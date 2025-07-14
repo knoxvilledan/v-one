@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Block, ChecklistItem } from "../types";
-import EditableChecklist from "./EditableChecklist";
+import { Block } from "../types";
 
 type Props = {
   block: Block;
@@ -10,7 +9,6 @@ type Props = {
   addNote: (index: number, note: string) => void;
   deleteNote: (blockIndex: number, noteIndex: number) => void;
   editNote: (blockIndex: number, noteIndex: number, newNote: string) => void;
-  updateChecklist?: (blockIndex: number, checklist: ChecklistItem[]) => void;
 };
 
 export default function TimeBlock({
@@ -20,11 +18,15 @@ export default function TimeBlock({
   addNote,
   deleteNote,
   editNote,
-  updateChecklist,
 }: Props) {
   const [input, setInput] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
+
+  const isHabitBreakNote = (note: string) => {
+    // Check if the note starts with 🚫 (bad habit indicator)
+    return note.startsWith("🚫 ");
+  };
 
   const handleAddNote = () => {
     const trimmedInput = input.trim();
@@ -56,12 +58,6 @@ export default function TimeBlock({
     setEditValue("");
   };
 
-  const handleChecklistUpdate = (newChecklist: ChecklistItem[]) => {
-    if (updateChecklist) {
-      updateChecklist(index, newChecklist);
-    }
-  };
-
   return (
     <div className="mb-4 border border-gray-400 shadow-md p-4 rounded-lg bg-white dark:bg-gray-800 min-h-[150px]">
       <div className="flex justify-between">
@@ -78,78 +74,66 @@ export default function TimeBlock({
         </button>
       </div>
 
-      {/* Checklist for blocks that have one */}
-      {block.checklist && block.checklist.length > 0 && (
-        <div className="mt-3 mb-4 border-b pb-3">
-          <EditableChecklist
-            items={block.checklist}
-            onUpdateItems={handleChecklistUpdate}
-            title={
-              index === 0
-                ? "Morning Checklist"
-                : index === 5
-                ? "Work Checklist"
-                : index === 6
-                ? "Tech Checklist"
-                : index === 8
-                ? "House & Family"
-                : index === 9
-                ? "Wrap up Checklist"
-                : "Checklist"
-            }
-          />
-        </div>
-      )}
-
+      {/* Daily checklist items (above Add Note) */}
       <ul className="list-disc pl-5 mt-2 space-y-1">
-        {block.notes.map((note, ni) => (
-          <li key={ni} className="flex justify-between items-center">
-            {editingIndex === ni ? (
-              <div className="flex items-center space-x-2 flex-1">
-                <input
-                  type="text"
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  className="flex-1 border rounded px-2 py-1 text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") saveEdit(ni);
-                    if (e.key === "Escape") cancelEdit();
-                  }}
-                  autoFocus
-                />
-                <button
-                  onClick={() => saveEdit(ni)}
-                  className="text-green-500 hover:text-green-700"
-                >
-                  ✓
-                </button>
-                <button
-                  onClick={cancelEdit}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  ✕
-                </button>
-              </div>
-            ) : (
-              <>
-                <span
-                  onClick={() => startEditing(ni, note)}
-                  className="cursor-pointer hover:bg-gray-100 px-1 rounded flex-1"
-                  title="Click to edit"
-                >
-                  {note}
-                </span>
-                <button
-                  onClick={() => deleteNote(index, ni)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  🗑️
-                </button>
-              </>
-            )}
-          </li>
-        ))}
+        {block.notes
+          .filter((note) => !isHabitBreakNote(note))
+          .map((note) => {
+            const originalIndex = block.notes.indexOf(note);
+            return (
+              <li
+                key={originalIndex}
+                className="flex justify-between items-center"
+              >
+                {editingIndex === originalIndex ? (
+                  <div className="flex items-center space-x-2 flex-1">
+                    <input
+                      type="text"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      className="flex-1 border rounded px-2 py-1 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveEdit(originalIndex);
+                        if (e.key === "Escape") cancelEdit();
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => saveEdit(originalIndex)}
+                      className="text-green-500 hover:text-green-700"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span
+                      onClick={() => startEditing(originalIndex, note)}
+                      className="cursor-pointer hover:bg-gray-100 px-1 rounded flex-1"
+                      title="Click to edit"
+                    >
+                      {note}
+                    </span>
+                    <button
+                      onClick={() => deleteNote(index, originalIndex)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      🗑️
+                    </button>
+                  </>
+                )}
+              </li>
+            );
+          })}
       </ul>
+
+      {/* Add Note Input */}
       <input
         type="text"
         value={input}
@@ -160,6 +144,65 @@ export default function TimeBlock({
           if (e.key === "Enter") handleAddNote();
         }}
       />
+
+      {/* Habit break items (below Add Note) */}
+      {block.notes.some(isHabitBreakNote) && (
+        <ul className="list-disc pl-5 mt-2 space-y-1">
+          {block.notes.filter(isHabitBreakNote).map((note) => {
+            const originalIndex = block.notes.indexOf(note);
+            return (
+              <li
+                key={originalIndex}
+                className="flex justify-between items-center"
+              >
+                {editingIndex === originalIndex ? (
+                  <div className="flex items-center space-x-2 flex-1">
+                    <input
+                      type="text"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      className="flex-1 border rounded px-2 py-1 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveEdit(originalIndex);
+                        if (e.key === "Escape") cancelEdit();
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => saveEdit(originalIndex)}
+                      className="text-green-500 hover:text-green-700"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span
+                      onClick={() => startEditing(originalIndex, note)}
+                      className="cursor-pointer hover:bg-gray-100 px-1 rounded flex-1 font-bold text-red-600"
+                      title="Click to edit"
+                    >
+                      {note}
+                    </span>
+                    <button
+                      onClick={() => deleteNote(index, originalIndex)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      🗑️
+                    </button>
+                  </>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

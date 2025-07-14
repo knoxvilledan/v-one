@@ -8,60 +8,138 @@ import {
 } from "../../lib/storage";
 import TimeBlock from "../../components/TimeBlock";
 import ScoreBar from "../../components/ScoreBar";
-import ExportButton from "../../components/ExportButton";
+import MasterChecklist from "../../components/MasterChecklist";
+import HabitBreakChecklist from "../../components/HabitBreakChecklist";
+import Footer from "../../components/Footer";
 import { calculateScore } from "../../lib/scoring";
 import { Block, ChecklistItem } from "../../types";
 
-const defaultChecklist: ChecklistItem[] = [
-  { id: "1", text: "Get Mind Right! Put 1 on Loop", completed: false },
-  { id: "2", text: "Hear/Read/ Write/Speak/ Vision/Feeling", completed: false },
-  { id: "3", text: "Teeth / Face", completed: false },
+const defaultMasterChecklist: ChecklistItem[] = [
+  // Morning routine
   {
-    id: "4",
+    id: "m1",
+    text: "Get Mind Right! Put 1 on Loop",
+    completed: false,
+    category: "morning",
+  },
+  {
+    id: "m2",
+    text: "Hear/Read/ Write/Speak/ Vision/Feeling",
+    completed: false,
+    category: "morning",
+  },
+  { id: "m3", text: "Teeth / Face", completed: false, category: "morning" },
+  {
+    id: "m4",
     text: "Spa Treatment / Feet / Deodorant / Hair",
     completed: false,
+    category: "morning",
   },
-  { id: "5", text: "Stretch & Build up…EVERYTHING", completed: false },
-  { id: "6", text: "Workout [101] [201] [301]", completed: false },
-  { id: "7", text: "Work Day Prep / To Do List Prep", completed: false },
   {
-    id: "8",
+    id: "m5",
+    text: "Stretch & Build up…EVERYTHING",
+    completed: false,
+    category: "morning",
+  },
+  {
+    id: "m6",
+    text: "Workout [101] [201] [301]",
+    completed: false,
+    category: "morning",
+  },
+  {
+    id: "m7",
+    text: "Work Day Prep / To Do List Prep",
+    completed: false,
+    category: "morning",
+  },
+  {
+    id: "m8",
     text: "Bible Study | Mind/Will | Soul/Emotions",
     completed: false,
+    category: "morning",
   },
-];
 
-const defaultWorkChecklist: ChecklistItem[] = [
-  { id: "work-1", text: "Work Tasks", completed: false },
-];
+  // Work tasks
+  { id: "w1", text: "Work Tasks", completed: false, category: "work" },
 
-const defaultTechChecklist: ChecklistItem[] = [
-  { id: "tech-1", text: "Programming, Tech Stacks, Tools", completed: false },
-  { id: "tech-2", text: "Coding, Build Portfolio/Projects", completed: false },
-  { id: "tech-3", text: "Web Dev / Soft Dev", completed: false },
-  { id: "tech-4", text: "IT Help Desk", completed: false },
-  { id: "tech-5", text: "Network Security", completed: false },
-  { id: "tech-6", text: "Research & Development Subjects", completed: false },
-];
-
-const defaultHouseFamilyChecklist: ChecklistItem[] = [
-  { id: "house-1", text: "Household / Chores / Misc", completed: false },
+  // Tech tasks
   {
-    id: "house-2",
+    id: "t1",
+    text: "Programming, Tech Stacks, Tools",
+    completed: false,
+    category: "tech",
+  },
+  {
+    id: "t2",
+    text: "Coding, Build Portfolio/Projects",
+    completed: false,
+    category: "tech",
+  },
+  { id: "t3", text: "Web Dev / Soft Dev", completed: false, category: "tech" },
+  { id: "t4", text: "IT Help Desk", completed: false, category: "tech" },
+  { id: "t5", text: "Network Security", completed: false, category: "tech" },
+  {
+    id: "t6",
+    text: "Research & Development Subjects",
+    completed: false,
+    category: "tech",
+  },
+
+  // House/Family tasks
+  {
+    id: "h1",
+    text: "Household / Chores / Misc",
+    completed: false,
+    category: "house",
+  },
+  {
+    id: "h2",
     text: "Various / Store / Breaks / Dinner",
     completed: false,
+    category: "house",
   },
   {
-    id: "house-3",
+    id: "h3",
     text: "2 - 3 X chores & 1.5 nights SB for family",
     completed: false,
+    category: "house",
+  },
+
+  // Wrap-up tasks
+  { id: "wr1", text: "Plan Next Day", completed: false, category: "wrapup" },
+  { id: "wr2", text: "Spa Treatment R2", completed: false, category: "wrapup" },
+  {
+    id: "wr3",
+    text: "Blue Angel / Ideal Day/ life",
+    completed: false,
+    category: "wrapup",
   },
 ];
 
-const defaultWrapUpChecklist: ChecklistItem[] = [
-  { id: "wrap-1", text: "Plan Next Day", completed: false },
-  { id: "wrap-2", text: "Spa Treatment R2", completed: false },
-  { id: "wrap-3", text: "Blue Angel / Ideal Day/ life", completed: false },
+const defaultHabitBreakChecklist: ChecklistItem[] = [
+  { id: "hb1", text: "LSD energy", completed: false, category: "lsd" },
+  { id: "hb2", text: "LNR", completed: false, category: "lsd" },
+  { id: "hb3", text: "LWR", completed: false, category: "lsd" },
+  { id: "hb4", text: "AC", completed: false, category: "lsd" },
+  { id: "hb5", text: "OC", completed: false, category: "lsd" },
+  { id: "hb6", text: "GAF", completed: false, category: "lsd" },
+  { id: "hb7", text: "GPR", completed: false, category: "lsd" },
+  { id: "hb8", text: "NC", completed: false, category: "lsd" },
+  {
+    id: "hb9",
+    text: "financial waste",
+    completed: false,
+    category: "financial",
+  },
+  { id: "hb10", text: "youtube shorts", completed: false, category: "youtube" },
+  { id: "hb11", text: "time wasted", completed: false, category: "time" },
+  {
+    id: "hb5",
+    text: "wasteful entertainment",
+    completed: false,
+    category: "entertainment",
+  },
 ];
 
 const defaultBlocks = [
@@ -80,32 +158,176 @@ const defaultBlocks = [
 export default function DailyPage() {
   const params = useParams();
   const date = params?.date as string;
+  const [wakeTime, setWakeTime] = useState<string>("04:00");
 
-  const [blocks, setBlocks] = useState<Block[]>(
-    () =>
-      (date && loadDayDataByDate(date)) ||
-      defaultBlocks.map((b, index) => ({
-        ...b,
-        notes: [],
-        complete: false,
-        checklist:
-          index === 0
-            ? defaultChecklist
-            : index === 5
-            ? defaultWorkChecklist
-            : index === 6
-            ? defaultTechChecklist
-            : index === 8
-            ? defaultHouseFamilyChecklist
-            : index === 9
-            ? defaultWrapUpChecklist
-            : undefined,
-      }))
+  const [blocks, setBlocks] = useState<Block[]>(() => {
+    if (date) {
+      const savedData = loadDayDataByDate(date);
+      return (
+        savedData?.blocks ||
+        defaultBlocks.map((b) => ({
+          ...b,
+          notes: [],
+          complete: false,
+          checklist: undefined,
+        }))
+      );
+    }
+    return defaultBlocks.map((b) => ({
+      ...b,
+      notes: [],
+      complete: false,
+      checklist: undefined,
+    }));
+  });
+
+  const [masterChecklist, setMasterChecklist] = useState<ChecklistItem[]>(
+    () => {
+      if (date) {
+        const savedData = loadDayDataByDate(date);
+        return savedData?.masterChecklist || defaultMasterChecklist;
+      }
+      return defaultMasterChecklist;
+    }
   );
 
+  const [habitBreakChecklist, setHabitBreakChecklist] = useState<
+    ChecklistItem[]
+  >(() => {
+    if (date) {
+      const savedData = loadDayDataByDate(date);
+      return savedData?.habitBreakChecklist || defaultHabitBreakChecklist;
+    }
+    return defaultHabitBreakChecklist;
+  });
+
   useEffect(() => {
-    if (date) saveDayDataByDate(date, blocks);
-  }, [blocks, date]);
+    if (date) {
+      const savedData = loadDayDataByDate(date);
+      if (savedData) {
+        setWakeTime(savedData.wakeTime || "04:00");
+        setHabitBreakChecklist(
+          savedData.habitBreakChecklist || defaultHabitBreakChecklist
+        );
+      }
+    }
+  }, [date]);
+
+  useEffect(() => {
+    if (date)
+      saveDayDataByDate(
+        date,
+        blocks,
+        masterChecklist,
+        wakeTime,
+        habitBreakChecklist
+      );
+  }, [blocks, masterChecklist, wakeTime, habitBreakChecklist, date]);
+
+  // Determine which time block a completed item should go to
+  const getTargetTimeBlock = (
+    completionTime: Date,
+    wakeTimeStr: string
+  ): number => {
+    const [wakeHour, wakeMinute] = wakeTimeStr.split(":").map(Number);
+    const completionHour = completionTime.getHours();
+    const completionMinute = completionTime.getMinutes();
+
+    const wakeMinutes = wakeHour * 60 + wakeMinute;
+    const completionMinutes = completionHour * 60 + completionMinute;
+
+    if (completionMinutes >= wakeMinutes && completionHour < 5) {
+      return 0;
+    }
+
+    if (completionHour < wakeHour) {
+      return 9;
+    }
+
+    if (completionHour >= 4 && completionHour < 5) return 0;
+    if (completionHour >= 5 && completionHour < 6) return 1;
+    if (completionHour >= 6 && completionHour < 7) return 2;
+    if (completionHour >= 7 && completionHour < 8) return 3;
+    if (completionHour >= 8 && completionHour < 9) return 4;
+    if (completionHour >= 9 && completionHour < 17) return 5;
+    if (completionHour >= 17 && completionHour < 18) return 6;
+    if (completionHour >= 18 && completionHour < 20) return 7;
+    if (completionHour >= 20 && completionHour < 21) return 8;
+    if (completionHour >= 21) return 9;
+
+    return 5;
+  };
+
+  // Handle completed items from master checklist
+  const handleCompleteChecklistItem = (itemId: string) => {
+    const completedItem = masterChecklist.find((item) => item.id === itemId);
+    if (completedItem) {
+      const completionTime = new Date();
+      // Use manually assigned target block or auto-assign based on time
+      const targetBlockIndex =
+        completedItem.targetBlock !== undefined
+          ? completedItem.targetBlock
+          : getTargetTimeBlock(completionTime, wakeTime);
+
+      const timestamp = completionTime.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const noteText = `✓ ${completedItem.text} (completed ${timestamp})`;
+
+      const updatedBlocks = [...blocks];
+      updatedBlocks[targetBlockIndex].notes.push(noteText);
+      setBlocks(updatedBlocks);
+
+      const updatedChecklist = masterChecklist.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              completed: true,
+              completedAt: completionTime,
+              targetBlock: targetBlockIndex,
+            }
+          : item
+      );
+      setMasterChecklist(updatedChecklist);
+    }
+  };
+
+  const handleCompleteHabitBreakItem = (itemId: string) => {
+    const now = new Date();
+    const completedItem = habitBreakChecklist.find(
+      (item) => item.id === itemId
+    );
+
+    if (completedItem) {
+      // Use manually assigned target block or auto-assign based on time
+      const targetBlock =
+        completedItem.targetBlock !== undefined
+          ? completedItem.targetBlock
+          : getTargetTimeBlock(now, wakeTime);
+
+      // Add the bad habit as a note to the target block
+      const updatedBlocks = [...blocks];
+      const badHabitNote = `🚫 ${
+        completedItem.text
+      } (${now.toLocaleTimeString()})`;
+      updatedBlocks[targetBlock].notes.push(badHabitNote);
+      setBlocks(updatedBlocks);
+
+      // Update the habit break checklist
+      const updatedItems = habitBreakChecklist.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              completed: true,
+              completedAt: now,
+              targetBlock: targetBlock,
+            }
+          : item
+      );
+      setHabitBreakChecklist(updatedItems);
+    }
+  };
 
   const toggleComplete = (i: number) => {
     const copy = [...blocks];
@@ -121,6 +343,33 @@ export default function DailyPage() {
 
   const deleteNote = (blockIndex: number, noteIndex: number) => {
     const copy = [...blocks];
+    const deletedNote = copy[blockIndex].notes[noteIndex];
+
+    // Check if this is a completed checklist item note (starts with ✓)
+    if (deletedNote.startsWith("✓ ")) {
+      // Extract the original task text (remove ✓ and timestamp)
+      const taskMatch = deletedNote.match(
+        /^✓ (.+?) \(completed \d{1,2}:\d{2}\)$/
+      );
+      if (taskMatch) {
+        const originalText = taskMatch[1];
+
+        // Find and restore the item in master checklist
+        const updatedChecklist = masterChecklist.map((item) => {
+          if (item.text === originalText && item.completed) {
+            return {
+              ...item,
+              completed: false,
+              completedAt: undefined,
+              targetBlock: undefined,
+            };
+          }
+          return item;
+        });
+        setMasterChecklist(updatedChecklist);
+      }
+    }
+
     copy[blockIndex].notes.splice(noteIndex, 1);
     setBlocks(copy);
   };
@@ -131,10 +380,19 @@ export default function DailyPage() {
     setBlocks(copy);
   };
 
-  const updateChecklist = (blockIndex: number, checklist: ChecklistItem[]) => {
-    const copy = [...blocks];
-    copy[blockIndex].checklist = checklist;
-    setBlocks(copy);
+  // Update master checklist
+  const updateMasterChecklist = (updatedItems: ChecklistItem[]) => {
+    try {
+      setMasterChecklist(updatedItems);
+      // Force save immediately to ensure data persists
+      saveDayDataByDate(date, blocks, updatedItems, wakeTime);
+    } catch (error) {
+      console.error("Error updating master checklist:", error);
+    }
+  };
+
+  const updateHabitBreakChecklist = (updatedItems: ChecklistItem[]) => {
+    setHabitBreakChecklist(updatedItems);
   };
 
   const score = calculateScore(blocks);
@@ -143,7 +401,25 @@ export default function DailyPage() {
     <main className="max-w-7xl mx-auto px-4">
       <h1 className="text-2xl font-bold mb-2">AMP Tracker – {date}</h1>
       <ScoreBar score={score} />
-      <ExportButton onExport={() => exportCSVByDate(date, blocks)} />
+      <MasterChecklist
+        items={masterChecklist}
+        onCompleteItem={handleCompleteChecklistItem}
+        onUpdateItems={updateMasterChecklist}
+      />
+      <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-2">
+          <label htmlFor="wake-time" className="text-sm font-medium">
+            Wake Time:
+          </label>
+          <input
+            id="wake-time"
+            type="time"
+            value={wakeTime}
+            onChange={(e) => setWakeTime(e.target.value)}
+            className="border rounded px-2 py-1 text-sm"
+          />
+        </div>
+      </div>
       <div className="columns-1 md:columns-2 xl:columns-3 gap-12">
         {blocks.map((block, i) => (
           <div key={i} className="break-inside-avoid mb-4">
@@ -154,11 +430,18 @@ export default function DailyPage() {
               addNote={addNote}
               deleteNote={deleteNote}
               editNote={editNote}
-              updateChecklist={updateChecklist}
             />
           </div>
         ))}
       </div>
+      <div className="mt-8">
+        <HabitBreakChecklist
+          items={habitBreakChecklist}
+          onCompleteItem={handleCompleteHabitBreakItem}
+          onUpdateItems={updateHabitBreakChecklist}
+        />
+      </div>
+      <Footer onExport={() => exportCSVByDate(date, blocks)} />
     </main>
   );
 }
