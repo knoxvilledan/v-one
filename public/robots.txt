@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Auth pages - allow for SEO but not deep crawling
+User-agent: *
+Disallow: /api/
+Disallow: /auth/signin
+Disallow: /auth/signup
+
+# Sitemap
+Sitemap: https://amp-tracker.vercel.app/sitemap.xml
