@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Block } from "../types";
+import { Block, ChecklistItem } from "../types";
+import EditableChecklist from "./EditableChecklist";
 
 type Props = {
   block: Block;
@@ -9,6 +10,7 @@ type Props = {
   addNote: (index: number, note: string) => void;
   deleteNote: (blockIndex: number, noteIndex: number) => void;
   editNote: (blockIndex: number, noteIndex: number, newNote: string) => void;
+  updateChecklist?: (blockIndex: number, checklist: ChecklistItem[]) => void;
 };
 
 export default function TimeBlock({
@@ -18,6 +20,7 @@ export default function TimeBlock({
   addNote,
   deleteNote,
   editNote,
+  updateChecklist,
 }: Props) {
   const [input, setInput] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -53,8 +56,14 @@ export default function TimeBlock({
     setEditValue("");
   };
 
+  const handleChecklistUpdate = (newChecklist: ChecklistItem[]) => {
+    if (updateChecklist) {
+      updateChecklist(index, newChecklist);
+    }
+  };
+
   return (
-    <div className="mb-4 border border-gray-400 shadow-md p-4 rounded-lg bg-white dark:bg-gray-800">
+    <div className="mb-4 border border-gray-400 shadow-md p-4 rounded-lg bg-white dark:bg-gray-800 min-h-[150px]">
       <div className="flex justify-between">
         <h2 className="font-semibold">
           {block.time} – {block.label}
@@ -68,6 +77,30 @@ export default function TimeBlock({
           {block.complete ? "✓ Done" : "Mark Done"}
         </button>
       </div>
+
+      {/* Checklist for blocks that have one */}
+      {block.checklist && block.checklist.length > 0 && (
+        <div className="mt-3 mb-4 border-b pb-3">
+          <EditableChecklist
+            items={block.checklist}
+            onUpdateItems={handleChecklistUpdate}
+            title={
+              index === 0
+                ? "Morning Checklist"
+                : index === 5
+                ? "Work Checklist"
+                : index === 6
+                ? "Tech Checklist"
+                : index === 8
+                ? "House & Family"
+                : index === 9
+                ? "Wrap up Checklist"
+                : "Checklist"
+            }
+          />
+        </div>
+      )}
+
       <ul className="list-disc pl-5 mt-2 space-y-1">
         {block.notes.map((note, ni) => (
           <li key={ni} className="flex justify-between items-center">
@@ -99,7 +132,7 @@ export default function TimeBlock({
               </div>
             ) : (
               <>
-                <span 
+                <span
                   onClick={() => startEditing(ni, note)}
                   className="cursor-pointer hover:bg-gray-100 px-1 rounded flex-1"
                   title="Click to edit"
