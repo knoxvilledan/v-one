@@ -6,11 +6,14 @@ export class ApiService {
 
   // Save user data to MongoDB
   static async saveDayData(
+    email: string,
     date: string,
-    blocks: Block[],
-    masterChecklist?: ChecklistItem[],
-    wakeTime?: string,
-    habitBreakChecklist?: ChecklistItem[]
+    dayData: {
+      wakeTime: string;
+      blocks: Block[];
+      masterChecklist: ChecklistItem[];
+      habitBreakChecklist: ChecklistItem[];
+    }
   ) {
     try {
       const response = await fetch(`${this.baseUrl}/user-data`, {
@@ -19,11 +22,9 @@ export class ApiService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          email,
           date,
-          blocks,
-          masterChecklist,
-          wakeTime,
-          habitBreakChecklist,
+          ...dayData,
         }),
       });
 
@@ -39,9 +40,9 @@ export class ApiService {
   }
 
   // Load user data from MongoDB
-  static async loadDayData(date: string) {
+  static async getUserData(email: string) {
     try {
-      const response = await fetch(`${this.baseUrl}/user-data?date=${date}`);
+      const response = await fetch(`${this.baseUrl}/user-data?email=${email}`);
 
       if (!response.ok) {
         throw new Error(`API Error: ${response.status}`);
@@ -51,6 +52,17 @@ export class ApiService {
       return result.data;
     } catch (error) {
       console.error("Error loading data:", error);
+      throw error;
+    }
+  }
+
+  // Load specific day data
+  static async loadDayData(email: string, date: string) {
+    try {
+      const userData = await this.getUserData(email);
+      return userData.days[date] || null;
+    } catch (error) {
+      console.error("Error loading day data:", error);
       throw error;
     }
   }

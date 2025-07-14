@@ -1,11 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import {
-  loadDayDataByDate,
-  saveDayDataByDate,
-  exportCSVByDate,
-} from "../../lib/storage";
+import { useSession } from "next-auth/react";
+import { ApiService } from "../../lib/api";
+import { exportCSVByDate } from "../../lib/storage";
 import TimeBlock from "../../components/TimeBlock";
 import ScoreBar from "../../components/ScoreBar";
 import MasterChecklist from "../../components/MasterChecklist";
@@ -158,21 +156,11 @@ const defaultBlocks = [
 export default function DailyPage() {
   const params = useParams();
   const date = params?.date as string;
+  const { data: session } = useSession();
   const [wakeTime, setWakeTime] = useState<string>("04:00");
+  const [isLoading, setIsLoading] = useState(true);
 
   const [blocks, setBlocks] = useState<Block[]>(() => {
-    if (date) {
-      const savedData = loadDayDataByDate(date);
-      return (
-        savedData?.blocks ||
-        defaultBlocks.map((b) => ({
-          ...b,
-          notes: [],
-          complete: false,
-          checklist: undefined,
-        }))
-      );
-    }
     return defaultBlocks.map((b) => ({
       ...b,
       notes: [],
@@ -182,47 +170,78 @@ export default function DailyPage() {
   });
 
   const [masterChecklist, setMasterChecklist] = useState<ChecklistItem[]>(
-    () => {
-      if (date) {
-        const savedData = loadDayDataByDate(date);
-        return savedData?.masterChecklist || defaultMasterChecklist;
-      }
-      return defaultMasterChecklist;
-    }
+    defaultMasterChecklist
   );
 
   const [habitBreakChecklist, setHabitBreakChecklist] = useState<
     ChecklistItem[]
-  >(() => {
-    if (date) {
-      const savedData = loadDayDataByDate(date);
-      return savedData?.habitBreakChecklist || defaultHabitBreakChecklist;
-    }
-    return defaultHabitBreakChecklist;
-  });
+  >(defaultHabitBreakChecklist);
 
+  // Load data from API when component mounts
   useEffect(() => {
-    if (date) {
-      const savedData = loadDayDataByDate(date);
-      if (savedData) {
-        setWakeTime(savedData.wakeTime || "04:00");
-        setHabitBreakChecklist(
-          savedData.habitBreakChecklist || defaultHabitBreakChecklist
-        );
+    const loadData = async () => {
+      if (!session?.user?.email || !date) return;
+
+      try {
+        setIsLoading(true);
+        const userData = await ApiService.getUserData(session.user.email);
+        const dayData = userData.days[date];
+
+        if (dayData) {
+          setWakeTime(dayData.wakeTime || "04:00");
+          setBlocks(
+            dayData.blocks ||
+              defaultBlocks.map((b) => ({
+                ...b,
+                notes: [],
+                complete: false,
+                checklist: undefined,
+              }))
+          );
+          setMasterChecklist(dayData.masterChecklist || defaultMasterChecklist);
+          setHabitBreakChecklist(
+            dayData.habitBreakChecklist || defaultHabitBreakChecklist
+          );
+        }
+      } catch (error) {
+        console.error("Error loading day data:", error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, [date]);
+    };
 
+    loadData();
+  }, [session, date]);
+
+  // Save data to API when state changes
   useEffect(() => {
-    if (date)
-      saveDayDataByDate(
-        date,
-        blocks,
-        masterChecklist,
-        wakeTime,
-        habitBreakChecklist
-      );
-  }, [blocks, masterChecklist, wakeTime, habitBreakChecklist, date]);
+    const saveData = async () => {
+      if (!session?.user?.email || !date || isLoading) return;
+
+      try {
+        const dayData = {
+          wakeTime,
+          blocks,
+          masterChecklist,
+          habitBreakChecklist,
+        };
+
+        await ApiService.saveDayData(session.user.email, date, dayData);
+      } catch (error) {
+        console.error("Error saving day data:", error);
+      }
+    };
+
+    saveData();
+  }, [
+    blocks,
+    masterChecklist,
+    wakeTime,
+    habitBreakChecklist,
+    date,
+    session,
+    isLoading,
+  ]);
 
   // Determine which time block a completed item should go to
   const getTargetTimeBlock = (
@@ -381,11 +400,19 @@ export default function DailyPage() {
   };
 
   // Update master checklist
-  const updateMasterChecklist = (updatedItems: ChecklistItem[]) => {
+  const updateMasterChecklist = async (updatedItems: ChecklistItem[]) => {
     try {
       setMasterChecklist(updatedItems);
-      // Force save immediately to ensure data persists
-      saveDayDataByDate(date, blocks, updatedItems, wakeTime);
+      // Save to database immediately
+      if (session?.user?.email && date) {
+        const dayData = {
+          wakeTime,
+          blocks,
+          masterChecklist: updatedItems,
+          habitBreakChecklist,
+        };
+        await ApiService.saveDayData(session.user.email, date, dayData);
+      }
     } catch (error) {
       console.error("Error updating master checklist:", error);
     }
@@ -396,6 +423,26 @@ export default function DailyPage() {
   };
 
   const score = calculateScore(blocks);
+
+  if (isLoading) {
+    return (
+      <main className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg">Loading day data...</div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!session) {
+    return (
+      <main className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg">Please sign in to view your data</div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-7xl mx-auto px-4">
