@@ -5,7 +5,11 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {};
+const options = {
+  connectTimeoutMS: 30000,
+  socketTimeoutMS: 30000,
+  serverSelectionTimeoutMS: 30000,
+};
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
@@ -27,4 +31,5 @@ if (process.env.NODE_ENV === "development") {
   clientPromise = client.connect();
 }
 
+// Export the client promise
 export default clientPromise;

@@ -18,29 +18,34 @@ export const authOptions = {
           return null;
         }
 
-        const client = await clientPromise;
-        const users = client.db().collection("users");
+        try {
+          const client = await clientPromise;
+          const users = client.db().collection("users");
 
-        const user = await users.findOne({ email: credentials.email });
+          const user = await users.findOne({ email: credentials.email });
 
-        if (!user) {
+          if (!user) {
+            return null;
+          }
+
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+
+          if (!isPasswordValid) {
+            return null;
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+          };
+        } catch (error) {
+          console.error("Auth error:", error);
           return null;
         }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          return null;
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-        };
       },
     }),
   ],
