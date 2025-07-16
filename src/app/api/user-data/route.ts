@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth";
 import clientPromise from "../../../lib/mongodb";
 import { Session } from "next-auth";
-import { Block, ChecklistItem } from "../../../types";
+import { Block, ChecklistItem, DayData } from "../../../types";
+import { formatDisplayDate, parseStorageDate } from "../../../lib/date-utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,34 +13,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { date, blocks, masterChecklist, wakeTime, habitBreakChecklist } =
+    const { date, wakeTime, blocks, masterChecklist, habitBreakChecklist } =
       await request.json();
 
     if (!date) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
     }
 
+    // Parse the date and create display format
+    const dateObj = parseStorageDate(date);
+    const displayDate = formatDisplayDate(dateObj);
+
     const client = await clientPromise;
     const userData = client.db().collection("user_data");
+
+    // Calculate basic score (you can enhance this)
+    const score = blocks.reduce((acc: number, block: Block) => {
+      return acc + (block.complete ? 1 : 0);
+    }, 0);
+
+    // Create the day data object
+    const dayData: Partial<DayData> = {
+      date,
+      displayDate,
+      wakeTime,
+      blocks,
+      masterChecklist,
+      habitBreakChecklist,
+      score,
+      updatedAt: new Date(),
+    };
 
     // Upsert user data for the specific date
     await userData.updateOne(
       { userId: session.user.id, date },
       {
-        $set: {
-          userId: session.user.id,
-          date,
-          blocks,
-          masterChecklist,
-          wakeTime,
-          habitBreakChecklist,
-          updatedAt: new Date(),
-        },
+        $set: dayData,
+        $setOnInsert: { createdAt: new Date() },
       },
       { upsert: true }
     );
 
-    return NextResponse.json({ message: "Data saved successfully" });
+    return NextResponse.json({
+      message: "Data saved successfully",
+      date,
+      displayDate,
+      score,
+    });
   } catch (error) {
     console.error("Save data error:", error);
     return NextResponse.json(

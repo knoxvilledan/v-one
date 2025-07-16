@@ -24,3 +24,15 @@ export interface Block {
   complete: boolean;
   checklist?: ChecklistItem[];
 }
+
+export interface DayData {
+  date: string; // Format: YYYY-MM-DD
+  displayDate: string; // Format: Wed 7-16-25
+  wakeTime: string;
+  blocks: Block[];
+  masterChecklist: ChecklistItem[];
+  habitBreakChecklist: ChecklistItem[];
+  score?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}

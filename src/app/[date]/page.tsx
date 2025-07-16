@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useParams, useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { ApiService } from "../../lib/api";
 import { exportCSVByDate } from "../../lib/storage";
+import { getTodayStorageDate } from "../../lib/date-utils";
+import DateNavigation from "../../components/DateNavigation";
 import TimeBlock from "../../components/TimeBlock";
 import ScoreBar from "../../components/ScoreBar";
 import MasterChecklist from "../../components/MasterChecklist";
@@ -155,10 +157,28 @@ const defaultBlocks = [
 
 export default function DailyPage() {
   const params = useParams();
+  const router = useRouter();
   const date = params?.date as string;
   const { data: session } = useSession();
   const [wakeTime, setWakeTime] = useState<string>("04:00");
   const [isLoading, setIsLoading] = useState(true);
+
+  // Redirect to today's date if no date is provided or invalid
+  useEffect(() => {
+    if (!date || date === "undefined") {
+      const today = getTodayStorageDate();
+      router.replace(`/${today}`);
+      return;
+    }
+
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      const today = getTodayStorageDate();
+      router.replace(`/${today}`);
+      return;
+    }
+  }, [date, router]);
 
   const [blocks, setBlocks] = useState<Block[]>(() => {
     return defaultBlocks.map((b) => ({
@@ -443,30 +463,47 @@ export default function DailyPage() {
       </main>
     );
   }
-
   return (
     <main className="max-w-7xl mx-auto px-4">
-      <h1 className="text-2xl font-bold mb-2">AMP Tracker – {date}</h1>
+      {/* Header with App Title */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">AMP Tracker</h1>
+      </div>
+
+      {/* Date Navigation, Wake Time, and Welcome Message - responsive layout */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+          <DateNavigation currentDate={date} />
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="wake-time"
+              className="text-sm font-medium whitespace-nowrap"
+            >
+              Wake Time:
+            </label>
+            <input
+              id="wake-time"
+              type="time"
+              value={wakeTime}
+              onChange={(e) => setWakeTime(e.target.value)}
+              className="border rounded px-2 py-1 text-sm"
+            />
+          </div>
+        </div>
+        <div className="flex items-center">
+          <span className="text-base lg:text-lg font-medium">
+            Welcome, {session.user?.name || "User"}
+          </span>
+        </div>
+      </div>
+
       <ScoreBar score={score} />
       <MasterChecklist
         items={masterChecklist}
         onCompleteItem={handleCompleteChecklistItem}
         onUpdateItems={updateMasterChecklist}
       />
-      <div className="flex items-center gap-4 mb-4">
-        <div className="flex items-center gap-2">
-          <label htmlFor="wake-time" className="text-sm font-medium">
-            Wake Time:
-          </label>
-          <input
-            id="wake-time"
-            type="time"
-            value={wakeTime}
-            onChange={(e) => setWakeTime(e.target.value)}
-            className="border rounded px-2 py-1 text-sm"
-          />
-        </div>
-      </div>
+
       <div className="columns-1 md:columns-2 xl:columns-3 gap-12">
         {blocks.map((block, i) => (
           <div key={i} className="break-inside-avoid mb-4">
@@ -488,7 +525,10 @@ export default function DailyPage() {
           onUpdateItems={updateHabitBreakChecklist}
         />
       </div>
-      <Footer onExport={() => exportCSVByDate(date, blocks)} />
+      <Footer
+        onExport={() => exportCSVByDate(date, blocks)}
+        onSignOut={() => signOut()}
+      />
     </main>
   );
 }
