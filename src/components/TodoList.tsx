@@ -224,7 +224,7 @@ export default function TodoList({
       className={`todo-list-container bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg ${
         isMobile
           ? "w-full relative"
-          : "fixed z-[9999] w-[40%] md:w-[40%] xl:w-[25%]"
+          : "fixed z-[9999] w-[50%] md:w-[45%] xl:w-[35%]"
       }`}
       style={
         !isMobile
@@ -233,8 +233,8 @@ export default function TodoList({
               left: hasBeenMoved ? `${position.x}px` : "50%",
               transform: hasBeenMoved ? "none" : "translateX(-50%)",
               cursor: isDragging ? "grabbing" : "default",
-              minWidth: "300px",
-              maxWidth: "600px",
+              minWidth: "400px",
+              maxWidth: "700px",
             }
           : {}
       }
@@ -282,7 +282,7 @@ export default function TodoList({
 
       {/* Content */}
       {!isCollapsed && (
-        <div className="p-3 max-h-96 overflow-y-auto">
+        <div className="p-3 max-h-[500px] overflow-y-auto">
           {/* Pending Items */}
           <div className="space-y-2 mb-4">
             {pendingItems.map((item) => (
@@ -294,7 +294,7 @@ export default function TodoList({
                   type="checkbox"
                   checked={item.completed}
                   onChange={() => onCompleteItem(item.id)}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 flex-shrink-0"
                 />
 
                 <div className="flex-1 min-w-0">
@@ -325,16 +325,16 @@ export default function TodoList({
                   )}
                 </div>
 
-                {/* Date Picker */}
+                {/* Date Picker - Made smaller */}
                 <input
                   type="date"
                   value={item.dueDate || currentDate}
                   onChange={(e) => handleDateChange(item.id, e.target.value)}
-                  className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                  className="px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white w-24 flex-shrink-0"
                   title="Due date"
                 />
 
-                {/* Block Assignment Dropdown */}
+                {/* Block Assignment Dropdown - Made smaller */}
                 <select
                   value={item.targetBlock ?? ""}
                   onChange={(e) =>
@@ -343,7 +343,7 @@ export default function TodoList({
                       e.target.value ? parseInt(e.target.value) : -1
                     )
                   }
-                  className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                  className="px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white w-20 flex-shrink-0"
                 >
                   <option value="">Auto</option>
                   <option value="0">4:00 AM</option>
@@ -360,7 +360,7 @@ export default function TodoList({
 
                 <button
                   onClick={() => handleDeleteItem(item.id)}
-                  className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                  className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex-shrink-0"
                   title="Delete task"
                 >
                   <svg
