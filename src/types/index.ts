@@ -12,9 +12,11 @@ export interface ChecklistItem {
     | "financial"
     | "youtube"
     | "time"
-    | "entertainment";
+    | "entertainment"
+    | "todo";
   completedAt?: Date;
   targetBlock?: number;
+  dueDate?: string; // Format: YYYY-MM-DD - for todo items with specific dates
 }
 
 export interface Block {
@@ -32,6 +34,7 @@ export interface DayData {
   blocks: Block[];
   masterChecklist: ChecklistItem[];
   habitBreakChecklist: ChecklistItem[];
+  todoList: ChecklistItem[];
   score?: number;
   createdAt: Date;
   updatedAt: Date;

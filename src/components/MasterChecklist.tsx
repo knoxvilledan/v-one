@@ -336,15 +336,66 @@ export default function MasterChecklist({
                             <option value="" className="bg-gray-800 text-white">
                               Auto-assign
                             </option>
-                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((block) => (
-                              <option
-                                key={block}
-                                value={block}
-                                className="bg-gray-800 text-white"
-                              >
-                                Block {block + 1}
-                              </option>
-                            ))}
+                            <option
+                              value="0"
+                              className="bg-gray-800 text-white"
+                            >
+                              4:00 AM
+                            </option>
+                            <option
+                              value="1"
+                              className="bg-gray-800 text-white"
+                            >
+                              5:00 AM
+                            </option>
+                            <option
+                              value="2"
+                              className="bg-gray-800 text-white"
+                            >
+                              6:00 AM
+                            </option>
+                            <option
+                              value="3"
+                              className="bg-gray-800 text-white"
+                            >
+                              7:00 AM
+                            </option>
+                            <option
+                              value="4"
+                              className="bg-gray-800 text-white"
+                            >
+                              8:00 AM
+                            </option>
+                            <option
+                              value="5"
+                              className="bg-gray-800 text-white"
+                            >
+                              9:00 AM
+                            </option>
+                            <option
+                              value="6"
+                              className="bg-gray-800 text-white"
+                            >
+                              5:00 PM
+                            </option>
+                            <option
+                              value="7"
+                              className="bg-gray-800 text-white"
+                            >
+                              6:00 PM
+                            </option>
+                            <option
+                              value="8"
+                              className="bg-gray-800 text-white"
+                            >
+                              8:00 PM
+                            </option>
+                            <option
+                              value="9"
+                              className="bg-gray-800 text-white"
+                            >
+                              9:00 PM
+                            </option>
                           </select>
                           <button
                             onClick={saveEdit}
@@ -371,9 +422,27 @@ export default function MasterChecklist({
                             >
                               {item.text}
                             </span>
-                            {item.targetBlock && (
+                            {item.targetBlock !== undefined && (
                               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Assigned to Block {item.targetBlock + 1}
+                                Assigned to{" "}
+                                {(() => {
+                                  const timeLabels = [
+                                    "4:00 AM",
+                                    "5:00 AM",
+                                    "6:00 AM",
+                                    "7:00 AM",
+                                    "8:00 AM",
+                                    "9:00 AM",
+                                    "5:00 PM",
+                                    "6:00 PM",
+                                    "8:00 PM",
+                                    "9:00 PM",
+                                  ];
+                                  return (
+                                    timeLabels[item.targetBlock] ||
+                                    `Block ${item.targetBlock + 1}`
+                                  );
+                                })()}
                               </div>
                             )}
                             {item.completed && item.completedAt && (
@@ -407,15 +476,66 @@ export default function MasterChecklist({
                                 >
                                   Auto-assign
                                 </option>
-                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((block) => (
-                                  <option
-                                    key={block}
-                                    value={block}
-                                    className="bg-gray-800 text-white"
-                                  >
-                                    Block {block + 1}
-                                  </option>
-                                ))}
+                                <option
+                                  value="0"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  4:00 AM
+                                </option>
+                                <option
+                                  value="1"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  5:00 AM
+                                </option>
+                                <option
+                                  value="2"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  6:00 AM
+                                </option>
+                                <option
+                                  value="3"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  7:00 AM
+                                </option>
+                                <option
+                                  value="4"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  8:00 AM
+                                </option>
+                                <option
+                                  value="5"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  9:00 AM
+                                </option>
+                                <option
+                                  value="6"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  5:00 PM
+                                </option>
+                                <option
+                                  value="7"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  6:00 PM
+                                </option>
+                                <option
+                                  value="8"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  8:00 PM
+                                </option>
+                                <option
+                                  value="9"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  9:00 PM
+                                </option>
                               </select>
                             </div>
                           )}

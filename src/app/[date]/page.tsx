@@ -10,6 +10,7 @@ import TimeBlock from "../../components/TimeBlock";
 import ScoreBar from "../../components/ScoreBar";
 import MasterChecklist from "../../components/MasterChecklist";
 import HabitBreakChecklist from "../../components/HabitBreakChecklist";
+import TodoList from "../../components/TodoList";
 import Footer from "../../components/Footer";
 import { calculateScore } from "../../lib/scoring";
 import { Block, ChecklistItem } from "../../types";
@@ -162,6 +163,9 @@ export default function DailyPage() {
   const { data: session } = useSession();
   const [wakeTime, setWakeTime] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [todoListVisible, setTodoListVisible] = useState(false);
+  const [todoList, setTodoList] = useState<ChecklistItem[]>([]);
+  const [resetTodoPosition, setResetTodoPosition] = useState(false);
 
   // Redirect to today's date if no date is provided or invalid
   useEffect(() => {
@@ -231,9 +235,18 @@ export default function DailyPage() {
             dayData.masterChecklist || defaultMasterChecklist;
           const habitBreakChecklist =
             dayData.habitBreakChecklist || defaultHabitBreakChecklist;
+          let todoList = dayData.todoList || [];
+
+          // Auto-load uncompleted todo items from previous days
+          todoList = await loadPreviousTodoItems(userData, date, todoList);
 
           setMasterChecklist(ensureDateObjects(masterChecklist));
           setHabitBreakChecklist(ensureDateObjects(habitBreakChecklist));
+          setTodoList(ensureDateObjects(todoList));
+        } else {
+          // If no data for this day, still load previous uncompleted todos
+          const todoList = await loadPreviousTodoItems(userData, date, []);
+          setTodoList(ensureDateObjects(todoList));
         }
       } catch (error) {
         console.error("Error loading day data:", error);
@@ -244,6 +257,37 @@ export default function DailyPage() {
 
     loadData();
   }, [session, date]);
+
+  // Helper function to load uncompleted todo items from previous days
+  const loadPreviousTodoItems = async (
+    userData: { days: Record<string, { todoList?: ChecklistItem[] }> },
+    currentDate: string,
+    existingTodos: ChecklistItem[]
+  ): Promise<ChecklistItem[]> => {
+    const currentDateObj = new Date(currentDate);
+    const allTodos = [...existingTodos];
+
+    // Check all previous days for uncompleted todos
+    Object.keys(userData.days).forEach((dateKey) => {
+      const dayData = userData.days[dateKey];
+      if (dayData.todoList) {
+        dayData.todoList.forEach((todo: ChecklistItem) => {
+          const todoDueDate = new Date(todo.dueDate || dateKey);
+
+          // Include uncompleted todos that are due today or overdue
+          if (
+            !todo.completed &&
+            todoDueDate <= currentDateObj &&
+            !allTodos.some((existing) => existing.id === todo.id)
+          ) {
+            allTodos.push(todo);
+          }
+        });
+      }
+    });
+
+    return allTodos;
+  };
 
   // Save data to API when state changes (debounced)
   useEffect(() => {
@@ -256,6 +300,7 @@ export default function DailyPage() {
           blocks,
           masterChecklist,
           habitBreakChecklist,
+          todoList,
         };
 
         await ApiService.saveDayData(session.user.email, date, dayData);
@@ -272,43 +317,64 @@ export default function DailyPage() {
     masterChecklist,
     wakeTime,
     habitBreakChecklist,
+    todoList,
     date,
     session,
     isLoading,
   ]);
 
-  // Determine which time block a completed item should go to
-  const getTargetTimeBlock = (
+  // Unified time block assignment function that considers the current date context
+  const getTimeBlockForCompletion = (
     completionTime: Date,
-    wakeTimeStr: string
+    currentPageDate: string
   ): number => {
-    const [wakeHour, wakeMinute] = wakeTimeStr.split(":").map(Number);
     const completionHour = completionTime.getHours();
-    const completionMinute = completionTime.getMinutes();
+    const completionDate = completionTime.toISOString().split("T")[0]; // YYYY-MM-DD format
 
-    const wakeMinutes = wakeHour * 60 + wakeMinute;
-    const completionMinutes = completionHour * 60 + completionMinute;
+    // If we're on the current page date and it's late night (after 9 PM),
+    // or if we're on tomorrow's page and it's early morning (before 4 AM)
+    if (completionDate === currentPageDate) {
+      // Standard time block assignments for the current day
+      if (completionHour >= 4 && completionHour < 5) return 0; // 4:00 AM
+      if (completionHour >= 5 && completionHour < 6) return 1; // 5:00 AM
+      if (completionHour >= 6 && completionHour < 7) return 2; // 6:00 AM
+      if (completionHour >= 7 && completionHour < 8) return 3; // 7:00 AM
+      if (completionHour >= 8 && completionHour < 9) return 4; // 8:00 AM
+      if (completionHour >= 9 && completionHour < 17) return 5; // 9:00 AM - 5:00 PM
+      if (completionHour >= 17 && completionHour < 18) return 6; // 5:00 PM
+      if (completionHour >= 18 && completionHour < 20) return 7; // 6:00 PM
+      if (completionHour >= 20 && completionHour < 21) return 8; // 8:00 PM
+      if (completionHour >= 21 || completionHour < 4) return 9; // 9:00 PM - 4:00 AM
+    } else {
+      // Cross-date scenarios
+      const currentPageDateObj = new Date(currentPageDate + "T00:00:00");
+      const completionDateObj = new Date(completionDate + "T00:00:00");
 
-    if (completionMinutes >= wakeMinutes && completionHour < 5) {
-      return 0;
+      // If completing on the day before the current page (late night work)
+      if (completionDateObj.getTime() < currentPageDateObj.getTime()) {
+        if (completionHour >= 21 || completionHour < 4) return 9; // 9:00 PM - 4:00 AM
+      }
+
+      // If completing on the day after the current page (early morning work)
+      if (completionDateObj.getTime() > currentPageDateObj.getTime()) {
+        if (completionHour >= 0 && completionHour < 4) return 9; // 12:00 AM - 4:00 AM
+        if (completionHour >= 4 && completionHour < 5) return 0; // 4:00 AM
+      }
     }
 
-    if (completionHour < wakeHour) {
-      return 9;
-    }
+    // Fallback to standard assignment if no special case matches
+    if (completionHour >= 4 && completionHour < 5) return 0; // 4:00 AM
+    if (completionHour >= 5 && completionHour < 6) return 1; // 5:00 AM
+    if (completionHour >= 6 && completionHour < 7) return 2; // 6:00 AM
+    if (completionHour >= 7 && completionHour < 8) return 3; // 7:00 AM
+    if (completionHour >= 8 && completionHour < 9) return 4; // 8:00 AM
+    if (completionHour >= 9 && completionHour < 17) return 5; // 9:00 AM - 5:00 PM
+    if (completionHour >= 17 && completionHour < 18) return 6; // 5:00 PM
+    if (completionHour >= 18 && completionHour < 20) return 7; // 6:00 PM
+    if (completionHour >= 20 && completionHour < 21) return 8; // 8:00 PM
+    if (completionHour >= 21 || completionHour < 4) return 9; // 9:00 PM - 4:00 AM
 
-    if (completionHour >= 4 && completionHour < 5) return 0;
-    if (completionHour >= 5 && completionHour < 6) return 1;
-    if (completionHour >= 6 && completionHour < 7) return 2;
-    if (completionHour >= 7 && completionHour < 8) return 3;
-    if (completionHour >= 8 && completionHour < 9) return 4;
-    if (completionHour >= 9 && completionHour < 17) return 5;
-    if (completionHour >= 17 && completionHour < 18) return 6;
-    if (completionHour >= 18 && completionHour < 20) return 7;
-    if (completionHour >= 20 && completionHour < 21) return 8;
-    if (completionHour >= 21) return 9;
-
-    return 5;
+    return 5; // Default fallback
   };
 
   // Handle completed items from master checklist
@@ -320,7 +386,7 @@ export default function DailyPage() {
       const targetBlockIndex =
         completedItem.targetBlock !== undefined
           ? completedItem.targetBlock
-          : getTargetTimeBlock(completionTime, wakeTime);
+          : getTimeBlockForCompletion(completionTime, date);
 
       const timestamp = completionTime.toLocaleTimeString([], {
         hour: "2-digit",
@@ -357,7 +423,7 @@ export default function DailyPage() {
       const targetBlock =
         completedItem.targetBlock !== undefined
           ? completedItem.targetBlock
-          : getTargetTimeBlock(now, wakeTime);
+          : getTimeBlockForCompletion(now, date);
 
       // Add the bad habit as a note to the target block
       const updatedBlocks = [...blocks];
@@ -382,6 +448,105 @@ export default function DailyPage() {
     }
   };
 
+  // Handle todo list item completion
+  const handleCompleteTodoItem = async (itemId: string) => {
+    const completedItem = todoList.find((item) => item.id === itemId);
+    if (completedItem) {
+      const completionTime = new Date();
+
+      if (completedItem.completed) {
+        // Item is being unchecked - remove from blocks and mark as incomplete
+        const updatedBlocks = [...blocks];
+        const targetBlock = completedItem.targetBlock;
+
+        if (targetBlock !== undefined) {
+          const noteIndex = updatedBlocks[targetBlock].notes.findIndex(
+            (note) =>
+              note.includes(`✓ ${completedItem.text}`) &&
+              note.includes("(completed")
+          );
+          if (noteIndex >= 0) {
+            updatedBlocks[targetBlock].notes.splice(noteIndex, 1);
+            setBlocks(updatedBlocks);
+          }
+        }
+
+        // Update todo list
+        const updatedTodoList = todoList.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                completed: false,
+                completedAt: undefined,
+                targetBlock: undefined,
+              }
+            : item
+        );
+        setTodoList(updatedTodoList);
+
+        // Save to database immediately
+        try {
+          if (session?.user?.email && date) {
+            const dayData = {
+              wakeTime,
+              blocks: updatedBlocks,
+              masterChecklist,
+              habitBreakChecklist,
+              todoList: updatedTodoList,
+            };
+            await ApiService.saveDayData(session.user.email, date, dayData);
+          }
+        } catch (error) {
+          console.error("Error saving todo item uncheck:", error);
+        }
+      } else {
+        // Item is being checked - add to blocks and mark as complete
+        const targetBlockIndex =
+          completedItem.targetBlock !== undefined
+            ? completedItem.targetBlock
+            : getTimeBlockForCompletion(completionTime, date);
+
+        const timestamp = completionTime.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const noteText = `✓ ${completedItem.text} (completed ${timestamp})`;
+
+        const updatedBlocks = [...blocks];
+        updatedBlocks[targetBlockIndex].notes.push(noteText);
+        setBlocks(updatedBlocks);
+
+        const updatedTodoList = todoList.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                completed: true,
+                completedAt: completionTime,
+                targetBlock: targetBlockIndex,
+              }
+            : item
+        );
+        setTodoList(updatedTodoList);
+
+        // Save to database immediately
+        try {
+          if (session?.user?.email && date) {
+            const dayData = {
+              wakeTime,
+              blocks: updatedBlocks,
+              masterChecklist,
+              habitBreakChecklist,
+              todoList: updatedTodoList,
+            };
+            await ApiService.saveDayData(session.user.email, date, dayData);
+          }
+        } catch (error) {
+          console.error("Error saving todo item check:", error);
+        }
+      }
+    }
+  };
+
   const toggleComplete = (i: number) => {
     const copy = [...blocks];
     copy[i].complete = !copy[i].complete;
@@ -402,6 +567,7 @@ export default function DailyPage() {
             blocks: copy,
             masterChecklist,
             habitBreakChecklist,
+            todoList,
           };
           await ApiService.saveDayData(session.user.email, date, dayData);
         }
@@ -477,6 +643,7 @@ export default function DailyPage() {
           blocks: copy,
           masterChecklist,
           habitBreakChecklist,
+          todoList,
         };
         await ApiService.saveDayData(session.user.email, date, dayData);
       }
@@ -593,6 +760,7 @@ export default function DailyPage() {
           blocks: blocksChanged ? blocksCopy : blocks,
           masterChecklist: updatedItems,
           habitBreakChecklist,
+          todoList,
         };
         await ApiService.saveDayData(session.user.email, date, dayData);
       }
@@ -611,11 +779,31 @@ export default function DailyPage() {
           blocks,
           masterChecklist,
           habitBreakChecklist: updatedItems,
+          todoList,
         };
         await ApiService.saveDayData(session.user.email, date, dayData);
       }
     } catch (error) {
       console.error("Error updating habit break checklist:", error);
+    }
+  };
+
+  const updateTodoList = async (updatedItems: ChecklistItem[]) => {
+    try {
+      setTodoList(updatedItems);
+      // Save to database immediately
+      if (session?.user?.email && date) {
+        const dayData = {
+          wakeTime,
+          blocks,
+          masterChecklist,
+          habitBreakChecklist,
+          todoList: updatedItems,
+        };
+        await ApiService.saveDayData(session.user.email, date, dayData);
+      }
+    } catch (error) {
+      console.error("Error updating todo list:", error);
     }
   };
 
@@ -634,6 +822,7 @@ export default function DailyPage() {
       );
       setMasterChecklist(defaultMasterChecklist);
       setHabitBreakChecklist(defaultHabitBreakChecklist);
+      setTodoList([]);
 
       // Save the reset data to database
       if (session?.user?.email && date) {
@@ -647,12 +836,30 @@ export default function DailyPage() {
           })),
           masterChecklist: defaultMasterChecklist,
           habitBreakChecklist: defaultHabitBreakChecklist,
+          todoList: [],
         };
         await ApiService.saveDayData(session.user.email, date, dayData);
       }
     } catch (error) {
       console.error("Error resetting day:", error);
     }
+  };
+
+  // Handler for todo button with close/reset functionality
+  const handleTodoButtonClick = () => {
+    if (todoListVisible) {
+      // If already visible, close it
+      setTodoListVisible(false);
+    } else {
+      // If not visible, show it and reset position
+      setTodoListVisible(true);
+      setResetTodoPosition(true);
+    }
+  };
+
+  // Callback when todo position is reset
+  const handleTodoPositionReset = () => {
+    setResetTodoPosition(false);
   };
 
   const score = calculateScore(blocks);
@@ -703,6 +910,19 @@ export default function DailyPage() {
               placeholder="Enter wake time"
             />
           </div>
+          <div className="flex items-center">
+            <button
+              onClick={handleTodoButtonClick}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                todoListVisible
+                  ? "bg-blue-500 text-white hover:bg-blue-600"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              }`}
+              title={todoListVisible ? "Close To-Do List" : "Open To-Do List"}
+            >
+              📝 To-Do
+            </button>
+          </div>
         </div>
         <div className="flex items-center">
           <span className="text-base lg:text-lg font-medium">
@@ -718,6 +938,20 @@ export default function DailyPage() {
         onUpdateItems={updateMasterChecklist}
       />
 
+      {/* Todo List - Responsive positioning for desktop */}
+      <div className="relative hidden md:block">
+        <TodoList
+          items={todoList}
+          onCompleteItem={handleCompleteTodoItem}
+          onUpdateItems={updateTodoList}
+          isVisible={todoListVisible}
+          isMobile={false}
+          currentDate={date}
+          resetPosition={resetTodoPosition}
+          onPositionReset={handleTodoPositionReset}
+        />
+      </div>
+
       <div className="columns-1 md:columns-2 xl:columns-3 gap-12">
         {blocks.map((block, i) => (
           <div key={i} className="break-inside-avoid mb-4">
@@ -732,6 +966,20 @@ export default function DailyPage() {
         ))}
       </div>
       <div className="mt-8">
+        {/* Todo List for mobile - appears above HabitBreakChecklist */}
+        <div className="block md:hidden mb-6">
+          <TodoList
+            items={todoList}
+            onCompleteItem={handleCompleteTodoItem}
+            onUpdateItems={updateTodoList}
+            isVisible={todoListVisible}
+            isMobile={true}
+            currentDate={date}
+            resetPosition={resetTodoPosition}
+            onPositionReset={handleTodoPositionReset}
+          />
+        </div>
+
         <HabitBreakChecklist
           items={habitBreakChecklist}
           onCompleteItem={handleCompleteHabitBreakItem}

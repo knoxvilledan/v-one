@@ -13,8 +13,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { date, wakeTime, blocks, masterChecklist, habitBreakChecklist } =
-      await request.json();
+    const {
+      date,
+      wakeTime,
+      blocks,
+      masterChecklist,
+      habitBreakChecklist,
+      todoList,
+    } = await request.json();
 
     if (!date) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
@@ -40,6 +46,7 @@ export async function POST(request: NextRequest) {
       blocks,
       masterChecklist,
       habitBreakChecklist,
+      todoList,
       score,
       updatedAt: new Date(),
     };
@@ -96,6 +103,7 @@ export async function GET(request: NextRequest) {
           masterChecklist: data.masterChecklist,
           wakeTime: data.wakeTime,
           habitBreakChecklist: data.habitBreakChecklist,
+          todoList: data.todoList || [],
         },
       });
     } else {
@@ -110,6 +118,7 @@ export async function GET(request: NextRequest) {
           masterChecklist: ChecklistItem[];
           wakeTime: string;
           habitBreakChecklist: ChecklistItem[];
+          todoList: ChecklistItem[];
         };
       } = {};
 
@@ -119,6 +128,7 @@ export async function GET(request: NextRequest) {
           masterChecklist: item.masterChecklist,
           wakeTime: item.wakeTime,
           habitBreakChecklist: item.habitBreakChecklist,
+          todoList: item.todoList || [],
         };
       });
 
