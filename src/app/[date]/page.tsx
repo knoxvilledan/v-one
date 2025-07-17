@@ -331,11 +331,11 @@ export default function DailyPage() {
     const completionHour = completionTime.getHours();
     const completionDate = completionTime.toISOString().split("T")[0]; // YYYY-MM-DD format
 
-    // If we're on the current page date and it's late night (after 9 PM),
-    // or if we're on tomorrow's page and it's early morning (before 4 AM)
+    // If we're on the current page date
     if (completionDate === currentPageDate) {
       // Standard time block assignments for the current day
-      if (completionHour >= 4 && completionHour < 5) return 0; // 4:00 AM
+      // Early morning (12:01 AM - 4:59 AM) -> 4:00 AM block
+      if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> 4:00 AM
       if (completionHour >= 5 && completionHour < 6) return 1; // 5:00 AM
       if (completionHour >= 6 && completionHour < 7) return 2; // 6:00 AM
       if (completionHour >= 7 && completionHour < 8) return 3; // 7:00 AM
@@ -344,7 +344,7 @@ export default function DailyPage() {
       if (completionHour >= 17 && completionHour < 18) return 6; // 5:00 PM
       if (completionHour >= 18 && completionHour < 20) return 7; // 6:00 PM
       if (completionHour >= 20 && completionHour < 21) return 8; // 8:00 PM
-      if (completionHour >= 21 || completionHour < 4) return 9; // 9:00 PM - 4:00 AM
+      if (completionHour >= 21) return 9; // 9:00 PM - 11:59 PM -> 9:00 PM
     } else {
       // Cross-date scenarios
       const currentPageDateObj = new Date(currentPageDate + "T00:00:00");
@@ -352,18 +352,19 @@ export default function DailyPage() {
 
       // If completing on the day before the current page (late night work)
       if (completionDateObj.getTime() < currentPageDateObj.getTime()) {
-        if (completionHour >= 21 || completionHour < 4) return 9; // 9:00 PM - 4:00 AM
+        if (completionHour >= 21) return 9; // 9:00 PM - 11:59 PM -> 9:00 PM
+        if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> 4:00 AM
       }
 
       // If completing on the day after the current page (early morning work)
       if (completionDateObj.getTime() > currentPageDateObj.getTime()) {
-        if (completionHour >= 0 && completionHour < 4) return 9; // 12:00 AM - 4:00 AM
-        if (completionHour >= 4 && completionHour < 5) return 0; // 4:00 AM
+        if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> 4:00 AM
+        if (completionHour >= 5 && completionHour < 6) return 1; // 5:00 AM
       }
     }
 
     // Fallback to standard assignment if no special case matches
-    if (completionHour >= 4 && completionHour < 5) return 0; // 4:00 AM
+    if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> 4:00 AM
     if (completionHour >= 5 && completionHour < 6) return 1; // 5:00 AM
     if (completionHour >= 6 && completionHour < 7) return 2; // 6:00 AM
     if (completionHour >= 7 && completionHour < 8) return 3; // 7:00 AM
@@ -372,9 +373,9 @@ export default function DailyPage() {
     if (completionHour >= 17 && completionHour < 18) return 6; // 5:00 PM
     if (completionHour >= 18 && completionHour < 20) return 7; // 6:00 PM
     if (completionHour >= 20 && completionHour < 21) return 8; // 8:00 PM
-    if (completionHour >= 21 || completionHour < 4) return 9; // 9:00 PM - 4:00 AM
+    if (completionHour >= 21) return 9; // 9:00 PM - 11:59 PM -> 9:00 PM
 
-    return 5; // Default fallback
+    return 0; // Default fallback to 4:00 AM block
   };
 
   // Handle completed items from master checklist
