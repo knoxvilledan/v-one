@@ -143,6 +143,25 @@ export default function MasterChecklist({
     }
   };
 
+  const reassignCompletedItem = (
+    item: ChecklistItem,
+    newTargetBlock: number | undefined
+  ) => {
+    try {
+      const updatedItems = items.map((i) =>
+        i.id === item.id
+          ? {
+              ...i,
+              targetBlock: newTargetBlock,
+            }
+          : i
+      );
+      onUpdateItems(updatedItems);
+    } catch (error) {
+      console.error("Error reassigning completed item:", error);
+    }
+  };
+
   const addNewItem = () => {
     if (newItemText.trim() && newItemCategory !== "completed") {
       const newItem: ChecklistItem = {
@@ -299,12 +318,18 @@ export default function MasterChecklist({
                                   : undefined
                               )
                             }
-                            className="px-2 py-1 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-2 py-1 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-800 text-white border-gray-600"
                           >
-                            <option value="">Auto-assign</option>
+                            <option value="" className="bg-gray-800 text-white">
+                              Auto-assign
+                            </option>
                             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((block) => (
-                              <option key={block} value={block}>
-                                Block {block}
+                              <option
+                                key={block}
+                                value={block}
+                                className="bg-gray-800 text-white"
+                              >
+                                Block {block + 1}
                               </option>
                             ))}
                           </select>
@@ -335,7 +360,7 @@ export default function MasterChecklist({
                             </span>
                             {item.targetBlock && (
                               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Assigned to Block {item.targetBlock}
+                                Assigned to Block {item.targetBlock + 1}
                               </div>
                             )}
                             {item.completed && item.completedAt && (
@@ -347,6 +372,40 @@ export default function MasterChecklist({
                               </div>
                             )}
                           </div>
+
+                          {/* Reassignment dropdown for completed items */}
+                          {item.completed && (
+                            <div className="flex items-center space-x-2 mr-2">
+                              <select
+                                value={item.targetBlock || ""}
+                                onChange={(e) =>
+                                  reassignCompletedItem(
+                                    item,
+                                    e.target.value
+                                      ? parseInt(e.target.value)
+                                      : undefined
+                                  )
+                                }
+                                className="px-2 py-1 border rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-800 text-white border-gray-600"
+                              >
+                                <option
+                                  value=""
+                                  className="bg-gray-800 text-white"
+                                >
+                                  Auto-assign
+                                </option>
+                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((block) => (
+                                  <option
+                                    key={block}
+                                    value={block}
+                                    className="bg-gray-800 text-white"
+                                  >
+                                    Block {block + 1}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
 
                           {isEditing && (
                             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">

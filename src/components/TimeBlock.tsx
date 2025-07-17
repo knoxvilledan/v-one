@@ -114,15 +114,15 @@ export default function TimeBlock({
                           Editing completed item:
                         </div>
                         <div>
-                          • To move to different block: Type &quot;Block X: task
-                          name&quot;
-                        </div>
-                        <div>
                           • To uncheck: Remove the &quot;✓ &quot; prefix
                         </div>
                         <div>
                           • To edit description: Keep &quot;✓ &quot; and modify
                           task text
+                        </div>
+                        <div>
+                          • To reassign blocks: Use the dropdown in Master
+                          Checklist
                         </div>
                       </div>
                     )}

@@ -502,105 +502,6 @@ export default function DailyPage() {
 
       if (taskMatch) {
         const originalText = taskMatch[1];
-        const timestamp = originalNote.match(
-          /\(completed (\d{1,2}:\d{2})\)$/
-        )?.[1];
-
-        console.log("EditNote Debug:", {
-          originalNote,
-          originalText,
-          newText,
-          blockIndex,
-          masterChecklist: masterChecklist.filter((item) => item.completed),
-        });
-
-        // Check if the new text indicates a block change (e.g., "Block 1: Original task")
-        const blockChangeMatch = newText.match(/^Block (\d+): (.+)$/);
-
-        if (blockChangeMatch) {
-          // User wants to move this item to a different block
-          const targetBlockIndex = parseInt(blockChangeMatch[1]) - 1; // Convert to 0-based index
-          const taskText = blockChangeMatch[2];
-
-          if (
-            targetBlockIndex >= 0 &&
-            targetBlockIndex < blocks.length &&
-            targetBlockIndex !== blockIndex
-          ) {
-            // Remove from current block
-            copy[blockIndex].notes.splice(noteIndex, 1);
-
-            // Add to target block with original format
-            const newNoteText = `✓ ${taskText} (completed ${timestamp})`;
-            copy[targetBlockIndex].notes.push(newNoteText);
-
-            // Update the master checklist to reflect the new target block
-            // First try to find by exact text match
-            let foundItem = false;
-            let updatedChecklist = masterChecklist.map((item) => {
-              if (
-                item.text === originalText &&
-                item.completed &&
-                item.targetBlock === blockIndex
-              ) {
-                foundItem = true;
-                return {
-                  ...item,
-                  text: taskText, // Update the text to match the edited version
-                  targetBlock: targetBlockIndex,
-                };
-              }
-              return item;
-            });
-
-            // If not found by exact text and current block, try to find by current target block only
-            if (!foundItem) {
-              updatedChecklist = masterChecklist.map((item) => {
-                if (item.completed && item.targetBlock === blockIndex) {
-                  foundItem = true;
-                  return {
-                    ...item,
-                    text: taskText, // Update the text to match the edited version
-                    targetBlock: targetBlockIndex,
-                  };
-                }
-                return item;
-              });
-            }
-
-            console.log("Block reassignment result:", {
-              foundItem,
-              originalText,
-              taskText,
-              fromBlock: blockIndex,
-              toBlock: targetBlockIndex,
-              updatedChecklist: updatedChecklist.filter(
-                (item) => item.completed
-              ),
-            });
-
-            if (foundItem) {
-              setMasterChecklist(updatedChecklist);
-            }
-            setBlocks(copy);
-
-            // Save to database immediately
-            try {
-              if (session?.user?.email && date) {
-                const dayData = {
-                  wakeTime,
-                  blocks: copy,
-                  masterChecklist: updatedChecklist,
-                  habitBreakChecklist,
-                };
-                await ApiService.saveDayData(session.user.email, date, dayData);
-              }
-            } catch (error) {
-              console.error("Error saving note edit:", error);
-            }
-            return;
-          }
-        }
 
         // Check if user wants to uncheck the item (remove ✓ prefix)
         if (!newText.startsWith("✓ ")) {
@@ -706,12 +607,75 @@ export default function DailyPage() {
   // Update master checklist
   const updateMasterChecklist = async (updatedItems: ChecklistItem[]) => {
     try {
+      // Check for reassigned completed items
+      const blocksCopy = [...blocks];
+      let blocksChanged = false;
+
+      // Compare old and new master checklist to detect reassignments
+      updatedItems.forEach((newItem) => {
+        const oldItem = masterChecklist.find((item) => item.id === newItem.id);
+
+        if (
+          oldItem &&
+          oldItem.completed &&
+          newItem.completed &&
+          oldItem.targetBlock !== newItem.targetBlock
+        ) {
+          // This is a reassignment of a completed item
+          const oldBlockIndex = oldItem.targetBlock;
+          const newBlockIndex = newItem.targetBlock;
+
+          // Find and remove the note from the old block
+          if (
+            oldBlockIndex !== undefined &&
+            oldBlockIndex >= 0 &&
+            oldBlockIndex < blocksCopy.length
+          ) {
+            const notePattern = new RegExp(
+              `^✓ ${oldItem.text.replace(
+                /[.*+?^${}()|[\]\\]/g,
+                "\\$&"
+              )} \\(completed \\d{1,2}:\\d{2}\\)$`
+            );
+            const noteIndex = blocksCopy[oldBlockIndex].notes.findIndex(
+              (note) => notePattern.test(note)
+            );
+
+            if (noteIndex >= 0) {
+              const originalNote = blocksCopy[oldBlockIndex].notes[noteIndex];
+              blocksCopy[oldBlockIndex].notes.splice(noteIndex, 1);
+
+              // Add to new block if specified
+              if (
+                newBlockIndex !== undefined &&
+                newBlockIndex >= 0 &&
+                newBlockIndex < blocksCopy.length
+              ) {
+                // Update the note text in case it was edited
+                const timestamp = originalNote.match(
+                  /\(completed (\d{1,2}:\d{2})\)$/
+                )?.[1];
+                const newNote = `✓ ${newItem.text} (completed ${timestamp})`;
+                blocksCopy[newBlockIndex].notes.push(newNote);
+              }
+
+              blocksChanged = true;
+            }
+          }
+        }
+      });
+
+      // Update state
       setMasterChecklist(updatedItems);
+      if (blocksChanged) {
+        setBlocks(blocksCopy);
+      }
+
       // Save to database immediately
       if (session?.user?.email && date) {
         const dayData = {
           wakeTime,
-          blocks,
+          blocks: blocksChanged ? blocksCopy : blocks,
           masterChecklist: updatedItems,
           habitBreakChecklist,
         };
