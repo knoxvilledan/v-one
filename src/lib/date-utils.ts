@@ -16,10 +16,13 @@ export function formatDisplayDate(date: Date): string {
 }
 
 /**
- * Format a date as "YYYY-MM-DD" for storage
+ * Format a date as "YYYY-MM-DD" for storage (uses local timezone)
  */
 export function formatStorageDate(date: Date): string {
-  return date.toISOString().split("T")[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -30,10 +33,15 @@ export function parseStorageDate(dateString: string): Date {
 }
 
 /**
- * Get today's date in storage format
+ * Get today's date in storage format (handles timezone properly)
  */
 export function getTodayStorageDate(): string {
-  return formatStorageDate(new Date());
+  const today = new Date();
+  // Use local timezone instead of UTC to avoid timezone issues
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 /**

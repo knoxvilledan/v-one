@@ -340,7 +340,9 @@ export default function HabitBreakChecklist({
                             {item.completed && item.completedAt && (
                               <div className="text-xs text-red-600 dark:text-red-400 mt-1">
                                 Completed at{" "}
-                                {new Date(item.completedAt).toLocaleTimeString()}
+                                {new Date(
+                                  item.completedAt
+                                ).toLocaleTimeString()}
                               </div>
                             )}
                           </div>

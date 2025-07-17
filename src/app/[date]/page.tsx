@@ -199,9 +199,9 @@ export default function DailyPage() {
 
   // Helper function to ensure date fields are proper Date objects
   const ensureDateObjects = (items: ChecklistItem[]): ChecklistItem[] => {
-    return items.map(item => ({
+    return items.map((item) => ({
       ...item,
-      completedAt: item.completedAt ? new Date(item.completedAt) : undefined
+      completedAt: item.completedAt ? new Date(item.completedAt) : undefined,
     }));
   };
 
@@ -227,9 +227,11 @@ export default function DailyPage() {
               }))
           );
           // Ensure dates are proper Date objects
-          const masterChecklist = dayData.masterChecklist || defaultMasterChecklist;
-          const habitBreakChecklist = dayData.habitBreakChecklist || defaultHabitBreakChecklist;
-          
+          const masterChecklist =
+            dayData.masterChecklist || defaultMasterChecklist;
+          const habitBreakChecklist =
+            dayData.habitBreakChecklist || defaultHabitBreakChecklist;
+
           setMasterChecklist(ensureDateObjects(masterChecklist));
           setHabitBreakChecklist(ensureDateObjects(habitBreakChecklist));
         }
@@ -519,6 +521,42 @@ export default function DailyPage() {
     }
   };
 
+  // Reset day function - clears all data for the current day
+  const resetDay = async () => {
+    try {
+      // Reset all state to default values
+      setWakeTime("04:00");
+      setBlocks(
+        defaultBlocks.map((b) => ({
+          ...b,
+          notes: [],
+          complete: false,
+          checklist: undefined,
+        }))
+      );
+      setMasterChecklist(defaultMasterChecklist);
+      setHabitBreakChecklist(defaultHabitBreakChecklist);
+
+      // Save the reset data to database
+      if (session?.user?.email && date) {
+        const dayData = {
+          wakeTime: "04:00",
+          blocks: defaultBlocks.map((b) => ({
+            ...b,
+            notes: [],
+            complete: false,
+            checklist: undefined,
+          })),
+          masterChecklist: defaultMasterChecklist,
+          habitBreakChecklist: defaultHabitBreakChecklist,
+        };
+        await ApiService.saveDayData(session.user.email, date, dayData);
+      }
+    } catch (error) {
+      console.error("Error resetting day:", error);
+    }
+  };
+
   const score = calculateScore(blocks);
 
   if (isLoading) {
@@ -605,6 +643,7 @@ export default function DailyPage() {
       <Footer
         onExport={() => exportCSVByDate(date, blocks)}
         onSignOut={() => signOut()}
+        onResetDay={resetDay} // Add reset day function to footer
       />
     </main>
   );
