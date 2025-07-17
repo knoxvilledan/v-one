@@ -103,13 +103,15 @@ export default function TimeBlock({
           }}
           disabled={isSaving}
         />
-        <button
-          onClick={handleAddNote}
-          disabled={!input.trim() || isSaving}
-          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
-        >
-          {isSaving ? "Saving..." : "Save"}
-        </button>
+        {input.trim() && (
+          <button
+            onClick={handleAddNote}
+            disabled={isSaving}
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm transition-all"
+          >
+            {isSaving ? "Saving..." : "Save"}
+          </button>
+        )}
       </div>
 
       {/* Habit break items (below Add Note) */}
