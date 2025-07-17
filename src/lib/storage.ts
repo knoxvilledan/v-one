@@ -89,7 +89,7 @@ export const loadDayDataByDate = (date: string) => {
       return {
         blocks: data,
         masterChecklist: null,
-        wakeTime: "04:00",
+        wakeTime: "05:00",
         habitBreakChecklist: [],
       };
     }
