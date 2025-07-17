@@ -465,6 +465,112 @@ export default function DailyPage() {
     newText: string
   ) => {
     const copy = [...blocks];
+    const originalNote = copy[blockIndex].notes[noteIndex];
+
+    // Check if this is a completed checklist item note (starts with ✓)
+    if (originalNote.startsWith("✓ ")) {
+      // Extract the original task text and timestamp
+      const taskMatch = originalNote.match(
+        /^✓ (.+?) \(completed \d{1,2}:\d{2}\)$/
+      );
+
+      if (taskMatch) {
+        const originalText = taskMatch[1];
+        const timestamp = originalNote.match(
+          /\(completed (\d{1,2}:\d{2})\)$/
+        )?.[1];
+
+        // Check if the new text indicates a block change (e.g., "Block 1: Original task")
+        const blockChangeMatch = newText.match(/^Block (\d+): (.+)$/);
+
+        if (blockChangeMatch) {
+          // User wants to move this item to a different block
+          const targetBlockIndex = parseInt(blockChangeMatch[1]) - 1; // Convert to 0-based index
+          const taskText = blockChangeMatch[2];
+
+          if (
+            targetBlockIndex >= 0 &&
+            targetBlockIndex < blocks.length &&
+            targetBlockIndex !== blockIndex
+          ) {
+            // Remove from current block
+            copy[blockIndex].notes.splice(noteIndex, 1);
+
+            // Add to target block with original format
+            const newNoteText = `✓ ${taskText} (completed ${timestamp})`;
+            copy[targetBlockIndex].notes.push(newNoteText);
+
+            // Update the master checklist to reflect the new target block
+            const updatedChecklist = masterChecklist.map((item) => {
+              if (item.text === originalText && item.completed) {
+                return {
+                  ...item,
+                  targetBlock: targetBlockIndex,
+                };
+              }
+              return item;
+            });
+            setMasterChecklist(updatedChecklist);
+            setBlocks(copy);
+
+            // Save to database immediately
+            try {
+              if (session?.user?.email && date) {
+                const dayData = {
+                  wakeTime,
+                  blocks: copy,
+                  masterChecklist: updatedChecklist,
+                  habitBreakChecklist,
+                };
+                await ApiService.saveDayData(session.user.email, date, dayData);
+              }
+            } catch (error) {
+              console.error("Error saving note edit:", error);
+            }
+            return;
+          }
+        }
+
+        // Check if user wants to uncheck the item (remove ✓ prefix)
+        if (!newText.startsWith("✓ ")) {
+          // User wants to uncheck this item - remove from block and restore to checklist
+          copy[blockIndex].notes.splice(noteIndex, 1);
+
+          // Find and restore the item in master checklist
+          const updatedChecklist = masterChecklist.map((item) => {
+            if (item.text === originalText && item.completed) {
+              return {
+                ...item,
+                completed: false,
+                completedAt: undefined,
+                targetBlock: undefined,
+              };
+            }
+            return item;
+          });
+          setMasterChecklist(updatedChecklist);
+          setBlocks(copy);
+
+          // Save to database immediately
+          try {
+            if (session?.user?.email && date) {
+              const dayData = {
+                wakeTime,
+                blocks: copy,
+                masterChecklist: updatedChecklist,
+                habitBreakChecklist,
+              };
+              await ApiService.saveDayData(session.user.email, date, dayData);
+            }
+          } catch (error) {
+            console.error("Error saving note edit:", error);
+          }
+          return;
+        }
+      }
+    }
+
+    // Default behavior: just update the note text
     copy[blockIndex].notes[noteIndex] = newText;
     setBlocks(copy);
 

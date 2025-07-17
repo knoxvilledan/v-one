@@ -96,7 +96,7 @@ export default function TimeBlock({
                 className="flex justify-between items-center"
               >
                 {editingIndex === actualIndex ? (
-                  <div className="flex items-center space-x-2 flex-1">
+                  <div className="flex flex-col space-y-2 flex-1">
                     <input
                       type="text"
                       value={editValue}
@@ -108,18 +108,38 @@ export default function TimeBlock({
                       }}
                       autoFocus
                     />
-                    <button
-                      onClick={() => saveEdit(actualIndex)}
-                      className="text-green-500 hover:text-green-700"
-                    >
-                      ✓
-                    </button>
-                    <button
-                      onClick={cancelEdit}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      ✕
-                    </button>
+                    {note.startsWith("✓ ") && (
+                      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        <div className="font-medium mb-1">
+                          Editing completed item:
+                        </div>
+                        <div>
+                          • To move to different block: Type &quot;Block X: task
+                          name&quot;
+                        </div>
+                        <div>
+                          • To uncheck: Remove the &quot;✓ &quot; prefix
+                        </div>
+                        <div>
+                          • To edit description: Keep &quot;✓ &quot; and modify
+                          task text
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => saveEdit(actualIndex)}
+                        className="text-green-500 hover:text-green-700"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <>
