@@ -13,6 +13,7 @@ export class ApiService {
       blocks: Block[];
       masterChecklist: ChecklistItem[];
       habitBreakChecklist: ChecklistItem[];
+      todoList?: ChecklistItem[];
     }
   ) {
     try {

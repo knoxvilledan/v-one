@@ -548,10 +548,26 @@ export default function DailyPage() {
     }
   };
 
-  const toggleComplete = (i: number) => {
+  const toggleComplete = async (i: number) => {
     const copy = [...blocks];
     copy[i].complete = !copy[i].complete;
     setBlocks(copy);
+
+    // Save to database immediately
+    try {
+      if (session?.user?.email && date) {
+        const dayData = {
+          wakeTime,
+          blocks: copy,
+          masterChecklist,
+          habitBreakChecklist,
+          todoList,
+        };
+        await ApiService.saveDayData(session.user.email, date, dayData);
+      }
+    } catch (error) {
+      console.error("Error saving block completion:", error);
+    }
   };
 
   const addNote = async (i: number, text: string) => {

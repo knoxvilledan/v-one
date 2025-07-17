@@ -18,17 +18,25 @@ export default function TimeBlock({
   deleteNote,
 }: Props) {
   const [input, setInput] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const isHabitBreakNote = (note: string) => {
     // Check if the note starts with 🚫 (bad habit indicator)
     return note.startsWith("🚫 ");
   };
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     const trimmedInput = input.trim();
     if (trimmedInput && trimmedInput.length > 0) {
-      addNote(index, trimmedInput);
-      setInput("");
+      setIsSaving(true);
+      try {
+        await addNote(index, trimmedInput);
+        setInput("");
+      } catch (error) {
+        console.error("Error adding note:", error);
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -83,16 +91,26 @@ export default function TimeBlock({
       </ul>
 
       {/* Add Note Input */}
-      <input
-        type="text"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="Add Note..."
-        className="mt-2 w-full border rounded px-2 py-1"
-        onKeyDown={(e) => {
-          if (e.key === "Enter") handleAddNote();
-        }}
-      />
+      <div className="mt-2 flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Add Note..."
+          className="flex-1 border rounded px-2 py-1"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleAddNote();
+          }}
+          disabled={isSaving}
+        />
+        <button
+          onClick={handleAddNote}
+          disabled={!input.trim() || isSaving}
+          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+        >
+          {isSaving ? "Saving..." : "Save"}
+        </button>
+      </div>
 
       {/* Habit break items (below Add Note) */}
       {block.notes.some(isHabitBreakNote) && (
