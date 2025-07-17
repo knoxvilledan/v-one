@@ -127,6 +127,12 @@ export default function MasterChecklist({
 
   const undoCompletion = (item: ChecklistItem) => {
     try {
+      console.log("Undoing completion for item:", {
+        itemId: item.id,
+        itemText: item.text,
+        targetBlock: item.targetBlock,
+      });
+
       const updatedItems = items.map((i) =>
         i.id === item.id
           ? {
@@ -148,6 +154,13 @@ export default function MasterChecklist({
     newTargetBlock: number | undefined
   ) => {
     try {
+      console.log("Reassigning item:", {
+        itemId: item.id,
+        itemText: item.text,
+        oldTargetBlock: item.targetBlock,
+        newTargetBlock: newTargetBlock,
+      });
+
       const updatedItems = items.map((i) =>
         i.id === item.id
           ? {

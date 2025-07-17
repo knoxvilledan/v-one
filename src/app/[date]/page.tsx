@@ -485,181 +485,96 @@ export default function DailyPage() {
     }
   };
 
-  const editNote = async (
-    blockIndex: number,
-    noteIndex: number,
-    newText: string
-  ) => {
-    const copy = [...blocks];
-    const originalNote = copy[blockIndex].notes[noteIndex];
-
-    // Check if this is a completed checklist item note (starts with ✓)
-    if (originalNote.startsWith("✓ ")) {
-      // Extract the original task text and timestamp
-      const taskMatch = originalNote.match(
-        /^✓ (.+?) \(completed \d{1,2}:\d{2}\)$/
-      );
-
-      if (taskMatch) {
-        const originalText = taskMatch[1];
-
-        // Check if user wants to uncheck the item (remove ✓ prefix)
-        if (!newText.startsWith("✓ ")) {
-          console.log("Unchecking item:", {
-            originalText,
-            newText,
-            blockIndex,
-            masterChecklist: masterChecklist.filter((item) => item.completed),
-          });
-
-          // User wants to uncheck this item - remove from block and restore to checklist
-          copy[blockIndex].notes.splice(noteIndex, 1);
-
-          // Find and restore the item in master checklist
-          // First try to find by exact text match and current block
-          let foundItem = false;
-          let updatedChecklist = masterChecklist.map((item) => {
-            if (
-              item.text === originalText &&
-              item.completed &&
-              item.targetBlock === blockIndex
-            ) {
-              foundItem = true;
-              return {
-                ...item,
-                completed: false,
-                completedAt: undefined,
-                targetBlock: undefined,
-              };
-            }
-            return item;
-          });
-
-          // If not found by exact text and current block, try to find by current target block only
-          if (!foundItem) {
-            updatedChecklist = masterChecklist.map((item) => {
-              if (item.completed && item.targetBlock === blockIndex) {
-                foundItem = true;
-                return {
-                  ...item,
-                  completed: false,
-                  completedAt: undefined,
-                  targetBlock: undefined,
-                };
-              }
-              return item;
-            });
-          }
-
-          console.log("Unchecking result:", {
-            foundItem,
-            originalText,
-            blockIndex,
-            updatedChecklist: updatedChecklist.filter(
-              (item) => !item.completed
-            ),
-          });
-
-          if (foundItem) {
-            setMasterChecklist(updatedChecklist);
-          }
-          setBlocks(copy);
-
-          // Save to database immediately
-          try {
-            if (session?.user?.email && date) {
-              const dayData = {
-                wakeTime,
-                blocks: copy,
-                masterChecklist: updatedChecklist,
-                habitBreakChecklist,
-              };
-              await ApiService.saveDayData(session.user.email, date, dayData);
-            }
-          } catch (error) {
-            console.error("Error saving note edit:", error);
-          }
-          return;
-        }
-      }
-    }
-
-    // Default behavior: just update the note text
-    copy[blockIndex].notes[noteIndex] = newText;
-    setBlocks(copy);
-
-    // Save to database immediately
-    try {
-      if (session?.user?.email && date) {
-        const dayData = {
-          wakeTime,
-          blocks: copy,
-          masterChecklist,
-          habitBreakChecklist,
-        };
-        await ApiService.saveDayData(session.user.email, date, dayData);
-      }
-    } catch (error) {
-      console.error("Error saving note edit:", error);
-    }
-  };
-
   // Update master checklist
   const updateMasterChecklist = async (updatedItems: ChecklistItem[]) => {
     try {
-      // Check for reassigned completed items
+      // Check for changes in completed items
       const blocksCopy = [...blocks];
       let blocksChanged = false;
 
-      // Compare old and new master checklist to detect reassignments
+      // Compare old and new master checklist to detect changes
       updatedItems.forEach((newItem) => {
         const oldItem = masterChecklist.find((item) => item.id === newItem.id);
 
-        if (
-          oldItem &&
-          oldItem.completed &&
-          newItem.completed &&
-          oldItem.targetBlock !== newItem.targetBlock
-        ) {
-          // This is a reassignment of a completed item
-          const oldBlockIndex = oldItem.targetBlock;
-          const newBlockIndex = newItem.targetBlock;
+        if (oldItem) {
+          // Case 1: Item was unchecked (completed -> not completed)
+          if (oldItem.completed && !newItem.completed) {
+            // Remove from timeblock
+            const oldBlockIndex = oldItem.targetBlock;
+            if (
+              oldBlockIndex !== undefined &&
+              oldBlockIndex >= 0 &&
+              oldBlockIndex < blocksCopy.length
+            ) {
+              // Find and remove the note from the old block
+              const noteIndex = blocksCopy[oldBlockIndex].notes.findIndex(
+                (note) => {
+                  // More flexible pattern matching
+                  return (
+                    note.includes(`✓ ${oldItem.text}`) &&
+                    note.includes("(completed")
+                  );
+                }
+              );
 
-          // Find and remove the note from the old block
-          if (
-            oldBlockIndex !== undefined &&
-            oldBlockIndex >= 0 &&
-            oldBlockIndex < blocksCopy.length
-          ) {
-            const notePattern = new RegExp(
-              `^✓ ${oldItem.text.replace(
-                /[.*+?^${}()|[\]\\]/g,
-                "\\$&"
-              )} \\(completed \\d{1,2}:\\d{2}\\)$`
-            );
-            const noteIndex = blocksCopy[oldBlockIndex].notes.findIndex(
-              (note) => notePattern.test(note)
-            );
-
-            if (noteIndex >= 0) {
-              const originalNote = blocksCopy[oldBlockIndex].notes[noteIndex];
-              blocksCopy[oldBlockIndex].notes.splice(noteIndex, 1);
-
-              // Add to new block if specified
-              if (
-                newBlockIndex !== undefined &&
-                newBlockIndex >= 0 &&
-                newBlockIndex < blocksCopy.length
-              ) {
-                // Update the note text in case it was edited
-                const timestamp = originalNote.match(
-                  /\(completed (\d{1,2}:\d{2})\)$/
-                )?.[1];
-                const newNote = `✓ ${newItem.text} (completed ${timestamp})`;
-                blocksCopy[newBlockIndex].notes.push(newNote);
+              if (noteIndex >= 0) {
+                blocksCopy[oldBlockIndex].notes.splice(noteIndex, 1);
+                blocksChanged = true;
+                console.log(
+                  `Removed unchecked item "${oldItem.text}" from block ${oldBlockIndex}`
+                );
               }
+            }
+          }
 
-              blocksChanged = true;
+          // Case 2: Item was reassigned (completed -> still completed but different block)
+          else if (
+            oldItem.completed &&
+            newItem.completed &&
+            oldItem.targetBlock !== newItem.targetBlock
+          ) {
+            const oldBlockIndex = oldItem.targetBlock;
+            const newBlockIndex = newItem.targetBlock;
+
+            // Find and remove the note from the old block
+            if (
+              oldBlockIndex !== undefined &&
+              oldBlockIndex >= 0 &&
+              oldBlockIndex < blocksCopy.length
+            ) {
+              const noteIndex = blocksCopy[oldBlockIndex].notes.findIndex(
+                (note) => {
+                  // More flexible pattern matching
+                  return (
+                    note.includes(`✓ ${oldItem.text}`) &&
+                    note.includes("(completed")
+                  );
+                }
+              );
+
+              if (noteIndex >= 0) {
+                const originalNote = blocksCopy[oldBlockIndex].notes[noteIndex];
+                blocksCopy[oldBlockIndex].notes.splice(noteIndex, 1);
+
+                // Add to new block if specified
+                if (
+                  newBlockIndex !== undefined &&
+                  newBlockIndex >= 0 &&
+                  newBlockIndex < blocksCopy.length
+                ) {
+                  // Extract timestamp from original note
+                  const timestamp = originalNote.match(
+                    /\(completed (\d{1,2}:\d{2}[^)]*)\)/
+                  )?.[1];
+                  const newNote = `✓ ${newItem.text} (completed ${timestamp})`;
+                  blocksCopy[newBlockIndex].notes.push(newNote);
+                }
+
+                blocksChanged = true;
+                console.log(
+                  `Reassigned item "${oldItem.text}" from block ${oldBlockIndex} to block ${newBlockIndex}`
+                );
+              }
             }
           }
         }
@@ -811,7 +726,6 @@ export default function DailyPage() {
               toggleComplete={toggleComplete}
               addNote={addNote}
               deleteNote={deleteNote}
-              editNote={editNote}
             />
           </div>
         ))}
