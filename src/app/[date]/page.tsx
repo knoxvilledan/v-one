@@ -699,7 +699,7 @@ export default function DailyPage() {
               type="time"
               value={wakeTime}
               onChange={(e) => setWakeTime(e.target.value)}
-              className="border rounded px-2 py-1 text-sm"
+              className="border rounded-md px-4 py-2 text-sm"
               placeholder="Enter wake time"
             />
           </div>
