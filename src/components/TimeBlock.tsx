@@ -78,14 +78,24 @@ export default function TimeBlock({
       <ul className="list-disc pl-5 mt-2 space-y-1">
         {block.notes
           .filter((note) => !isHabitBreakNote(note))
-          .map((note) => {
-            const originalIndex = block.notes.indexOf(note);
+          .map((note, index) => {
+            // Use actual array index from filtered array
+            const filteredIndex = index;
+            // Find the actual index in the full notes array
+            const actualIndex = block.notes.findIndex(
+              (n, i) =>
+                n === note &&
+                !isHabitBreakNote(n) &&
+                block.notes.slice(0, i).filter((n) => !isHabitBreakNote(n))
+                  .length === filteredIndex
+            );
+
             return (
               <li
-                key={originalIndex}
+                key={`${actualIndex}-${note.substring(0, 20)}`}
                 className="flex justify-between items-center"
               >
-                {editingIndex === originalIndex ? (
+                {editingIndex === actualIndex ? (
                   <div className="flex items-center space-x-2 flex-1">
                     <input
                       type="text"
@@ -93,13 +103,13 @@ export default function TimeBlock({
                       onChange={(e) => setEditValue(e.target.value)}
                       className="flex-1 border rounded px-2 py-1 text-sm"
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") saveEdit(originalIndex);
+                        if (e.key === "Enter") saveEdit(actualIndex);
                         if (e.key === "Escape") cancelEdit();
                       }}
                       autoFocus
                     />
                     <button
-                      onClick={() => saveEdit(originalIndex)}
+                      onClick={() => saveEdit(actualIndex)}
                       className="text-green-500 hover:text-green-700"
                     >
                       ✓
@@ -114,14 +124,14 @@ export default function TimeBlock({
                 ) : (
                   <>
                     <span
-                      onClick={() => startEditing(originalIndex, note)}
+                      onClick={() => startEditing(actualIndex, note)}
                       className="cursor-pointer hover:bg-gray-100 px-1 rounded flex-1"
                       title="Click to edit"
                     >
                       {note}
                     </span>
                     <button
-                      onClick={() => deleteNote(index, originalIndex)}
+                      onClick={() => deleteNote(index, actualIndex)}
                       className="text-red-500 hover:text-red-700"
                     >
                       🗑️
@@ -148,14 +158,24 @@ export default function TimeBlock({
       {/* Habit break items (below Add Note) */}
       {block.notes.some(isHabitBreakNote) && (
         <ul className="list-disc pl-5 mt-2 space-y-1">
-          {block.notes.filter(isHabitBreakNote).map((note) => {
-            const originalIndex = block.notes.indexOf(note);
+          {block.notes.filter(isHabitBreakNote).map((note, index) => {
+            // Use actual array index from filtered array
+            const filteredIndex = index;
+            // Find the actual index in the full notes array
+            const actualIndex = block.notes.findIndex(
+              (n, i) =>
+                n === note &&
+                isHabitBreakNote(n) &&
+                block.notes.slice(0, i).filter((n) => isHabitBreakNote(n))
+                  .length === filteredIndex
+            );
+
             return (
               <li
-                key={originalIndex}
+                key={`habit-${actualIndex}-${note.substring(0, 20)}`}
                 className="flex justify-between items-center"
               >
-                {editingIndex === originalIndex ? (
+                {editingIndex === actualIndex ? (
                   <div className="flex items-center space-x-2 flex-1">
                     <input
                       type="text"
@@ -163,13 +183,13 @@ export default function TimeBlock({
                       onChange={(e) => setEditValue(e.target.value)}
                       className="flex-1 border rounded px-2 py-1 text-sm"
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") saveEdit(originalIndex);
+                        if (e.key === "Enter") saveEdit(actualIndex);
                         if (e.key === "Escape") cancelEdit();
                       }}
                       autoFocus
                     />
                     <button
-                      onClick={() => saveEdit(originalIndex)}
+                      onClick={() => saveEdit(actualIndex)}
                       className="text-green-500 hover:text-green-700"
                     >
                       ✓
@@ -184,14 +204,14 @@ export default function TimeBlock({
                 ) : (
                   <>
                     <span
-                      onClick={() => startEditing(originalIndex, note)}
+                      onClick={() => startEditing(actualIndex, note)}
                       className="cursor-pointer hover:bg-gray-100 px-1 rounded flex-1 font-bold text-red-600"
                       title="Click to edit"
                     >
                       {note}
                     </span>
                     <button
-                      onClick={() => deleteNote(index, originalIndex)}
+                      onClick={() => deleteNote(index, actualIndex)}
                       className="text-red-500 hover:text-red-700"
                     >
                       🗑️

@@ -233,7 +233,7 @@ export default function DailyPage() {
     loadData();
   }, [session, date]);
 
-  // Save data to API when state changes
+  // Save data to API when state changes (debounced)
   useEffect(() => {
     const saveData = async () => {
       if (!session?.user?.email || !date || isLoading) return;
@@ -252,7 +252,9 @@ export default function DailyPage() {
       }
     };
 
-    saveData();
+    // Debounce the save operation
+    const timeoutId = setTimeout(saveData, 1000);
+    return () => clearTimeout(timeoutId);
   }, [
     blocks,
     masterChecklist,
@@ -374,13 +376,30 @@ export default function DailyPage() {
     setBlocks(copy);
   };
 
-  const addNote = (i: number, text: string) => {
+  const addNote = async (i: number, text: string) => {
     const copy = [...blocks];
-    if (text.trim()) copy[i].notes.push(text);
-    setBlocks(copy);
+    if (text.trim()) {
+      copy[i].notes.push(text);
+      setBlocks(copy);
+
+      // Save to database immediately
+      try {
+        if (session?.user?.email && date) {
+          const dayData = {
+            wakeTime,
+            blocks: copy,
+            masterChecklist,
+            habitBreakChecklist,
+          };
+          await ApiService.saveDayData(session.user.email, date, dayData);
+        }
+      } catch (error) {
+        console.error("Error saving note:", error);
+      }
+    }
   };
 
-  const deleteNote = (blockIndex: number, noteIndex: number) => {
+  const deleteNote = async (blockIndex: number, noteIndex: number) => {
     const copy = [...blocks];
     const deletedNote = copy[blockIndex].notes[noteIndex];
 
@@ -411,12 +430,46 @@ export default function DailyPage() {
 
     copy[blockIndex].notes.splice(noteIndex, 1);
     setBlocks(copy);
+
+    // Save to database immediately
+    try {
+      if (session?.user?.email && date) {
+        const dayData = {
+          wakeTime,
+          blocks: copy,
+          masterChecklist,
+          habitBreakChecklist,
+        };
+        await ApiService.saveDayData(session.user.email, date, dayData);
+      }
+    } catch (error) {
+      console.error("Error saving after note deletion:", error);
+    }
   };
 
-  const editNote = (blockIndex: number, noteIndex: number, newText: string) => {
+  const editNote = async (
+    blockIndex: number,
+    noteIndex: number,
+    newText: string
+  ) => {
     const copy = [...blocks];
     copy[blockIndex].notes[noteIndex] = newText;
     setBlocks(copy);
+
+    // Save to database immediately
+    try {
+      if (session?.user?.email && date) {
+        const dayData = {
+          wakeTime,
+          blocks: copy,
+          masterChecklist,
+          habitBreakChecklist,
+        };
+        await ApiService.saveDayData(session.user.email, date, dayData);
+      }
+    } catch (error) {
+      console.error("Error saving note edit:", error);
+    }
   };
 
   // Update master checklist
@@ -438,8 +491,22 @@ export default function DailyPage() {
     }
   };
 
-  const updateHabitBreakChecklist = (updatedItems: ChecklistItem[]) => {
-    setHabitBreakChecklist(updatedItems);
+  const updateHabitBreakChecklist = async (updatedItems: ChecklistItem[]) => {
+    try {
+      setHabitBreakChecklist(updatedItems);
+      // Save to database immediately
+      if (session?.user?.email && date) {
+        const dayData = {
+          wakeTime,
+          blocks,
+          masterChecklist,
+          habitBreakChecklist: updatedItems,
+        };
+        await ApiService.saveDayData(session.user.email, date, dayData);
+      }
+    } catch (error) {
+      console.error("Error updating habit break checklist:", error);
+    }
   };
 
   const score = calculateScore(blocks);
