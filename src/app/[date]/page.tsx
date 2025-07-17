@@ -425,8 +425,15 @@ export default function DailyPage() {
         const originalText = taskMatch[1];
 
         // Find and restore the item in master checklist
-        const updatedChecklist = masterChecklist.map((item) => {
-          if (item.text === originalText && item.completed) {
+        // First try to find by exact text match and current block
+        let foundItem = false;
+        let updatedChecklist = masterChecklist.map((item) => {
+          if (
+            item.text === originalText &&
+            item.completed &&
+            item.targetBlock === blockIndex
+          ) {
+            foundItem = true;
             return {
               ...item,
               completed: false,
@@ -436,7 +443,26 @@ export default function DailyPage() {
           }
           return item;
         });
-        setMasterChecklist(updatedChecklist);
+
+        // If not found by exact text and current block, try to find by current target block only
+        if (!foundItem) {
+          updatedChecklist = masterChecklist.map((item) => {
+            if (item.completed && item.targetBlock === blockIndex) {
+              foundItem = true;
+              return {
+                ...item,
+                completed: false,
+                completedAt: undefined,
+                targetBlock: undefined,
+              };
+            }
+            return item;
+          });
+        }
+
+        if (foundItem) {
+          setMasterChecklist(updatedChecklist);
+        }
       }
     }
 
@@ -480,6 +506,14 @@ export default function DailyPage() {
           /\(completed (\d{1,2}:\d{2})\)$/
         )?.[1];
 
+        console.log("EditNote Debug:", {
+          originalNote,
+          originalText,
+          newText,
+          blockIndex,
+          masterChecklist: masterChecklist.filter((item) => item.completed),
+        });
+
         // Check if the new text indicates a block change (e.g., "Block 1: Original task")
         const blockChangeMatch = newText.match(/^Block (\d+): (.+)$/);
 
@@ -501,16 +535,53 @@ export default function DailyPage() {
             copy[targetBlockIndex].notes.push(newNoteText);
 
             // Update the master checklist to reflect the new target block
-            const updatedChecklist = masterChecklist.map((item) => {
-              if (item.text === originalText && item.completed) {
+            // First try to find by exact text match
+            let foundItem = false;
+            let updatedChecklist = masterChecklist.map((item) => {
+              if (
+                item.text === originalText &&
+                item.completed &&
+                item.targetBlock === blockIndex
+              ) {
+                foundItem = true;
                 return {
                   ...item,
+                  text: taskText, // Update the text to match the edited version
                   targetBlock: targetBlockIndex,
                 };
               }
               return item;
             });
-            setMasterChecklist(updatedChecklist);
+
+            // If not found by exact text and current block, try to find by current target block only
+            if (!foundItem) {
+              updatedChecklist = masterChecklist.map((item) => {
+                if (item.completed && item.targetBlock === blockIndex) {
+                  foundItem = true;
+                  return {
+                    ...item,
+                    text: taskText, // Update the text to match the edited version
+                    targetBlock: targetBlockIndex,
+                  };
+                }
+                return item;
+              });
+            }
+
+            console.log("Block reassignment result:", {
+              foundItem,
+              originalText,
+              taskText,
+              fromBlock: blockIndex,
+              toBlock: targetBlockIndex,
+              updatedChecklist: updatedChecklist.filter(
+                (item) => item.completed
+              ),
+            });
+
+            if (foundItem) {
+              setMasterChecklist(updatedChecklist);
+            }
             setBlocks(copy);
 
             // Save to database immediately
@@ -533,12 +604,26 @@ export default function DailyPage() {
 
         // Check if user wants to uncheck the item (remove ✓ prefix)
         if (!newText.startsWith("✓ ")) {
+          console.log("Unchecking item:", {
+            originalText,
+            newText,
+            blockIndex,
+            masterChecklist: masterChecklist.filter((item) => item.completed),
+          });
+
           // User wants to uncheck this item - remove from block and restore to checklist
           copy[blockIndex].notes.splice(noteIndex, 1);
 
           // Find and restore the item in master checklist
-          const updatedChecklist = masterChecklist.map((item) => {
-            if (item.text === originalText && item.completed) {
+          // First try to find by exact text match and current block
+          let foundItem = false;
+          let updatedChecklist = masterChecklist.map((item) => {
+            if (
+              item.text === originalText &&
+              item.completed &&
+              item.targetBlock === blockIndex
+            ) {
+              foundItem = true;
               return {
                 ...item,
                 completed: false,
@@ -548,7 +633,35 @@ export default function DailyPage() {
             }
             return item;
           });
-          setMasterChecklist(updatedChecklist);
+
+          // If not found by exact text and current block, try to find by current target block only
+          if (!foundItem) {
+            updatedChecklist = masterChecklist.map((item) => {
+              if (item.completed && item.targetBlock === blockIndex) {
+                foundItem = true;
+                return {
+                  ...item,
+                  completed: false,
+                  completedAt: undefined,
+                  targetBlock: undefined,
+                };
+              }
+              return item;
+            });
+          }
+
+          console.log("Unchecking result:", {
+            foundItem,
+            originalText,
+            blockIndex,
+            updatedChecklist: updatedChecklist.filter(
+              (item) => !item.completed
+            ),
+          });
+
+          if (foundItem) {
+            setMasterChecklist(updatedChecklist);
+          }
           setBlocks(copy);
 
           // Save to database immediately
