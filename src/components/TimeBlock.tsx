@@ -59,35 +59,23 @@ export default function TimeBlock({
       {/* Daily checklist items (above Add Note) */}
       <ul className="list-disc pl-5 mt-2 space-y-1">
         {block.notes
-          .filter((note) => !isHabitBreakNote(note))
-          .map((note, index) => {
-            // Use actual array index from filtered array
-            const filteredIndex = index;
-            // Find the actual index in the full notes array
-            const actualIndex = block.notes.findIndex(
-              (n, i) =>
-                n === note &&
-                !isHabitBreakNote(n) &&
-                block.notes.slice(0, i).filter((n) => !isHabitBreakNote(n))
-                  .length === filteredIndex
-            );
-
-            return (
-              <li
-                key={`${actualIndex}-${note.substring(0, 20)}`}
-                className="flex justify-between items-center"
+          .map((note, noteIndex) => ({ note, noteIndex }))
+          .filter(({ note }) => !isHabitBreakNote(note))
+          .map(({ note, noteIndex }) => (
+            <li
+              key={`${noteIndex}-${note.substring(0, 20)}`}
+              className="flex justify-between items-center"
+            >
+              <span className="flex-1 text-sm">{note}</span>
+              <button
+                onClick={() => deleteNote(index, noteIndex)}
+                className="text-red-500 hover:text-red-700"
+                title="Delete note"
               >
-                <span className="flex-1 text-sm">{note}</span>
-                <button
-                  onClick={() => deleteNote(index, actualIndex)}
-                  className="text-red-500 hover:text-red-700"
-                  title="Delete note"
-                >
-                  🗑️
-                </button>
-              </li>
-            );
-          })}
+                🗑️
+              </button>
+            </li>
+          ))}
       </ul>
 
       {/* Add Note Input */}
@@ -117,36 +105,26 @@ export default function TimeBlock({
       {/* Habit break items (below Add Note) */}
       {block.notes.some(isHabitBreakNote) && (
         <ul className="list-disc pl-5 mt-2 space-y-1">
-          {block.notes.filter(isHabitBreakNote).map((note, index) => {
-            // Use actual array index from filtered array
-            const filteredIndex = index;
-            // Find the actual index in the full notes array
-            const actualIndex = block.notes.findIndex(
-              (n, i) =>
-                n === note &&
-                isHabitBreakNote(n) &&
-                block.notes.slice(0, i).filter((n) => isHabitBreakNote(n))
-                  .length === filteredIndex
-            );
-
-            return (
+          {block.notes
+            .map((note, noteIndex) => ({ note, noteIndex }))
+            .filter(({ note }) => isHabitBreakNote(note))
+            .map(({ note, noteIndex }) => (
               <li
-                key={`habit-${actualIndex}-${note.substring(0, 20)}`}
+                key={`habit-${noteIndex}-${note.substring(0, 20)}`}
                 className="flex justify-between items-center"
               >
                 <span className="flex-1 font-bold text-red-600 text-sm">
                   {note}
                 </span>
                 <button
-                  onClick={() => deleteNote(index, actualIndex)}
+                  onClick={() => deleteNote(index, noteIndex)}
                   className="text-red-500 hover:text-red-700"
                   title="Delete note"
                 >
                   🗑️
                 </button>
               </li>
-            );
-          })}
+            ))}
         </ul>
       )}
     </div>

@@ -19,7 +19,7 @@ export default function MasterChecklist({
   onCompleteItem,
   onUpdateItems,
 }: MasterChecklistProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false); // Start collapsed like HabitBreakChecklist
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({

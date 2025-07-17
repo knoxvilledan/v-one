@@ -142,6 +142,32 @@ export default function HabitBreakChecklist({
     }
   };
 
+  const reassignCompletedItem = (
+    item: ChecklistItem,
+    newTargetBlock: number | undefined
+  ) => {
+    try {
+      console.log("Reassigning habit break item:", {
+        itemId: item.id,
+        itemText: item.text,
+        oldTargetBlock: item.targetBlock,
+        newTargetBlock: newTargetBlock,
+      });
+
+      const updatedItems = items.map((i) =>
+        i.id === item.id
+          ? {
+              ...i,
+              targetBlock: newTargetBlock,
+            }
+          : i
+      );
+      onUpdateItems(updatedItems);
+    } catch (error) {
+      console.error("Error reassigning completed habit break item:", error);
+    }
+  };
+
   const addNewItem = () => {
     if (newItemText.trim() && newItemCategory !== "completed") {
       const newItem: ChecklistItem = {
@@ -346,6 +372,91 @@ export default function HabitBreakChecklist({
                               </div>
                             )}
                           </div>
+
+                          {/* Reassignment dropdown for completed items */}
+                          {item.completed && (
+                            <div className="flex items-center space-x-2 mr-2">
+                              <select
+                                value={item.targetBlock || ""}
+                                onChange={(e) =>
+                                  reassignCompletedItem(
+                                    item,
+                                    e.target.value
+                                      ? parseInt(e.target.value)
+                                      : undefined
+                                  )
+                                }
+                                className="px-2 py-1 border rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-800 text-white border-gray-600"
+                              >
+                                <option
+                                  value=""
+                                  className="bg-gray-800 text-white"
+                                >
+                                  Auto-assign
+                                </option>
+                                <option
+                                  value="0"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  4:00 AM
+                                </option>
+                                <option
+                                  value="1"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  5:00 AM
+                                </option>
+                                <option
+                                  value="2"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  6:00 AM
+                                </option>
+                                <option
+                                  value="3"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  7:00 AM
+                                </option>
+                                <option
+                                  value="4"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  8:00 AM
+                                </option>
+                                <option
+                                  value="5"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  9:00 AM
+                                </option>
+                                <option
+                                  value="6"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  10:00 AM
+                                </option>
+                                <option
+                                  value="7"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  11:00 AM
+                                </option>
+                                <option
+                                  value="8"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  12:00 PM
+                                </option>
+                                <option
+                                  value="9"
+                                  className="bg-gray-800 text-white"
+                                >
+                                  11:00 PM
+                                </option>
+                              </select>
+                            </div>
+                          )}
 
                           {isEditing && (
                             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
