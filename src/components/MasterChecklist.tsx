@@ -341,7 +341,7 @@ export default function MasterChecklist({
                             {item.completed && item.completedAt && (
                               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 Completed at{" "}
-                                {item.completedAt?.toLocaleTimeString()}
+                                {new Date(item.completedAt).toLocaleTimeString()}
                               </div>
                             )}
                           </div>

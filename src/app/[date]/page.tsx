@@ -197,6 +197,14 @@ export default function DailyPage() {
     ChecklistItem[]
   >(defaultHabitBreakChecklist);
 
+  // Helper function to ensure date fields are proper Date objects
+  const ensureDateObjects = (items: ChecklistItem[]): ChecklistItem[] => {
+    return items.map(item => ({
+      ...item,
+      completedAt: item.completedAt ? new Date(item.completedAt) : undefined
+    }));
+  };
+
   // Load data from API when component mounts
   useEffect(() => {
     const loadData = async () => {
@@ -218,10 +226,12 @@ export default function DailyPage() {
                 checklist: undefined,
               }))
           );
-          setMasterChecklist(dayData.masterChecklist || defaultMasterChecklist);
-          setHabitBreakChecklist(
-            dayData.habitBreakChecklist || defaultHabitBreakChecklist
-          );
+          // Ensure dates are proper Date objects
+          const masterChecklist = dayData.masterChecklist || defaultMasterChecklist;
+          const habitBreakChecklist = dayData.habitBreakChecklist || defaultHabitBreakChecklist;
+          
+          setMasterChecklist(ensureDateObjects(masterChecklist));
+          setHabitBreakChecklist(ensureDateObjects(habitBreakChecklist));
         }
       } catch (error) {
         console.error("Error loading day data:", error);
