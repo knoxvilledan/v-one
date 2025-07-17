@@ -160,7 +160,7 @@ export default function DailyPage() {
   const router = useRouter();
   const date = params?.date as string;
   const { data: session } = useSession();
-  const [wakeTime, setWakeTime] = useState<string>("04:00");
+  const [wakeTime, setWakeTime] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
   // Redirect to today's date if no date is provided or invalid
@@ -216,7 +216,7 @@ export default function DailyPage() {
         const dayData = userData.days[date];
 
         if (dayData) {
-          setWakeTime(dayData.wakeTime || "04:00");
+          setWakeTime(dayData.wakeTime || "");
           setBlocks(
             dayData.blocks ||
               defaultBlocks.map((b) => ({
@@ -623,7 +623,7 @@ export default function DailyPage() {
   const resetDay = async () => {
     try {
       // Reset all state to default values
-      setWakeTime("04:00");
+      setWakeTime("");
       setBlocks(
         defaultBlocks.map((b) => ({
           ...b,
@@ -638,7 +638,7 @@ export default function DailyPage() {
       // Save the reset data to database
       if (session?.user?.email && date) {
         const dayData = {
-          wakeTime: "04:00",
+          wakeTime: "",
           blocks: defaultBlocks.map((b) => ({
             ...b,
             notes: [],
@@ -692,7 +692,7 @@ export default function DailyPage() {
               htmlFor="wake-time"
               className="text-sm font-medium whitespace-nowrap"
             >
-              Wake Time:
+              Woke Time:
             </label>
             <input
               id="wake-time"
@@ -700,6 +700,7 @@ export default function DailyPage() {
               value={wakeTime}
               onChange={(e) => setWakeTime(e.target.value)}
               className="border rounded px-2 py-1 text-sm"
+              placeholder="Enter wake time"
             />
           </div>
         </div>
