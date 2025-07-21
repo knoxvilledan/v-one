@@ -14,7 +14,7 @@ export default function HomePage() {
   useEffect(() => {
     // Only run original logic if not in maintenance mode
     if (MAINTENANCE_MODE) return;
-    
+
     if (status === "loading") return; // Still loading
 
     if (!session) {

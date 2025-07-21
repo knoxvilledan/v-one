@@ -9,17 +9,19 @@ Your AMP Tracker site is currently showing a maintenance page to all visitors.
 ### Method 1: Using Environment Variables (Recommended)
 
 1. **For local development:**
+
    - Open `.env.local` file
    - Change `NEXT_PUBLIC_MAINTENANCE_MODE=true` to `NEXT_PUBLIC_MAINTENANCE_MODE=false`
    - Restart your development server (`npm run dev`)
 
 2. **For production (Vercel):**
+
    ```bash
    vercel env rm NEXT_PUBLIC_MAINTENANCE_MODE
    # OR
    vercel env add NEXT_PUBLIC_MAINTENANCE_MODE
    # Then enter "false" as the value
-   
+
    # Redeploy the site
    vercel --prod
    ```
@@ -30,7 +32,9 @@ Edit `src/lib/maintenance.ts`:
 
 ```typescript
 // Change this line:
-export const MAINTENANCE_MODE = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' || process.env.NODE_ENV === 'production';
+export const MAINTENANCE_MODE =
+  process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ||
+  process.env.NODE_ENV === "production";
 
 // To this:
 export const MAINTENANCE_MODE = false;

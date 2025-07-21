@@ -34,19 +34,20 @@ export default function MaintenancePage() {
             Under Maintenance
           </h2>
         </div>
-        
+
         <div className="mb-6">
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-            We&apos;re making some updates to improve your experience. Please check back soon.
+            We&apos;re making some updates to improve your experience. Please
+            check back soon.
           </p>
         </div>
-        
+
         <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
           <p className="text-sm text-gray-500 dark:text-gray-500">
             Thank you for your patience.
           </p>
         </div>
-        
+
         <div className="mt-6">
           <div className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400">
             <svg
