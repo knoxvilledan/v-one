@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { ApiService } from "../../lib/api";
 import { exportCSVByDate } from "../../lib/storage";
 import { getTodayStorageDate } from "../../lib/date-utils";
+import { useContent } from "../../hooks/useContent";
 import DateNavigation from "../../components/DateNavigation";
 import TimeBlock from "../../components/TimeBlock";
 import ScoreBar from "../../components/ScoreBar";
@@ -15,158 +16,65 @@ import Footer from "../../components/Footer";
 import { calculateScore } from "../../lib/scoring";
 import { Block, ChecklistItem } from "../../types";
 
-const defaultMasterChecklist: ChecklistItem[] = [
-  // Morning routine
-  {
-    id: "m1",
-    text: "Get Mind Right! Put 1 on Loop",
-    completed: false,
-    category: "morning",
-  },
-  {
-    id: "m2",
-    text: "Hear/Read/ Write/Speak/ Vision/Feeling",
-    completed: false,
-    category: "morning",
-  },
-  { id: "m3", text: "Teeth / Face", completed: false, category: "morning" },
-  {
-    id: "m4",
-    text: "Spa Treatment / Feet / Deodorant / Hair",
-    completed: false,
-    category: "morning",
-  },
-  {
-    id: "m5",
-    text: "Stretch & Build up…EVERYTHING",
-    completed: false,
-    category: "morning",
-  },
-  {
-    id: "m6",
-    text: "Workout [101] [201] [301]",
-    completed: false,
-    category: "morning",
-  },
-  {
-    id: "m7",
-    text: "Work Day Prep / To Do List Prep",
-    completed: false,
-    category: "morning",
-  },
-  {
-    id: "m8",
-    text: "Bible Study | Mind/Will | Soul/Emotions",
-    completed: false,
-    category: "morning",
-  },
-
-  // Work tasks
-  { id: "w1", text: "Work Tasks", completed: false, category: "work" },
-
-  // Tech tasks
-  {
-    id: "t1",
-    text: "Programming, Tech Stacks, Tools",
-    completed: false,
-    category: "tech",
-  },
-  {
-    id: "t2",
-    text: "Coding, Build Portfolio/Projects",
-    completed: false,
-    category: "tech",
-  },
-  { id: "t3", text: "Web Dev / Soft Dev", completed: false, category: "tech" },
-  { id: "t4", text: "IT Help Desk", completed: false, category: "tech" },
-  { id: "t5", text: "Network Security", completed: false, category: "tech" },
-  {
-    id: "t6",
-    text: "Research & Development Subjects",
-    completed: false,
-    category: "tech",
-  },
-
-  // House/Family tasks
-  {
-    id: "h1",
-    text: "Household / Chores / Misc",
-    completed: false,
-    category: "house",
-  },
-  {
-    id: "h2",
-    text: "Various / Store / Breaks / Dinner",
-    completed: false,
-    category: "house",
-  },
-  {
-    id: "h3",
-    text: "2 - 3 X chores & 1.5 nights SB for family",
-    completed: false,
-    category: "house",
-  },
-
-  // Wrap-up tasks
-  { id: "wr1", text: "Plan Next Day", completed: false, category: "wrapup" },
-  { id: "wr2", text: "Spa Treatment R2", completed: false, category: "wrapup" },
-  {
-    id: "wr3",
-    text: "Blue Angel / Ideal Day/ life",
-    completed: false,
-    category: "wrapup",
-  },
-];
-
-const defaultHabitBreakChecklist: ChecklistItem[] = [
-  { id: "hb1", text: "LSD energy", completed: false, category: "lsd" },
-  { id: "hb2", text: "LNR", completed: false, category: "lsd" },
-  { id: "hb3", text: "LWR", completed: false, category: "lsd" },
-  { id: "hb4", text: "AC", completed: false, category: "lsd" },
-  { id: "hb5", text: "OC", completed: false, category: "lsd" },
-  { id: "hb6", text: "GAF", completed: false, category: "lsd" },
-  { id: "hb7", text: "GPR", completed: false, category: "lsd" },
-  { id: "hb8", text: "NC", completed: false, category: "lsd" },
-  {
-    id: "hb9",
-    text: "financial waste",
-    completed: false,
-    category: "financial",
-  },
-  { id: "hb10", text: "youtube shorts", completed: false, category: "youtube" },
-  { id: "hb11", text: "time wasted", completed: false, category: "time" },
-  {
-    id: "hb5",
-    text: "wasteful entertainment",
-    completed: false,
-    category: "entertainment",
-  },
-];
-
-const defaultBlocks = [
-  { time: "4:00 AM", label: "Wake & AMP Start" },
-  { time: "5:00 AM", label: "Workout & Stretch" },
-  { time: "6:00 AM", label: "Family Morning" },
-  { time: "7:00 AM", label: "Open Hour (Focus)" },
-  { time: "8:00 AM", label: "Education (Sales/Programming)" },
-  { time: "9:00 AM", label: "Switch to Work (Sales/FUP)" },
-  { time: "5:00 PM", label: "Tech Work" },
-  { time: "6:00 PM", label: "Tech Work" },
-  { time: "8:00 PM", label: "Family / Chores" },
-  { time: "9:00 PM", label: "EOD Wrap Up" },
-];
-
 export default function DailyPage() {
   const params = useParams();
   const router = useRouter();
   const date = params?.date as string;
   const { data: session } = useSession();
+  const { contentData } = useContent();
+
   const [wakeTime, setWakeTime] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [todoListVisible, setTodoListVisible] = useState(false);
   const [todoList, setTodoList] = useState<ChecklistItem[]>([]);
   const [resetTodoPosition, setResetTodoPosition] = useState(false);
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [masterChecklist, setMasterChecklist] = useState<ChecklistItem[]>([]);
+  const [habitBreakChecklist, setHabitBreakChecklist] = useState<
+    ChecklistItem[]
+  >([]);
 
+  // Get default content from dynamic templates
+  const getDefaultContent = useCallback(() => {
+    if (!contentData?.content) {
+      return {
+        defaultBlocks: [],
+        defaultMasterChecklist: [],
+        defaultHabitBreakChecklist: [],
+      };
+    }
+
+    const defaultBlocks =
+      contentData.content.timeBlocks?.map((tb) => ({
+        time: tb.time,
+        label: tb.label,
+        notes: [],
+        complete: false,
+        checklist: undefined,
+      })) || [];
+
+    const defaultMasterChecklist =
+      contentData.content.masterChecklist?.map((mc) => ({
+        id: mc.id,
+        text: mc.text,
+        completed: false,
+        category: mc.category,
+      })) || [];
+
+    const defaultHabitBreakChecklist =
+      contentData.content.habitBreakChecklist?.map((hb) => ({
+        id: hb.id,
+        text: hb.text,
+        completed: false,
+        category: hb.category,
+      })) || [];
+
+    return {
+      defaultBlocks,
+      defaultMasterChecklist,
+      defaultHabitBreakChecklist,
+    };
+  }, [contentData?.content]);
   // Redirect to today's date if no date is provided or invalid
   useEffect(() => {
     if (!date || date === "undefined") {
@@ -184,23 +92,6 @@ export default function DailyPage() {
     }
   }, [date, router]);
 
-  const [blocks, setBlocks] = useState<Block[]>(() => {
-    return defaultBlocks.map((b) => ({
-      ...b,
-      notes: [],
-      complete: false,
-      checklist: undefined,
-    }));
-  });
-
-  const [masterChecklist, setMasterChecklist] = useState<ChecklistItem[]>(
-    defaultMasterChecklist
-  );
-
-  const [habitBreakChecklist, setHabitBreakChecklist] = useState<
-    ChecklistItem[]
-  >(defaultHabitBreakChecklist);
-
   // Helper function to ensure date fields are proper Date objects
   const ensureDateObjects = (items: ChecklistItem[]): ChecklistItem[] => {
     return items.map((item) => ({
@@ -208,6 +99,37 @@ export default function DailyPage() {
       completedAt: item.completedAt ? new Date(item.completedAt) : undefined,
     }));
   };
+
+  // Initialize default state when content is loaded
+  useEffect(() => {
+    if (contentData?.content) {
+      const defaults = getDefaultContent();
+      if (typeof defaults === "object" && "defaultBlocks" in defaults) {
+        const {
+          defaultBlocks,
+          defaultMasterChecklist,
+          defaultHabitBreakChecklist,
+        } = defaults;
+
+        // Only set initial state if we haven't loaded user data yet
+        if (blocks.length === 0) {
+          setBlocks(defaultBlocks);
+        }
+        if (masterChecklist.length === 0) {
+          setMasterChecklist(defaultMasterChecklist as ChecklistItem[]);
+        }
+        if (habitBreakChecklist.length === 0) {
+          setHabitBreakChecklist(defaultHabitBreakChecklist as ChecklistItem[]);
+        }
+      }
+    }
+  }, [
+    contentData,
+    blocks.length,
+    masterChecklist.length,
+    habitBreakChecklist.length,
+    getDefaultContent,
+  ]);
 
   // Load data from API when component mounts
   useEffect(() => {
@@ -218,6 +140,14 @@ export default function DailyPage() {
         setIsLoading(true);
         const userData = await ApiService.getUserData(session.user.email);
         const dayData = userData.days[date];
+
+        // Get default content
+        const defaults = getDefaultContent();
+        const {
+          defaultBlocks,
+          defaultMasterChecklist,
+          defaultHabitBreakChecklist,
+        } = defaults;
 
         if (dayData) {
           setWakeTime(dayData.wakeTime || "");
@@ -256,7 +186,7 @@ export default function DailyPage() {
     };
 
     loadData();
-  }, [session, date]);
+  }, [session, date, getDefaultContent]);
 
   // Helper function to load uncompleted todo items from previous days
   const loadPreviousTodoItems = async (
@@ -827,35 +757,45 @@ export default function DailyPage() {
   // Reset day function - clears all data for the current day
   const resetDay = async () => {
     try {
-      // Reset all state to default values
-      setWakeTime("");
-      setBlocks(
-        defaultBlocks.map((b) => ({
-          ...b,
-          notes: [],
-          complete: false,
-          checklist: undefined,
-        }))
-      );
-      setMasterChecklist(defaultMasterChecklist);
-      setHabitBreakChecklist(defaultHabitBreakChecklist);
-      setTodoList([]);
+      // Get default content
+      const defaults = getDefaultContent();
+      if (typeof defaults === "object" && "defaultBlocks" in defaults) {
+        const {
+          defaultBlocks,
+          defaultMasterChecklist,
+          defaultHabitBreakChecklist,
+        } = defaults;
 
-      // Save the reset data to database
-      if (session?.user?.email && date) {
-        const dayData = {
-          wakeTime: "",
-          blocks: defaultBlocks.map((b) => ({
+        // Reset all state to default values
+        setWakeTime("");
+        setBlocks(
+          defaultBlocks.map((b) => ({
             ...b,
             notes: [],
             complete: false,
             checklist: undefined,
-          })),
-          masterChecklist: defaultMasterChecklist,
-          habitBreakChecklist: defaultHabitBreakChecklist,
-          todoList: [],
-        };
-        await ApiService.saveDayData(session.user.email, date, dayData);
+          }))
+        );
+        setMasterChecklist(defaultMasterChecklist as ChecklistItem[]);
+        setHabitBreakChecklist(defaultHabitBreakChecklist as ChecklistItem[]);
+        setTodoList([]);
+
+        // Save the reset data to database
+        if (session?.user?.email && date) {
+          const dayData = {
+            wakeTime: "",
+            blocks: defaultBlocks.map((b) => ({
+              ...b,
+              notes: [],
+              complete: false,
+              checklist: undefined,
+            })),
+            masterChecklist: defaultMasterChecklist as ChecklistItem[],
+            habitBreakChecklist: defaultHabitBreakChecklist as ChecklistItem[],
+            todoList: [],
+          };
+          await ApiService.saveDayData(session.user.email, date, dayData);
+        }
       }
     } catch (error) {
       console.error("Error resetting day:", error);
@@ -943,7 +883,7 @@ export default function DailyPage() {
         </div>
         <div className="flex items-center">
           <span className="text-base lg:text-lg font-medium">
-            Welcome, {session.user?.name || "User"}
+            Welcome, {session?.user?.name || "User"}
           </span>
         </div>
       </div>

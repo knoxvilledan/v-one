@@ -38,4 +38,8 @@ export interface DayData {
   score?: number;
   createdAt: Date;
   updatedAt: Date;
+  userId: string; // Reference to user
 }
+
+// Re-export content types
+export * from "./content";

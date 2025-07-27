@@ -5,12 +5,23 @@ import clientPromise from "../../../lib/mongodb";
 import { Session } from "next-auth";
 import { Block, ChecklistItem, DayData } from "../../../types";
 import { formatDisplayDate, parseStorageDate } from "../../../lib/date-utils";
+import { ContentService } from "../../../lib/content-service";
 
 export async function POST(request: NextRequest) {
   try {
     const session = (await getServerSession(authOptions)) as Session | null;
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get or create user
+    let user = await ContentService.getUserByEmail(session.user.email);
+    if (!user) {
+      user = await ContentService.createUser(
+        session.user.email,
+        session.user.name || undefined,
+        "public"
+      );
     }
 
     const {
@@ -48,12 +59,13 @@ export async function POST(request: NextRequest) {
       habitBreakChecklist,
       todoList,
       score,
+      userId: user._id!.toString(),
       updatedAt: new Date(),
     };
 
     // Upsert user data for the specific date
     await userData.updateOne(
-      { userId: session.user.id, date },
+      { userId: user._id!.toString(), date },
       {
         $set: dayData,
         $setOnInsert: { createdAt: new Date() },
@@ -79,8 +91,18 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = (await getServerSession(authOptions)) as Session | null;
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get or create user
+    let user = await ContentService.getUserByEmail(session.user.email);
+    if (!user) {
+      user = await ContentService.createUser(
+        session.user.email,
+        session.user.name || undefined,
+        "public"
+      );
     }
 
     const url = new URL(request.url);
@@ -91,9 +113,47 @@ export async function GET(request: NextRequest) {
 
     if (date) {
       // Get specific date data
-      const data = await userData.findOne({ userId: session.user.id, date });
+      const data = await userData.findOne({
+        userId: user._id!.toString(),
+        date,
+      });
 
       if (!data) {
+        // Get default data from content templates
+        const contentTemplate = await ContentService.getContentTemplateByRole(
+          user.role
+        );
+
+        if (contentTemplate) {
+          const defaultData = {
+            blocks:
+              contentTemplate.content.timeBlocks?.map((tb) => ({
+                time: tb.time,
+                label: tb.label,
+                notes: [],
+                complete: false,
+              })) || [],
+            masterChecklist:
+              contentTemplate.content.masterChecklist?.map((mc) => ({
+                id: mc.id,
+                text: mc.text,
+                completed: false,
+                category: mc.category,
+              })) || [],
+            wakeTime: "",
+            habitBreakChecklist:
+              contentTemplate.content.habitBreakChecklist?.map((hb) => ({
+                id: hb.id,
+                text: hb.text,
+                completed: false,
+                category: hb.category,
+              })) || [],
+            todoList: [],
+          };
+
+          return NextResponse.json({ data: defaultData });
+        }
+
         return NextResponse.json({ data: null });
       }
 
@@ -109,7 +169,7 @@ export async function GET(request: NextRequest) {
     } else {
       // Get all user data organized by dates
       const allData = await userData
-        .find({ userId: session.user.id })
+        .find({ userId: user._id!.toString() })
         .toArray();
 
       const days: {
