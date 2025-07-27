@@ -3,8 +3,7 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   // Check if maintenance mode is enabled
-  const maintenanceMode =
-    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" || true; // Default to true for deployment
+  const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
   if (maintenanceMode) {
     const { pathname } = request.nextUrl;

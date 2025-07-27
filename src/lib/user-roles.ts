@@ -1,5 +1,5 @@
 import { MongoClient } from "mongodb";
-import { UserProfile, UserRole } from "../types";
+import { User, UserRole } from "../types/content";
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 const client = new MongoClient(MONGODB_URI);
@@ -14,7 +14,7 @@ export class UserRoleService {
   static async initializeUserRoles() {
     try {
       const db = await this.getDatabase();
-      const usersCollection = db.collection<UserProfile>("users");
+      const usersCollection = db.collection<User>("users");
 
       // Create an index on email for faster lookups
       await usersCollection.createIndex({ email: 1 }, { unique: true });
@@ -51,7 +51,7 @@ export class UserRoleService {
   static async getUserRole(email: string): Promise<UserRole> {
     try {
       const db = await this.getDatabase();
-      const usersCollection = db.collection<UserProfile>("users");
+      const usersCollection = db.collection<User>("users");
 
       const user = await usersCollection.findOne({ email });
 
@@ -72,12 +72,12 @@ export class UserRoleService {
     email: string,
     name?: string,
     role: UserRole = "public"
-  ): Promise<UserProfile> {
+  ): Promise<User> {
     try {
       const db = await this.getDatabase();
-      const usersCollection = db.collection<UserProfile>("users");
+      const usersCollection = db.collection<User>("users");
 
-      const userProfile: Partial<UserProfile> = {
+      const userProfile: Partial<User> = {
         email,
         name,
         role,
@@ -96,7 +96,7 @@ export class UserRoleService {
         { upsert: true, returnDocument: "after" }
       );
 
-      return result as UserProfile;
+      return result as User;
     } catch (error) {
       console.error("❌ Error creating/updating user:", error);
       throw error;
@@ -110,10 +110,10 @@ export class UserRoleService {
   }
 
   // Get all users (admin only)
-  static async getAllUsers(): Promise<UserProfile[]> {
+  static async getAllUsers(): Promise<User[]> {
     try {
       const db = await this.getDatabase();
-      const usersCollection = db.collection<UserProfile>("users");
+      const usersCollection = db.collection<User>("users");
 
       return await usersCollection.find({}).toArray();
     } catch (error) {
@@ -136,7 +136,7 @@ export class UserRoleService {
       }
 
       const db = await this.getDatabase();
-      const usersCollection = db.collection<UserProfile>("users");
+      const usersCollection = db.collection<User>("users");
 
       const result = await usersCollection.updateOne(
         { email },
