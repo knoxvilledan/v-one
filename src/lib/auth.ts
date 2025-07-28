@@ -5,7 +5,7 @@ import clientPromise from "./mongodb";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: MongoDBAdapter(clientPromise, { databaseName: "AmpTracker" }),
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -20,7 +20,7 @@ export const authOptions = {
 
         try {
           const client = await clientPromise;
-          const users = client.db().collection("users");
+          const users = client.db("AmpTracker").collection("users");
 
           const user = await users.findOne({ email: credentials.email });
 

@@ -5,20 +5,23 @@
 ### 👤 Public Users (Role: public)
 
 **Alice Smith**
+
 - Email: `alice.smith@example.com`
 - Password: `test123`
 - Role: Public
 - Expected Experience: Sees placeholder content, can customize checklists
 
 **Bob Johnson**
+
 - Email: `bob.johnson@example.com`
 - Password: `test123`
-- Role: Public  
+- Role: Public
 - Expected Experience: Sees placeholder content, independent from Alice's data
 
 ### 👑 Admin User (Role: admin)
 
 **Carol Williams**
+
 - Email: `carol.williams@example.com`
 - Password: `admin123`
 - Role: Admin
