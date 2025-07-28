@@ -1,0 +1,10 @@
+{
+  "name": "MongoDB Test Setup Scripts",
+  "description": "Scripts to set up and test MongoDB with 3 random users for public profile testing",
+  "scripts": {
+    "setup-users": "node scripts/setup-test-users.js",
+    "setup-content": "node scripts/setup-content-templates.js",
+    "test-setup": "node scripts/test-database-setup.js",
+    "full-setup": "npm run setup-users && npm run setup-content && npm run test-setup"
+  }
+}
