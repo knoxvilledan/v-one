@@ -13,16 +13,16 @@ async function debugAuthentication() {
     console.log("🔗 Connecting to MongoDB...");
     await client.connect();
 
-    const db = client.db("AmpTracker");
+    const db = client.db("AmpTrack");
     const usersCollection = db.collection("users");
 
     console.log("\n🔍 Debugging Authentication Issues...\n");
 
     // Check test users
     const testEmails = [
-      "alice.smith@example.com",
-      "bob.johnson@example.com",
-      "carol.williams@example.com",
+      "alice.test@example.com",
+      "bob.test@example.com",
+      "carol.test@example.com",
     ];
 
     for (const email of testEmails) {
@@ -45,7 +45,7 @@ async function debugAuthentication() {
 
         // Test password verification
         if (user.password) {
-          const testPassword = email.includes("carol") ? "admin123" : "test123";
+          const testPassword = "password123";
           const isValid = await bcrypt.compare(testPassword, user.password);
           console.log(
             `  🔓 Password test (${testPassword}): ${
@@ -69,8 +69,19 @@ async function debugAuthentication() {
     const userCount = await usersCollection.countDocuments();
     console.log(`  Total users: ${userCount}`);
 
+    // Show all existing users
+    console.log("\n👥 All existing users:");
+    const allUsers = await usersCollection.find({}).toArray();
+    allUsers.forEach((user, index) => {
+      console.log(
+        `  ${index + 1}. ${user.email || user.name || "No email"} (ID: ${
+          user._id
+        })`
+      );
+    });
+
     console.log("\n🔧 Recommendations:");
-    console.log("1. Make sure your app is using the AmpTracker database");
+    console.log("1. Make sure your app is using the AmpTrack database");
     console.log(
       "2. Check that NextAuth is configured to use the users collection"
     );

@@ -6,7 +6,7 @@ require("dotenv").config({ path: ".env.local" });
 // MongoDB connection from environment
 const MONGODB_URI =
   process.env.MONGODB_URI ||
-  "mongodb+srv://knoxvilledan:SSSDDDeee222@cluster1.fc7watg.mongodb.net/AmpTracker?retryWrites=true&w=majority&appName=Cluster1";
+  "mongodb+srv://knoxvilledan:SSSDDDeee222@cluster1.fc7watg.mongodb.net/AmpTrack?retryWrites=true&w=majority&appName=Cluster1";
 
 async function testDatabaseSetup() {
   const client = new MongoClient(MONGODB_URI);
@@ -15,8 +15,7 @@ async function testDatabaseSetup() {
     console.log("🔗 Connecting to MongoDB...");
     await client.connect();
 
-    const db = client.db("AmpTracker");
-
+    const db = client.db("AmpTrack");
     console.log("\n👥 TEST USERS:");
     console.log("================");
     const usersCollection = db.collection("users");

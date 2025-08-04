@@ -13,7 +13,7 @@ async function testAuthFlow() {
     console.log("🔗 Testing authentication flow...\n");
     await client.connect();
 
-    const db = client.db("AmpTracker");
+    const db = client.db("AmpTrack");
     const users = db.collection("users");
 
     // Test the exact flow that NextAuth uses

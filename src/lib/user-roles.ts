@@ -7,7 +7,7 @@ const client = new MongoClient(MONGODB_URI);
 export class UserRoleService {
   private static async getDatabase() {
     await client.connect();
-    return client.db("AmpTracker");
+    return client.db("AmpTrack");
   }
 
   // Initialize user roles in the database

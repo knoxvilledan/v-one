@@ -7,7 +7,7 @@ const client = new MongoClient(MONGODB_URI);
 export class ContentService {
   private static async getDatabase() {
     await client.connect();
-    return client.db("AmpTracker");
+    return client.db("AmpTrack");
   }
 
   // User Management
