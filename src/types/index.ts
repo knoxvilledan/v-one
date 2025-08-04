@@ -25,12 +25,21 @@ export interface Block {
   notes: string[];
   complete: boolean;
   checklist?: ChecklistItem[];
+  duration?: number; // Duration in minutes, defaults to 60
+  index?: number; // Block index (0-15)
+}
+
+export interface WakeTimeSettings {
+  wakeTime: string; // Format: "04:00" (24-hour format)
+  blockDuration: number; // Default duration for each block in minutes
+  customDurations?: number[]; // Optional array of 16 custom durations
 }
 
 export interface DayData {
   date: string; // Format: YYYY-MM-DD
   displayDate: string; // Format: Wed 7-16-25
   wakeTime: string;
+  wakeTimeSettings?: WakeTimeSettings; // Enhanced wake time configuration
   blocks: Block[];
   masterChecklist: ChecklistItem[];
   habitBreakChecklist: ChecklistItem[];

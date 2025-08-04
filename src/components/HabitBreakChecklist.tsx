@@ -40,25 +40,6 @@ export default function HabitBreakChecklist({
     ChecklistItem["category"] | "completed"
   >("lsd");
 
-  // Get current time block based on actual time
-  const getCurrentTimeBlock = (): number => {
-    const now = new Date();
-    const hour = now.getHours();
-
-    if (hour >= 4 && hour < 5) return 0; // 4:00 AM
-    if (hour >= 5 && hour < 6) return 1; // 5:00 AM
-    if (hour >= 6 && hour < 7) return 2; // 6:00 AM
-    if (hour >= 7 && hour < 8) return 3; // 7:00 AM
-    if (hour >= 8 && hour < 9) return 4; // 8:00 AM
-    if (hour >= 9 && hour < 17) return 5; // 9:00 AM - 5:00 PM (Work)
-    if (hour >= 17 && hour < 18) return 6; // 5:00 PM
-    if (hour >= 18 && hour < 20) return 7; // 6:00 PM
-    if (hour >= 20 && hour < 21) return 8; // 8:00 PM
-    if (hour >= 21 || hour < 4) return 9; // 9:00 PM - 4:00 AM
-
-    return 5; // Default to work block
-  };
-
   const toggleSection = (category: string) => {
     setExpandedSections((prev) => ({
       ...prev,
@@ -67,15 +48,9 @@ export default function HabitBreakChecklist({
   };
 
   const handleCompleteItem = (item: ChecklistItem) => {
-    const updatedItem = {
-      ...item,
-      completed: true,
-      completedAt: new Date(),
-      targetBlock: getCurrentTimeBlock(),
-    };
-
-    const updatedItems = items.map((i) => (i.id === item.id ? updatedItem : i));
-    onUpdateItems(updatedItems);
+    // Call the parent handler which will handle BOTH:
+    // 1. Injecting into TimeBlock as a note
+    // 2. Updating the habitBreakChecklist state
     onCompleteItem(item.id);
   };
 
@@ -327,9 +302,9 @@ export default function HabitBreakChecklist({
                             className="px-2 py-1 border border-red-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                           >
                             <option value="">Auto-assign</option>
-                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((block) => (
-                              <option key={block} value={block}>
-                                Block {block}
+                            {Array.from({ length: 16 }, (_, index) => (
+                              <option key={index} value={index}>
+                                Block {index}
                               </option>
                             ))}
                           </select>
@@ -394,66 +369,15 @@ export default function HabitBreakChecklist({
                                 >
                                   Auto-assign
                                 </option>
-                                <option
-                                  value="0"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  4:00 AM
-                                </option>
-                                <option
-                                  value="1"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  5:00 AM
-                                </option>
-                                <option
-                                  value="2"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  6:00 AM
-                                </option>
-                                <option
-                                  value="3"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  7:00 AM
-                                </option>
-                                <option
-                                  value="4"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  8:00 AM
-                                </option>
-                                <option
-                                  value="5"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  9:00 AM
-                                </option>
-                                <option
-                                  value="6"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  10:00 AM
-                                </option>
-                                <option
-                                  value="7"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  11:00 AM
-                                </option>
-                                <option
-                                  value="8"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  12:00 PM
-                                </option>
-                                <option
-                                  value="9"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  11:00 PM
-                                </option>
+                                {Array.from({ length: 16 }, (_, index) => (
+                                  <option
+                                    key={index}
+                                    value={index}
+                                    className="bg-gray-800 text-white"
+                                  >
+                                    Block {index}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                           )}

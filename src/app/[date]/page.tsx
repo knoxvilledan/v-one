@@ -14,7 +14,13 @@ import HabitBreakChecklist from "../../components/HabitBreakChecklist";
 import TodoList from "../../components/TodoList";
 import Footer from "../../components/Footer";
 import { calculateScore } from "../../lib/scoring";
-import { Block, ChecklistItem } from "../../types";
+import {
+  calculateTimeBlocks,
+  getTimeBlockForCompletion as getTimeBlockForCompletionFromCalculator,
+  getDefaultTimeBlockSettings,
+  TimeBlockConfig,
+} from "../../lib/time-calculator";
+import { Block, ChecklistItem, WakeTimeSettings } from "../../types";
 
 export default function DailyPage() {
   const params = useParams();
@@ -24,6 +30,11 @@ export default function DailyPage() {
   const { contentData } = useContent();
 
   const [wakeTime, setWakeTime] = useState<string>("");
+  const [wakeTimeSettings, setWakeTimeSettings] =
+    useState<WakeTimeSettings | null>(null);
+  const [timeBlockConfigs, setTimeBlockConfigs] = useState<TimeBlockConfig[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [todoListVisible, setTodoListVisible] = useState(false);
   const [todoList, setTodoList] = useState<ChecklistItem[]>([]);
@@ -41,17 +52,29 @@ export default function DailyPage() {
         defaultBlocks: [],
         defaultMasterChecklist: [],
         defaultHabitBreakChecklist: [],
+        defaultWakeTimeSettings: getDefaultTimeBlockSettings("public"),
       };
     }
 
-    const defaultBlocks =
-      contentData.content.timeBlocks?.map((tb) => ({
-        time: tb.time,
-        label: tb.label,
-        notes: [],
-        complete: false,
-        checklist: undefined,
-      })) || [];
+    // Initialize wake time settings based on user role
+    const defaultWakeSettings = getDefaultTimeBlockSettings(
+      contentData.userRole
+    );
+
+    // Generate 16 time blocks with dynamic time calculation
+    const timeBlockConfigs = calculateTimeBlocks(defaultWakeSettings);
+
+    const defaultBlocks = timeBlockConfigs.map((config, index) => ({
+      time: config.timeLabel,
+      label:
+        contentData.content.timeBlocks?.[index]?.label ||
+        `Time Block ${index + 1}`,
+      notes: [],
+      complete: false,
+      checklist: undefined,
+      duration: config.duration,
+      index: config.index,
+    }));
 
     const defaultMasterChecklist =
       contentData.content.masterChecklist?.map((mc) => ({
@@ -73,8 +96,9 @@ export default function DailyPage() {
       defaultBlocks,
       defaultMasterChecklist,
       defaultHabitBreakChecklist,
+      defaultWakeTimeSettings: defaultWakeSettings,
     };
-  }, [contentData?.content]);
+  }, [contentData?.content, contentData?.userRole]);
   // Redirect to today's date if no date is provided or invalid
   useEffect(() => {
     if (!date || date === "undefined") {
@@ -109,7 +133,16 @@ export default function DailyPage() {
           defaultBlocks,
           defaultMasterChecklist,
           defaultHabitBreakChecklist,
+          defaultWakeTimeSettings,
         } = defaults;
+
+        // Initialize wake time settings if not already set
+        if (!wakeTimeSettings && defaultWakeTimeSettings) {
+          setWakeTimeSettings(defaultWakeTimeSettings);
+          // Calculate initial time block configurations
+          const configs = calculateTimeBlocks(defaultWakeTimeSettings);
+          setTimeBlockConfigs(configs);
+        }
 
         // Only set initial state if we haven't loaded user data yet
         if (blocks.length === 0) {
@@ -128,8 +161,30 @@ export default function DailyPage() {
     blocks.length,
     masterChecklist.length,
     habitBreakChecklist.length,
+    wakeTimeSettings,
     getDefaultContent,
   ]);
+
+  // Recalculate time blocks when wake time settings change
+  useEffect(() => {
+    if (wakeTimeSettings) {
+      const configs = calculateTimeBlocks(wakeTimeSettings);
+      setTimeBlockConfigs(configs);
+
+      // Update existing blocks with new time labels if needed
+      setBlocks((prevBlocks) => {
+        if (prevBlocks.length > 0) {
+          return prevBlocks.map((block, index) => ({
+            ...block,
+            time: configs[index]?.timeLabel || block.time,
+            duration: configs[index]?.duration || block.duration || 60,
+            index: index,
+          }));
+        }
+        return prevBlocks;
+      });
+    }
+  }, [wakeTimeSettings]);
 
   // Load data from API when component mounts
   useEffect(() => {
@@ -253,28 +308,43 @@ export default function DailyPage() {
     isLoading,
   ]);
 
-  // Unified time block assignment function that considers the current date context
+  // Enhanced time block assignment function that uses dynamic time blocks
   const getTimeBlockForCompletion = (
     completionTime: Date,
     currentPageDate: string
   ): number => {
+    // Use the new dynamic time calculator if timeBlockConfigs are available
+    if (timeBlockConfigs.length > 0) {
+      return getTimeBlockForCompletionFromCalculator(
+        completionTime,
+        timeBlockConfigs,
+        currentPageDate
+      );
+    }
+
+    // Fallback to expanded static assignment for 16 blocks
     const completionHour = completionTime.getHours();
     const completionDate = completionTime.toISOString().split("T")[0]; // YYYY-MM-DD format
 
     // If we're on the current page date
     if (completionDate === currentPageDate) {
-      // Standard time block assignments for the current day
-      // Early morning (12:01 AM - 4:59 AM) -> 4:00 AM block
-      if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> 4:00 AM
-      if (completionHour >= 5 && completionHour < 6) return 1; // 5:00 AM
-      if (completionHour >= 6 && completionHour < 7) return 2; // 6:00 AM
-      if (completionHour >= 7 && completionHour < 8) return 3; // 7:00 AM
-      if (completionHour >= 8 && completionHour < 9) return 4; // 8:00 AM
-      if (completionHour >= 9 && completionHour < 17) return 5; // 9:00 AM - 5:00 PM
-      if (completionHour >= 17 && completionHour < 18) return 6; // 5:00 PM
-      if (completionHour >= 18 && completionHour < 20) return 7; // 6:00 PM
-      if (completionHour >= 20 && completionHour < 21) return 8; // 8:00 PM
-      if (completionHour >= 21) return 9; // 9:00 PM - 11:59 PM -> 9:00 PM
+      // Expanded time block assignments for 16 blocks
+      if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> Block 0
+      if (completionHour >= 5 && completionHour < 6) return 1; // 5:00 AM -> Block 1
+      if (completionHour >= 6 && completionHour < 7) return 2; // 6:00 AM -> Block 2
+      if (completionHour >= 7 && completionHour < 8) return 3; // 7:00 AM -> Block 3
+      if (completionHour >= 8 && completionHour < 9) return 4; // 8:00 AM -> Block 4
+      if (completionHour >= 9 && completionHour < 10) return 5; // 9:00 AM -> Block 5
+      if (completionHour >= 10 && completionHour < 11) return 6; // 10:00 AM -> Block 6
+      if (completionHour >= 11 && completionHour < 12) return 7; // 11:00 AM -> Block 7
+      if (completionHour >= 12 && completionHour < 13) return 8; // 12:00 PM -> Block 8
+      if (completionHour >= 13 && completionHour < 14) return 9; // 1:00 PM -> Block 9
+      if (completionHour >= 14 && completionHour < 15) return 10; // 2:00 PM -> Block 10
+      if (completionHour >= 15 && completionHour < 16) return 11; // 3:00 PM -> Block 11
+      if (completionHour >= 16 && completionHour < 17) return 12; // 4:00 PM -> Block 12
+      if (completionHour >= 17 && completionHour < 18) return 13; // 5:00 PM -> Block 13
+      if (completionHour >= 18 && completionHour < 20) return 14; // 6:00 PM - 7:59 PM -> Block 14
+      if (completionHour >= 20) return 15; // 8:00 PM+ -> Block 15
     } else {
       // Cross-date scenarios
       const currentPageDateObj = new Date(currentPageDate + "T00:00:00");
@@ -282,30 +352,36 @@ export default function DailyPage() {
 
       // If completing on the day before the current page (late night work)
       if (completionDateObj.getTime() < currentPageDateObj.getTime()) {
-        if (completionHour >= 21) return 9; // 9:00 PM - 11:59 PM -> 9:00 PM
-        if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> 4:00 AM
+        if (completionHour >= 20) return 15; // 8:00 PM+ -> Last block
+        if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> First block
       }
 
       // If completing on the day after the current page (early morning work)
       if (completionDateObj.getTime() > currentPageDateObj.getTime()) {
-        if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> 4:00 AM
-        if (completionHour >= 5 && completionHour < 6) return 1; // 5:00 AM
+        if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> First block
+        if (completionHour >= 5 && completionHour < 6) return 1; // 5:00 AM -> Block 1
       }
     }
 
-    // Fallback to standard assignment if no special case matches
-    if (completionHour >= 0 && completionHour < 5) return 0; // 12:01 AM - 4:59 AM -> 4:00 AM
-    if (completionHour >= 5 && completionHour < 6) return 1; // 5:00 AM
-    if (completionHour >= 6 && completionHour < 7) return 2; // 6:00 AM
-    if (completionHour >= 7 && completionHour < 8) return 3; // 7:00 AM
-    if (completionHour >= 8 && completionHour < 9) return 4; // 8:00 AM
-    if (completionHour >= 9 && completionHour < 17) return 5; // 9:00 AM - 5:00 PM
-    if (completionHour >= 17 && completionHour < 18) return 6; // 5:00 PM
-    if (completionHour >= 18 && completionHour < 20) return 7; // 6:00 PM
-    if (completionHour >= 20 && completionHour < 21) return 8; // 8:00 PM
-    if (completionHour >= 21) return 9; // 9:00 PM - 11:59 PM -> 9:00 PM
+    // Fallback to expanded assignment for 16 blocks
+    if (completionHour >= 0 && completionHour < 5) return 0;
+    if (completionHour >= 5 && completionHour < 6) return 1;
+    if (completionHour >= 6 && completionHour < 7) return 2;
+    if (completionHour >= 7 && completionHour < 8) return 3;
+    if (completionHour >= 8 && completionHour < 9) return 4;
+    if (completionHour >= 9 && completionHour < 10) return 5;
+    if (completionHour >= 10 && completionHour < 11) return 6;
+    if (completionHour >= 11 && completionHour < 12) return 7;
+    if (completionHour >= 12 && completionHour < 13) return 8;
+    if (completionHour >= 13 && completionHour < 14) return 9;
+    if (completionHour >= 14 && completionHour < 15) return 10;
+    if (completionHour >= 15 && completionHour < 16) return 11;
+    if (completionHour >= 16 && completionHour < 17) return 12;
+    if (completionHour >= 17 && completionHour < 18) return 13;
+    if (completionHour >= 18 && completionHour < 20) return 14;
+    if (completionHour >= 20) return 15;
 
-    return 0; // Default fallback to 4:00 AM block
+    return 0; // Default fallback to first block
   };
 
   // Handle completed items from master checklist
@@ -376,6 +452,25 @@ export default function DailyPage() {
           : item
       );
       setHabitBreakChecklist(updatedItems);
+
+      // Save to database immediately
+      const saveData = async () => {
+        try {
+          if (session?.user?.email && date) {
+            const dayData = {
+              wakeTime,
+              blocks: updatedBlocks,
+              masterChecklist,
+              habitBreakChecklist: updatedItems,
+              todoList,
+            };
+            await ApiService.saveDayData(session.user.email, date, dayData);
+          }
+        } catch (error) {
+          console.error("Error saving habit break completion:", error);
+        }
+      };
+      saveData();
     }
   };
 

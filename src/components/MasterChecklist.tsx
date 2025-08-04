@@ -41,23 +41,30 @@ export default function MasterChecklist({
     ChecklistItem["category"] | "completed"
   >("morning");
 
-  // Get current time block based on actual time
+  // Get current time block based on actual time (approximated for 16-block system)
   const getCurrentTimeBlock = (): number => {
     const now = new Date();
     const hour = now.getHours();
+    const minute = now.getMinutes();
 
-    if (hour >= 4 && hour < 5) return 0; // 4:00 AM
-    if (hour >= 5 && hour < 6) return 1; // 5:00 AM
-    if (hour >= 6 && hour < 7) return 2; // 6:00 AM
-    if (hour >= 7 && hour < 8) return 3; // 7:00 AM
-    if (hour >= 8 && hour < 9) return 4; // 8:00 AM
-    if (hour >= 9 && hour < 17) return 5; // 9:00 AM - 5:00 PM (Work)
-    if (hour >= 17 && hour < 18) return 6; // 5:00 PM
-    if (hour >= 18 && hour < 20) return 7; // 6:00 PM
-    if (hour >= 20 && hour < 21) return 8; // 8:00 PM
-    if (hour >= 21 || hour < 4) return 9; // 9:00 PM - 4:00 AM
+    // Convert time to minutes since midnight
+    const totalMinutes = hour * 60 + minute;
 
-    return 5; // Default to work block
+    // Assuming 16 blocks of 90 minutes each starting at 4:00 AM (240 minutes)
+    // Block 0: 4:00 AM (240 min)
+    // Block 15: 2:30 AM next day (1590 min = 26.5 hours, wraps to 2:30 AM)
+    const startTime = 240; // 4:00 AM in minutes
+    let adjustedMinutes = totalMinutes;
+
+    // Handle time before 4:00 AM (next day's blocks)
+    if (totalMinutes < startTime) {
+      adjustedMinutes = totalMinutes + 1440; // Add 24 hours
+    }
+
+    const blockIndex = Math.floor((adjustedMinutes - startTime) / 90);
+
+    // Ensure we stay within 0-15 range
+    return Math.max(0, Math.min(15, blockIndex));
   };
 
   const toggleSection = (category: string) => {
@@ -336,66 +343,15 @@ export default function MasterChecklist({
                             <option value="" className="bg-gray-800 text-white">
                               Auto-assign
                             </option>
-                            <option
-                              value="0"
-                              className="bg-gray-800 text-white"
-                            >
-                              4:00 AM
-                            </option>
-                            <option
-                              value="1"
-                              className="bg-gray-800 text-white"
-                            >
-                              5:00 AM
-                            </option>
-                            <option
-                              value="2"
-                              className="bg-gray-800 text-white"
-                            >
-                              6:00 AM
-                            </option>
-                            <option
-                              value="3"
-                              className="bg-gray-800 text-white"
-                            >
-                              7:00 AM
-                            </option>
-                            <option
-                              value="4"
-                              className="bg-gray-800 text-white"
-                            >
-                              8:00 AM
-                            </option>
-                            <option
-                              value="5"
-                              className="bg-gray-800 text-white"
-                            >
-                              9:00 AM
-                            </option>
-                            <option
-                              value="6"
-                              className="bg-gray-800 text-white"
-                            >
-                              5:00 PM
-                            </option>
-                            <option
-                              value="7"
-                              className="bg-gray-800 text-white"
-                            >
-                              6:00 PM
-                            </option>
-                            <option
-                              value="8"
-                              className="bg-gray-800 text-white"
-                            >
-                              8:00 PM
-                            </option>
-                            <option
-                              value="9"
-                              className="bg-gray-800 text-white"
-                            >
-                              9:00 PM
-                            </option>
+                            {Array.from({ length: 16 }, (_, i) => (
+                              <option
+                                key={i}
+                                value={i}
+                                className="bg-gray-800 text-white"
+                              >
+                                Block {i}
+                              </option>
+                            ))}
                           </select>
                           <button
                             onClick={saveEdit}
@@ -424,25 +380,7 @@ export default function MasterChecklist({
                             </span>
                             {item.targetBlock !== undefined && (
                               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Assigned to{" "}
-                                {(() => {
-                                  const timeLabels = [
-                                    "4:00 AM",
-                                    "5:00 AM",
-                                    "6:00 AM",
-                                    "7:00 AM",
-                                    "8:00 AM",
-                                    "9:00 AM",
-                                    "5:00 PM",
-                                    "6:00 PM",
-                                    "8:00 PM",
-                                    "9:00 PM",
-                                  ];
-                                  return (
-                                    timeLabels[item.targetBlock] ||
-                                    `Block ${item.targetBlock + 1}`
-                                  );
-                                })()}
+                                Assigned to Block {item.targetBlock}
                               </div>
                             )}
                             {item.completed && item.completedAt && (
@@ -476,66 +414,15 @@ export default function MasterChecklist({
                                 >
                                   Auto-assign
                                 </option>
-                                <option
-                                  value="0"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  4:00 AM
-                                </option>
-                                <option
-                                  value="1"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  5:00 AM
-                                </option>
-                                <option
-                                  value="2"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  6:00 AM
-                                </option>
-                                <option
-                                  value="3"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  7:00 AM
-                                </option>
-                                <option
-                                  value="4"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  8:00 AM
-                                </option>
-                                <option
-                                  value="5"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  9:00 AM
-                                </option>
-                                <option
-                                  value="6"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  5:00 PM
-                                </option>
-                                <option
-                                  value="7"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  6:00 PM
-                                </option>
-                                <option
-                                  value="8"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  8:00 PM
-                                </option>
-                                <option
-                                  value="9"
-                                  className="bg-gray-800 text-white"
-                                >
-                                  9:00 PM
-                                </option>
+                                {Array.from({ length: 16 }, (_, i) => (
+                                  <option
+                                    key={i}
+                                    value={i}
+                                    className="bg-gray-800 text-white"
+                                  >
+                                    Block {i}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                           )}

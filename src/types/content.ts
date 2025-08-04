@@ -23,6 +23,8 @@ export interface TimeBlockTemplate {
   time: string;
   label: string;
   order: number;
+  duration?: number; // Duration in minutes, defaults to 60
+  index?: number; // Block index (0-15)
 }
 
 export interface ContentTemplate {

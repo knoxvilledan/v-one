@@ -122,16 +122,22 @@ export const defaultPublicBlocks: Omit<
   Block,
   "notes" | "complete" | "checklist"
 >[] = [
-  { time: "6:00 AM", label: "Morning Routine" },
-  { time: "7:00 AM", label: "Exercise/Wellness" },
-  { time: "8:00 AM", label: "Breakfast/Planning" },
-  { time: "9:00 AM", label: "Focus Work" },
-  { time: "12:00 PM", label: "Lunch Break" },
-  { time: "1:00 PM", label: "Afternoon Work" },
-  { time: "5:00 PM", label: "Personal Projects" },
-  { time: "7:00 PM", label: "Dinner/Family" },
-  { time: "9:00 PM", label: "Wind Down" },
-  { time: "10:00 PM", label: "Evening Routine" },
+  { time: "6:00 AM", label: "Morning Routine", duration: 60, index: 0 },
+  { time: "7:00 AM", label: "Exercise/Wellness", duration: 60, index: 1 },
+  { time: "8:00 AM", label: "Breakfast/Planning", duration: 60, index: 2 },
+  { time: "9:00 AM", label: "Focus Work Block 1", duration: 60, index: 3 },
+  { time: "10:00 AM", label: "Focus Work Block 2", duration: 60, index: 4 },
+  { time: "11:00 AM", label: "Focus Work Block 3", duration: 60, index: 5 },
+  { time: "12:00 PM", label: "Lunch Break", duration: 60, index: 6 },
+  { time: "1:00 PM", label: "Afternoon Work Block 1", duration: 60, index: 7 },
+  { time: "2:00 PM", label: "Afternoon Work Block 2", duration: 60, index: 8 },
+  { time: "3:00 PM", label: "Afternoon Work Block 3", duration: 60, index: 9 },
+  { time: "4:00 PM", label: "Afternoon Work Block 4", duration: 60, index: 10 },
+  { time: "5:00 PM", label: "Personal Projects", duration: 60, index: 11 },
+  { time: "6:00 PM", label: "Dinner Prep", duration: 60, index: 12 },
+  { time: "7:00 PM", label: "Dinner/Family", duration: 120, index: 13 },
+  { time: "9:00 PM", label: "Wind Down", duration: 60, index: 14 },
+  { time: "10:00 PM", label: "Evening Routine", duration: 60, index: 15 },
 ];
 
 // Your existing admin data (from the current app)
@@ -267,14 +273,30 @@ export const defaultAdminBlocks: Omit<
   Block,
   "notes" | "complete" | "checklist"
 >[] = [
-  { time: "4:00 AM", label: "Wake & AMP Start" },
-  { time: "5:00 AM", label: "Workout & Stretch" },
-  { time: "6:00 AM", label: "Family Morning" },
-  { time: "7:00 AM", label: "Open Hour (Focus)" },
-  { time: "8:00 AM", label: "Education (Sales/Programming)" },
-  { time: "9:00 AM", label: "Switch to Work (Sales/FUP)" },
-  { time: "5:00 PM", label: "Tech Work" },
-  { time: "6:00 PM", label: "Tech Work" },
-  { time: "8:00 PM", label: "Family / Chores" },
-  { time: "9:00 PM", label: "EOD Wrap Up" },
+  { time: "4:00 AM", label: "Wake & AMP Start", duration: 60, index: 0 },
+  { time: "5:00 AM", label: "Workout & Stretch", duration: 60, index: 1 },
+  { time: "6:00 AM", label: "Family Morning", duration: 60, index: 2 },
+  { time: "7:00 AM", label: "Open Hour (Focus)", duration: 60, index: 3 },
+  {
+    time: "8:00 AM",
+    label: "Education (Sales/Programming)",
+    duration: 60,
+    index: 4,
+  },
+  {
+    time: "9:00 AM",
+    label: "Switch to Work (Sales/FUP)",
+    duration: 480,
+    index: 5,
+  }, // 8-hour work block
+  { time: "5:00 PM", label: "Tech Work Block 1", duration: 60, index: 6 },
+  { time: "6:00 PM", label: "Tech Work Block 2", duration: 60, index: 7 },
+  { time: "7:00 PM", label: "Tech Work Block 3", duration: 60, index: 8 },
+  { time: "8:00 PM", label: "Family / Chores", duration: 60, index: 9 },
+  { time: "9:00 PM", label: "EOD Wrap Up", duration: 60, index: 10 },
+  { time: "10:00 PM", label: "Evening Planning", duration: 60, index: 11 },
+  { time: "11:00 PM", label: "Personal Time", duration: 60, index: 12 },
+  { time: "12:00 AM", label: "Wind Down", duration: 60, index: 13 },
+  { time: "1:00 AM", label: "Late Night Focus", duration: 60, index: 14 },
+  { time: "2:00 AM", label: "Sleep Prep", duration: 120, index: 15 }, // 2-hour sleep prep
 ];

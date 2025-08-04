@@ -346,16 +346,11 @@ export default function TodoList({
                   className="px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white w-20 flex-shrink-0"
                 >
                   <option value="">Auto</option>
-                  <option value="0">4:00 AM</option>
-                  <option value="1">5:00 AM</option>
-                  <option value="2">6:00 AM</option>
-                  <option value="3">7:00 AM</option>
-                  <option value="4">8:00 AM</option>
-                  <option value="5">9:00 AM</option>
-                  <option value="6">5:00 PM</option>
-                  <option value="7">6:00 PM</option>
-                  <option value="8">8:00 PM</option>
-                  <option value="9">9:00 PM</option>
+                  {Array.from({ length: 16 }, (_, i) => (
+                    <option key={i} value={i}>
+                      Block {i}
+                    </option>
+                  ))}
                 </select>
 
                 <button
