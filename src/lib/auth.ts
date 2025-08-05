@@ -1,14 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import clientPromise from "./mongodb";
+import dbConnect from "./dbConnect";
+import User from "@/models/User";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise, { databaseName: "AmpTrack" }),
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
-      name: "credentials",
+      name: "Email & Password",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
@@ -19,54 +26,92 @@ export const authOptions = {
         }
 
         try {
-          const client = await clientPromise;
-          const users = client.db("AmpTrack").collection("users");
+          await dbConnect();
+          const user = await User.findOne({
+            email: credentials.email.toLowerCase(),
+          });
 
-          const user = await users.findOne({ email: credentials.email });
-
-          if (!user) {
-            return null;
+          if (!user?.passwordHash) {
+            return null; // User doesn't exist or doesn't have password (OAuth-only user)
           }
 
-          const isPasswordValid = await bcrypt.compare(
+          const isValidPassword = await bcrypt.compare(
             credentials.password,
-            user.password
+            user.passwordHash
           );
 
-          if (!isPasswordValid) {
+          if (!isValidPassword) {
             return null;
           }
 
           return {
             id: user._id.toString(),
             email: user.email,
-            name: user.name,
+            name: user.username || user.email,
           };
         } catch (error) {
-          console.error("Auth error:", error);
+          console.error("Credentials auth error:", error);
           return null;
         }
       },
     }),
   ],
   session: {
-    strategy: "jwt" as const,
+    strategy: "jwt" as const, // Use JWT for credentials, database for OAuth
   },
   pages: {
     signIn: "/auth/signin",
   },
+  events: {
+    async createUser({ user }: { user: any }) {
+      // Create app-level user record when NextAuth creates a user (OAuth flow)
+      try {
+        await dbConnect();
+        await User.updateOne(
+          { email: user.email },
+          {
+            $setOnInsert: {
+              authUserId: user.id,
+              role: "public",
+              wakeTime: "--:--",
+              isEmailVerified: true, // OAuth users are pre-verified
+            },
+          },
+          { upsert: true }
+        );
+        console.log(`Created/updated app-level user for ${user.email}`);
+      } catch (error) {
+        console.error("Error creating app-level user:", error);
+      }
+    },
+  },
   callbacks: {
     async jwt({ token, user }: { token: any; user: any }) {
+      // For credentials provider
       if (user) {
         token.id = user.id;
       }
       return token;
     },
-    async session({ session, token }: { session: any; token: any }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
+    async session({
+      session,
+      user,
+      token,
+    }: {
+      session: any;
+      user?: any;
+      token?: any;
+    }) {
+      // Handle both database sessions (OAuth) and JWT sessions (credentials)
+      if (user) {
+        // Database session (OAuth)
+        session.user.id = user.id;
+      } else if (token) {
+        // JWT session (credentials)
+        session.user.id = token.id;
       }
       return session;
     },
   },
+  debug: process.env.NODE_ENV === "development",
 };

@@ -1010,9 +1010,20 @@ export default function DailyPage() {
             <TimeBlock
               block={block}
               index={i}
+              date={date}
               toggleComplete={toggleComplete}
               addNote={addNote}
               deleteNote={deleteNote}
+              onLabelUpdate={(blockIndex, newLabel) => {
+                const updatedBlocks = [...blocks];
+                updatedBlocks[blockIndex].label = newLabel;
+                setBlocks(updatedBlocks);
+              }}
+              onError={(error) => {
+                console.error("TimeBlock error:", error);
+                // You could add a toast notification here
+              }}
+              isAdmin={contentData?.userRole === "admin"}
             />
           </div>
         ))}

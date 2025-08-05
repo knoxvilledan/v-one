@@ -1,20 +1,29 @@
 import { useState } from "react";
 import { Block } from "../types";
+import EditableTimeBlockLabel from "./EditableTimeBlockLabel";
 
 type Props = {
   block: Block;
   index: number;
+  date: string;
   toggleComplete: (index: number) => void;
   addNote: (index: number, note: string) => void;
   deleteNote: (blockIndex: number, noteIndex: number) => void;
+  onLabelUpdate?: (blockIndex: number, newLabel: string) => void;
+  onError?: (error: string) => void;
+  isAdmin?: boolean;
 };
 
 export default function TimeBlock({
   block,
   index,
+  date,
   toggleComplete,
   addNote,
   deleteNote,
+  onLabelUpdate,
+  onError,
+  isAdmin = false,
 }: Props) {
   const [input, setInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -41,13 +50,23 @@ export default function TimeBlock({
 
   return (
     <div className="mb-4 border border-gray-400 shadow-md p-4 rounded-lg bg-white dark:bg-gray-800 min-h-[150px]">
-      <div className="flex justify-between">
-        <h2 className="font-semibold">
-          {block.time} – {block.label}
-        </h2>
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="text-sm text-gray-600 font-medium mb-1">
+            {block.time}
+          </div>
+          <EditableTimeBlockLabel
+            blockIndex={index}
+            currentLabel={block.label}
+            date={date}
+            onLabelUpdate={onLabelUpdate}
+            onError={onError}
+            isAdmin={isAdmin}
+          />
+        </div>
         <button
           onClick={() => toggleComplete(index)}
-          className={`text-sm ${
+          className={`text-sm ml-2 ${
             block.complete ? "text-green-400" : "text-gray-500"
           }`}
         >
