@@ -1,11 +1,9 @@
-import clientPromise from "./mongodb";
-import { User, UserRole, ContentTemplate } from "../types/content";
+import dbConnect from "./dbConnect";
+import { User, UserRole, ContentTemplate as TContentTemplate } from "../types/content";
+import { ContentTemplate } from "../models/ContentTemplate";
 
 export class ContentService {
-  private static async getDatabase() {
-    const client = await clientPromise;
-    return client.db(); // default DB from connection string
-  }
+  private static async ensureDb() { await dbConnect(); }
 
   // User Management
   static async createUser(
@@ -14,8 +12,8 @@ export class ContentService {
     role: UserRole = "public"
   ): Promise<User> {
     try {
-      const db = await this.getDatabase();
-      const usersCollection = db.collection<User>("users");
+      await this.ensureDb();
+  const usersCollection = (await import("mongoose")).default.connection.db!.collection<User>("users");
 
       const user: User = {
         email,
@@ -26,8 +24,13 @@ export class ContentService {
         isActive: true,
       };
 
-      const result = await usersCollection.insertOne(user);
-      return { ...user, _id: result.insertedId.toString() };
+      await usersCollection.updateOne(
+        { email },
+        { $setOnInsert: user },
+        { upsert: true }
+      );
+      const doc = await usersCollection.findOne({ email });
+      return doc as unknown as User;
     } catch (error) {
       console.error("Error creating user:", error);
       throw error;
@@ -36,8 +39,8 @@ export class ContentService {
 
   static async getUserByEmail(email: string): Promise<User | null> {
     try {
-      const db = await this.getDatabase();
-      const usersCollection = db.collection<User>("users");
+      await this.ensureDb();
+  const usersCollection = (await import("mongoose")).default.connection.db!.collection<User>("users");
       return await usersCollection.findOne({ email, isActive: true });
     } catch (error) {
       console.error("Error getting user:", error);
@@ -47,8 +50,8 @@ export class ContentService {
 
   static async updateUserRole(email: string, role: UserRole): Promise<boolean> {
     try {
-      const db = await this.getDatabase();
-      const usersCollection = db.collection<User>("users");
+      await this.ensureDb();
+  const usersCollection = (await import("mongoose")).default.connection.db!.collection<User>("users");
 
       const result = await usersCollection.updateOne(
         { email },
@@ -67,11 +70,8 @@ export class ContentService {
     userRole: UserRole
   ): Promise<ContentTemplate | null> {
     try {
-      const db = await this.getDatabase();
-      const contentCollection =
-        db.collection<ContentTemplate>("content_templates");
-
-      return await contentCollection.findOne({ userRole });
+      await this.ensureDb();
+      return await ContentTemplate.findOne({ userRole }).lean<TContentTemplate | null>();
     } catch (error) {
       console.error("Error getting content template:", error);
       return null;
@@ -80,9 +80,7 @@ export class ContentService {
 
   static async createDefaultContentTemplates(): Promise<boolean> {
     try {
-      const db = await this.getDatabase();
-      const contentCollection =
-        db.collection<ContentTemplate>("content_templates");
+      await this.ensureDb();
 
       // Public user template (generic placeholders)
       const publicTemplate: ContentTemplate = {
@@ -337,9 +335,17 @@ export class ContentService {
         updatedAt: new Date(),
       };
 
-      // Insert templates
-      await contentCollection.deleteMany({}); // Clear existing
-      await contentCollection.insertMany([publicTemplate, adminTemplate]);
+      // Insert templates (idempotent upsert)
+      await ContentTemplate.findOneAndUpdate(
+        { userRole: "public" },
+        { $set: publicTemplate },
+        { upsert: true }
+      );
+      await ContentTemplate.findOneAndUpdate(
+        { userRole: "admin" },
+        { $set: adminTemplate },
+        { upsert: true }
+      );
 
       return true;
     } catch (error) {
@@ -353,21 +359,12 @@ export class ContentService {
     content: ContentTemplate["content"]
   ): Promise<boolean> {
     try {
-      const db = await this.getDatabase();
-      const contentCollection =
-        db.collection<ContentTemplate>("content_templates");
-
-      const result = await contentCollection.updateOne(
+      await this.ensureDb();
+      const res = await ContentTemplate.updateOne(
         { userRole },
-        {
-          $set: {
-            content,
-            updatedAt: new Date(),
-          },
-        }
+        { $set: { content, updatedAt: new Date() } }
       );
-
-      return result.modifiedCount > 0;
+      return res.modifiedCount > 0 || res.upsertedId != null;
     } catch (error) {
       console.error("Error updating content template:", error);
       return false;

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+  "test:smoke": "node scripts/smoke-test.mjs",
+  "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.10.0",
@@ -15,6 +17,7 @@
     "mongoose": "^8.17.0",
     "next": "15.3.5",
     "next-auth": "^4.24.11",
+    "zod": "^3.23.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

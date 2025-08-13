@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../lib/auth";
 import { ContentService } from "../../../../lib/content-service";
-import clientPromise from "../../../../lib/mongodb";
+import dbConnect from "../../../../lib/dbConnect";
+import { UserData, type IUserData } from "../../../../models/UserData";
 
 // PATCH /api/timeblocks/user - Update user's personal time block labels
 export async function PATCH(request: NextRequest) {
@@ -41,14 +42,10 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const client = await clientPromise;
-    const userData = client.db().collection("user_data");
+  await dbConnect();
 
     // Get existing user data for the date
-    const existingData = await userData.findOne({
-      userId: user._id!.toString(),
-      date,
-    });
+  const existingData = await UserData.findOne({ userId: user._id!.toString(), date }).lean<IUserData>();
 
     if (!existingData) {
       return NextResponse.json(
@@ -58,7 +55,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update the specific block label
-    const updatedBlocks = [...existingData.blocks];
+  const updatedBlocks = [...(existingData?.blocks || [])];
     if (updatedBlocks[blockIndex]) {
       updatedBlocks[blockIndex].label = label.trim();
     } else {
@@ -66,14 +63,9 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Save the updated data
-    await userData.updateOne(
+    await UserData.updateOne(
       { userId: user._id!.toString(), date },
-      {
-        $set: {
-          blocks: updatedBlocks,
-          updatedAt: new Date(),
-        },
-      }
+      { $set: { blocks: updatedBlocks, updatedAt: new Date() } }
     );
 
     return NextResponse.json({
@@ -119,14 +111,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const client = await clientPromise;
-    const userData = client.db().collection("user_data");
+  await dbConnect();
 
     // Get user data for the specific date
-    const data = await userData.findOne({
-      userId: user._id!.toString(),
-      date,
-    });
+  const data = await UserData.findOne({ userId: user._id!.toString(), date }).lean<IUserData>();
 
     if (!data) {
       return NextResponse.json(
@@ -136,7 +124,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      blocks: data.blocks,
+  blocks: data?.blocks || [],
       date,
     });
   } catch (error) {

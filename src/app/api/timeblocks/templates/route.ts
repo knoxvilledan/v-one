@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../lib/auth";
 import { ContentService } from "../../../../lib/content-service";
+import dbConnect from "../../../../lib/dbConnect";
+import { ContentTemplate, type IContentTemplate } from "../../../../models/ContentTemplate";
 
 // PATCH /api/timeblocks/templates - Update global time block templates (admin only)
 export async function PATCH(request: NextRequest) {
@@ -43,9 +45,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get the current content template
-    const contentTemplate = await ContentService.getContentTemplateByRole(
-      targetRole
-    );
+  await dbConnect();
+  const contentTemplate = await ContentTemplate.findOne({ userRole: targetRole }).lean<IContentTemplate>();
 
     if (!contentTemplate) {
       return NextResponse.json(
@@ -85,10 +86,10 @@ export async function PATCH(request: NextRequest) {
       timeBlocks: updatedTimeBlocks,
     };
 
-    const success = await ContentService.updateContentTemplate(
-      targetRole,
-      updatedContent
-    );
+    const success = (await ContentTemplate.updateOne(
+      { userRole: targetRole },
+      { $set: { content: updatedContent, updatedAt: new Date() } }
+    )).modifiedCount > 0;
 
     if (!success) {
       return NextResponse.json(
@@ -141,9 +142,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Get the content template for the specified role
-    const contentTemplate = await ContentService.getContentTemplateByRole(
-      targetRole
-    );
+  await dbConnect();
+  const contentTemplate = await ContentTemplate.findOne({ userRole: targetRole }).lean<IContentTemplate>();
 
     if (!contentTemplate) {
       return NextResponse.json(
@@ -202,9 +202,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the current content template
-    const contentTemplate = await ContentService.getContentTemplateByRole(
-      targetRole
-    );
+  await dbConnect();
+  const contentTemplate = await ContentTemplate.findOne({ userRole: targetRole }).lean<IContentTemplate>();
 
     if (!contentTemplate) {
       return NextResponse.json(
@@ -256,10 +255,10 @@ export async function POST(request: NextRequest) {
       timeBlocks: updatedTimeBlocks,
     };
 
-    const success = await ContentService.updateContentTemplate(
-      targetRole,
-      updatedContent
-    );
+    const success = (await ContentTemplate.updateOne(
+      { userRole: targetRole },
+      { $set: { content: updatedContent, updatedAt: new Date() } }
+    )).modifiedCount > 0;
 
     if (!success) {
       return NextResponse.json(

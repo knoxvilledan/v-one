@@ -1,11 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth";
-import clientPromise from "../../../lib/mongodb";
+import dbConnect from "../../../lib/dbConnect";
+import { UserData, type IUserData } from "../../../models/UserData";
+import type { TimeBlockTemplate, ChecklistTemplate } from "../../../types/content";
 import { Session } from "next-auth";
 import { Block, ChecklistItem, DayData } from "../../../types";
 import { formatDisplayDate, parseStorageDate } from "../../../lib/date-utils";
 import { ContentService } from "../../../lib/content-service";
+import { z } from "zod";
+import { ensureIndexes } from "../../../lib/db-indexes";
+
+const blockSchema = z.object({
+  time: z.string(),
+  label: z.string().max(120),
+  notes: z.array(z.string()).default([]),
+  complete: z.boolean().default(false),
+  duration: z.number().optional(),
+  index: z.number().optional(),
+});
+
+const checklistItemSchema = z.object({
+  id: z.string(),
+  text: z.string().max(200),
+  completed: z.boolean().optional(),
+  category: z
+    .enum([
+      "morning",
+      "work",
+      "tech",
+      "house",
+      "wrapup",
+      "lsd",
+      "financial",
+      "youtube",
+      "time",
+      "entertainment",
+      "todo",
+    ])
+    .optional(),
+  completedAt: z.any().optional(),
+  targetBlock: z.number().optional(),
+});
+
+const payloadSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  wakeTime: z.string().optional(),
+  blocks: z.array(blockSchema),
+  masterChecklist: z.array(checklistItemSchema).optional(),
+  habitBreakChecklist: z.array(checklistItemSchema).optional(),
+  todoList: z.array(checklistItemSchema).optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,14 +69,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const {
-      date,
-      wakeTime,
-      blocks,
-      masterChecklist,
-      habitBreakChecklist,
-      todoList,
-    } = await request.json();
+    const json = await request.json();
+    const parsed = payloadSchema.safeParse(json);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { date, wakeTime, blocks, masterChecklist, habitBreakChecklist, todoList } = parsed.data;
+    const fallbackCategory = "todo" as const;
+    const normalize = (arr?: typeof parsed.data.masterChecklist):
+      | ChecklistItem[]
+      | undefined =>
+      arr
+        ? (arr.map((i) => ({
+            ...i,
+            completed: !!i.completed,
+            category: (i.category ?? fallbackCategory) as ChecklistItem["category"],
+          })) as ChecklistItem[])
+        : undefined;
+
+    const normalizedMaster = normalize(masterChecklist);
+    const normalizedHabits = normalize(habitBreakChecklist);
+    const normalizedTodos = normalize(todoList);
 
     if (!date) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
@@ -41,8 +102,8 @@ export async function POST(request: NextRequest) {
     const dateObj = parseStorageDate(date);
     const displayDate = formatDisplayDate(dateObj);
 
-    const client = await clientPromise;
-    const userData = client.db().collection("user_data");
+  await dbConnect();
+  await ensureIndexes();
 
     // Calculate basic score (you can enhance this)
     const score = blocks.reduce((acc: number, block: Block) => {
@@ -55,21 +116,18 @@ export async function POST(request: NextRequest) {
       displayDate,
       wakeTime,
       blocks,
-      masterChecklist,
-      habitBreakChecklist,
-      todoList,
+  masterChecklist: normalizedMaster,
+  habitBreakChecklist: normalizedHabits,
+  todoList: normalizedTodos,
       score,
       userId: user._id!.toString(),
       updatedAt: new Date(),
     };
 
     // Upsert user data for the specific date
-    await userData.updateOne(
+    await UserData.updateOne(
       { userId: user._id!.toString(), date },
-      {
-        $set: dayData,
-        $setOnInsert: { createdAt: new Date() },
-      },
+      { $set: dayData },
       { upsert: true }
     );
 
@@ -108,15 +166,12 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const date = url.searchParams.get("date");
 
-    const client = await clientPromise;
-    const userData = client.db().collection("user_data");
+  await dbConnect();
+  await ensureIndexes();
 
     if (date) {
       // Get specific date data
-      const data = await userData.findOne({
-        userId: user._id!.toString(),
-        date,
-      });
+  const data = await UserData.findOne({ userId: user._id!.toString(), date }).lean();
 
       if (!data) {
         // Get default data from content templates
@@ -168,9 +223,7 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Get all user data organized by dates
-      const allData = await userData
-        .find({ userId: user._id!.toString() })
-        .toArray();
+  const allData = await UserData.find({ userId: user._id!.toString() }).lean();
 
       const days: {
         [key: string]: {

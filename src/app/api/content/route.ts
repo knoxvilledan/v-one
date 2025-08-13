@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth";
 import { ContentService } from "../../../lib/content-service";
+import dbConnect from "../../../lib/dbConnect";
+import { ContentTemplate, type IContentTemplate } from "../../../models/ContentTemplate";
 
 // GET /api/content - Get content template for current user's role
 export async function GET() {
@@ -25,9 +27,8 @@ export async function GET() {
     }
 
     // Get content template for user's role
-    const contentTemplate = await ContentService.getContentTemplateByRole(
-      user.role
-    );
+  await dbConnect();
+  const contentTemplate = await ContentTemplate.findOne({ userRole: user.role }).lean<IContentTemplate>();
 
     if (!contentTemplate) {
       return NextResponse.json(
