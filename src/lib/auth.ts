@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import clientPromise from "./mongodb";
@@ -10,10 +9,6 @@ import bcrypt from "bcryptjs";
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise, { databaseName: "AmpTrack" }),
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
     CredentialsProvider({
       name: "Email & Password",
       credentials: {
@@ -113,5 +108,5 @@ export const authOptions = {
       return session;
     },
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: false,
 };

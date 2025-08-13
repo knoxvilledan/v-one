@@ -1,13 +1,10 @@
-import { MongoClient } from "mongodb";
+import clientPromise from "./mongodb";
 import { User, UserRole, ContentTemplate } from "../types/content";
-
-const MONGODB_URI = process.env.MONGODB_URI!;
-const client = new MongoClient(MONGODB_URI);
 
 export class ContentService {
   private static async getDatabase() {
-    await client.connect();
-    return client.db("AmpTrack");
+    const client = await clientPromise;
+    return client.db(); // default DB from connection string
   }
 
   // User Management
