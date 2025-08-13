@@ -59,4 +59,5 @@ const UserDataSchema = new Schema<IUserData>(
 UserDataSchema.index({ userId: 1, date: 1 }, { unique: true });
 
 export const UserData =
-  mongoose.models.UserData || mongoose.model<IUserData>("UserData", UserDataSchema);
+  mongoose.models.UserData ||
+  mongoose.model<IUserData>("UserData", UserDataSchema);

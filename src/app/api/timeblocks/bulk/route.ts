@@ -4,7 +4,10 @@ import { authOptions } from "../../../../lib/auth";
 import { ContentService } from "../../../../lib/content-service";
 import dbConnect from "../../../../lib/dbConnect";
 import { UserData, type IUserData } from "../../../../models/UserData";
-import type { TimeBlockTemplate, ChecklistTemplate } from "../../../../types/content";
+import type {
+  TimeBlockTemplate,
+  ChecklistTemplate,
+} from "../../../../types/content";
 
 // PATCH /api/timeblocks/bulk - Bulk update multiple time block labels for a user
 export async function PATCH(request: NextRequest) {
@@ -60,10 +63,13 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-  await dbConnect();
+    await dbConnect();
 
     // Get existing user data for the date
-  const existingData = await UserData.findOne({ userId: user._id!.toString(), date }).lean<IUserData>();
+    const existingData = await UserData.findOne({
+      userId: user._id!.toString(),
+      date,
+    }).lean<IUserData>();
 
     if (!existingData) {
       return NextResponse.json(
@@ -73,7 +79,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Apply all updates
-  const updatedBlocks = [...(existingData?.blocks || [])];
+    const updatedBlocks = [...(existingData?.blocks || [])];
     const appliedUpdates = [];
 
     for (const update of updates) {
@@ -87,7 +93,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Save the updated data
-  await UserData.updateOne(
+    await UserData.updateOne(
       { userId: user._id!.toString(), date },
       {
         $set: {
@@ -135,10 +141,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-  await dbConnect();
+    await dbConnect();
 
     // Check if data already exists for this date
-  const existingData = await UserData.findOne({ userId: user._id!.toString(), date }).lean<IUserData>();
+    const existingData = await UserData.findOne({
+      userId: user._id!.toString(),
+      date,
+    }).lean<IUserData>();
 
     if (existingData) {
       return NextResponse.json(
@@ -162,14 +171,16 @@ export async function POST(request: NextRequest) {
 
     // Create blocks from template
     const blocks =
-      contentTemplate.content.timeBlocks?.map((tb: TimeBlockTemplate, index: number) => ({
-        time: tb.time,
-        label: tb.label,
-        notes: [],
-        complete: false,
-        duration: tb.duration || 60,
-        index: index,
-      })) || [];
+      contentTemplate.content.timeBlocks?.map(
+        (tb: TimeBlockTemplate, index: number) => ({
+          time: tb.time,
+          label: tb.label,
+          notes: [],
+          complete: false,
+          duration: tb.duration || 60,
+          index: index,
+        })
+      ) || [];
 
     // Create checklists from template
     const masterChecklist =
@@ -181,12 +192,14 @@ export async function POST(request: NextRequest) {
       })) || [];
 
     const habitBreakChecklist =
-      contentTemplate.content.habitBreakChecklist?.map((hb: ChecklistTemplate) => ({
-        id: hb.id,
-        text: hb.text,
-        completed: false,
-        category: hb.category,
-      })) || [];
+      contentTemplate.content.habitBreakChecklist?.map(
+        (hb: ChecklistTemplate) => ({
+          id: hb.id,
+          text: hb.text,
+          completed: false,
+          category: hb.category,
+        })
+      ) || [];
 
     // Create the day data
     const dayData = {
@@ -203,7 +216,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Insert the new data
-  await UserData.create(dayData);
+    await UserData.create(dayData);
 
     return NextResponse.json({
       message: "Day data created from template successfully",

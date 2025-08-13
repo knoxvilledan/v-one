@@ -1,9 +1,15 @@
 import dbConnect from "./dbConnect";
-import { User, UserRole, ContentTemplate as TContentTemplate } from "../types/content";
+import {
+  User,
+  UserRole,
+  ContentTemplate as TContentTemplate,
+} from "../types/content";
 import { ContentTemplate } from "../models/ContentTemplate";
 
 export class ContentService {
-  private static async ensureDb() { await dbConnect(); }
+  private static async ensureDb() {
+    await dbConnect();
+  }
 
   // User Management
   static async createUser(
@@ -13,7 +19,9 @@ export class ContentService {
   ): Promise<User> {
     try {
       await this.ensureDb();
-  const usersCollection = (await import("mongoose")).default.connection.db!.collection<User>("users");
+      const usersCollection = (
+        await import("mongoose")
+      ).default.connection.db!.collection<User>("users");
 
       const user: User = {
         email,
@@ -40,7 +48,9 @@ export class ContentService {
   static async getUserByEmail(email: string): Promise<User | null> {
     try {
       await this.ensureDb();
-  const usersCollection = (await import("mongoose")).default.connection.db!.collection<User>("users");
+      const usersCollection = (
+        await import("mongoose")
+      ).default.connection.db!.collection<User>("users");
       return await usersCollection.findOne({ email, isActive: true });
     } catch (error) {
       console.error("Error getting user:", error);
@@ -51,7 +61,9 @@ export class ContentService {
   static async updateUserRole(email: string, role: UserRole): Promise<boolean> {
     try {
       await this.ensureDb();
-  const usersCollection = (await import("mongoose")).default.connection.db!.collection<User>("users");
+      const usersCollection = (
+        await import("mongoose")
+      ).default.connection.db!.collection<User>("users");
 
       const result = await usersCollection.updateOne(
         { email },
@@ -71,7 +83,9 @@ export class ContentService {
   ): Promise<ContentTemplate | null> {
     try {
       await this.ensureDb();
-      return await ContentTemplate.findOne({ userRole }).lean<TContentTemplate | null>();
+      return await ContentTemplate.findOne({
+        userRole,
+      }).lean<TContentTemplate | null>();
     } catch (error) {
       console.error("Error getting content template:", error);
       return null;

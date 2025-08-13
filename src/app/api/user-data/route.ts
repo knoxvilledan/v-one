@@ -3,7 +3,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth";
 import dbConnect from "../../../lib/dbConnect";
 import { UserData, type IUserData } from "../../../models/UserData";
-import type { TimeBlockTemplate, ChecklistTemplate } from "../../../types/content";
+import type {
+  TimeBlockTemplate,
+  ChecklistTemplate,
+} from "../../../types/content";
 import { Session } from "next-auth";
 import { Block, ChecklistItem, DayData } from "../../../types";
 import { formatDisplayDate, parseStorageDate } from "../../../lib/date-utils";
@@ -77,16 +80,24 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { date, wakeTime, blocks, masterChecklist, habitBreakChecklist, todoList } = parsed.data;
+    const {
+      date,
+      wakeTime,
+      blocks,
+      masterChecklist,
+      habitBreakChecklist,
+      todoList,
+    } = parsed.data;
     const fallbackCategory = "todo" as const;
-    const normalize = (arr?: typeof parsed.data.masterChecklist):
-      | ChecklistItem[]
-      | undefined =>
+    const normalize = (
+      arr?: typeof parsed.data.masterChecklist
+    ): ChecklistItem[] | undefined =>
       arr
         ? (arr.map((i) => ({
             ...i,
             completed: !!i.completed,
-            category: (i.category ?? fallbackCategory) as ChecklistItem["category"],
+            category: (i.category ??
+              fallbackCategory) as ChecklistItem["category"],
           })) as ChecklistItem[])
         : undefined;
 
@@ -102,8 +113,8 @@ export async function POST(request: NextRequest) {
     const dateObj = parseStorageDate(date);
     const displayDate = formatDisplayDate(dateObj);
 
-  await dbConnect();
-  await ensureIndexes();
+    await dbConnect();
+    await ensureIndexes();
 
     // Calculate basic score (you can enhance this)
     const score = blocks.reduce((acc: number, block: Block) => {
@@ -116,9 +127,9 @@ export async function POST(request: NextRequest) {
       displayDate,
       wakeTime,
       blocks,
-  masterChecklist: normalizedMaster,
-  habitBreakChecklist: normalizedHabits,
-  todoList: normalizedTodos,
+      masterChecklist: normalizedMaster,
+      habitBreakChecklist: normalizedHabits,
+      todoList: normalizedTodos,
       score,
       userId: user._id!.toString(),
       updatedAt: new Date(),
@@ -166,12 +177,15 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const date = url.searchParams.get("date");
 
-  await dbConnect();
-  await ensureIndexes();
+    await dbConnect();
+    await ensureIndexes();
 
     if (date) {
       // Get specific date data
-  const data = await UserData.findOne({ userId: user._id!.toString(), date }).lean();
+      const data = await UserData.findOne({
+        userId: user._id!.toString(),
+        date,
+      }).lean();
 
       if (!data) {
         // Get default data from content templates
@@ -223,7 +237,9 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Get all user data organized by dates
-  const allData = await UserData.find({ userId: user._id!.toString() }).lean();
+      const allData = await UserData.find({
+        userId: user._id!.toString(),
+      }).lean();
 
       const days: {
         [key: string]: {

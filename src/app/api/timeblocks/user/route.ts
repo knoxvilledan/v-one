@@ -42,10 +42,13 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-  await dbConnect();
+    await dbConnect();
 
     // Get existing user data for the date
-  const existingData = await UserData.findOne({ userId: user._id!.toString(), date }).lean<IUserData>();
+    const existingData = await UserData.findOne({
+      userId: user._id!.toString(),
+      date,
+    }).lean<IUserData>();
 
     if (!existingData) {
       return NextResponse.json(
@@ -55,7 +58,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update the specific block label
-  const updatedBlocks = [...(existingData?.blocks || [])];
+    const updatedBlocks = [...(existingData?.blocks || [])];
     if (updatedBlocks[blockIndex]) {
       updatedBlocks[blockIndex].label = label.trim();
     } else {
@@ -111,10 +114,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-  await dbConnect();
+    await dbConnect();
 
     // Get user data for the specific date
-  const data = await UserData.findOne({ userId: user._id!.toString(), date }).lean<IUserData>();
+    const data = await UserData.findOne({
+      userId: user._id!.toString(),
+      date,
+    }).lean<IUserData>();
 
     if (!data) {
       return NextResponse.json(
@@ -124,7 +130,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-  blocks: data?.blocks || [],
+      blocks: data?.blocks || [],
       date,
     });
   } catch (error) {

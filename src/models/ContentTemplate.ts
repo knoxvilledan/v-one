@@ -51,8 +51,17 @@ const TimeBlockTemplateSchema = new Schema(
 
 const ContentTemplateSchema = new Schema<IContentTemplate>(
   {
-    userRole: { type: String, enum: ["public", "admin"], unique: true, required: true },
-    type: { type: String, enum: ["placeholderText"], default: "placeholderText" },
+    userRole: {
+      type: String,
+      enum: ["public", "admin"],
+      unique: true,
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: ["placeholderText"],
+      default: "placeholderText",
+    },
     content: {
       masterChecklist: { type: [ChecklistTemplateSchema], default: [] },
       habitBreakChecklist: { type: [ChecklistTemplateSchema], default: [] },
