@@ -1,10 +1,10 @@
 import dbConnect from "./dbConnect";
-import {
+import type {
   User,
   UserRole,
-  ContentTemplate as TContentTemplate,
+  ContentTemplate as ContentTemplateType,
 } from "../types/content";
-import { ContentTemplate } from "../models/ContentTemplate";
+import { ContentTemplate as ContentTemplateModel } from "../models/ContentTemplate";
 
 export class ContentService {
   private static async ensureDb() {
@@ -80,12 +80,12 @@ export class ContentService {
   // Content Template Management
   static async getContentTemplateByRole(
     userRole: UserRole
-  ): Promise<ContentTemplate | null> {
+  ): Promise<ContentTemplateType | null> {
     try {
       await this.ensureDb();
-      return await ContentTemplate.findOne({
+      return await ContentTemplateModel.findOne({
         userRole,
-      }).lean<TContentTemplate | null>();
+      }).lean<ContentTemplateType | null>();
     } catch (error) {
       console.error("Error getting content template:", error);
       return null;
@@ -97,7 +97,7 @@ export class ContentService {
       await this.ensureDb();
 
       // Public user template (generic placeholders)
-      const publicTemplate: ContentTemplate = {
+      const publicTemplate: ContentTemplateType = {
         userRole: "public",
         type: "placeholderText",
         content: {
@@ -228,7 +228,7 @@ export class ContentService {
       };
 
       // Admin user template (current personal content as example)
-      const adminTemplate: ContentTemplate = {
+      const adminTemplate: ContentTemplateType = {
         userRole: "admin",
         type: "placeholderText",
         content: {
@@ -350,12 +350,12 @@ export class ContentService {
       };
 
       // Insert templates (idempotent upsert)
-      await ContentTemplate.findOneAndUpdate(
+      await ContentTemplateModel.findOneAndUpdate(
         { userRole: "public" },
         { $set: publicTemplate },
         { upsert: true }
       );
-      await ContentTemplate.findOneAndUpdate(
+      await ContentTemplateModel.findOneAndUpdate(
         { userRole: "admin" },
         { $set: adminTemplate },
         { upsert: true }
@@ -370,11 +370,11 @@ export class ContentService {
 
   static async updateContentTemplate(
     userRole: UserRole,
-    content: ContentTemplate["content"]
+    content: ContentTemplateType["content"]
   ): Promise<boolean> {
     try {
       await this.ensureDb();
-      const res = await ContentTemplate.updateOne(
+      const res = await ContentTemplateModel.updateOne(
         { userRole },
         { $set: { content, updatedAt: new Date() } }
       );

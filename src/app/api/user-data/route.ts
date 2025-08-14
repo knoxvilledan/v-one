@@ -46,6 +46,8 @@ const checklistItemSchema = z.object({
   targetBlock: z.number().optional(),
 });
 
+type ZChecklistItem = z.infer<typeof checklistItemSchema>;
+
 const payloadSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   wakeTime: z.string().optional(),
@@ -89,11 +91,9 @@ export async function POST(request: NextRequest) {
       todoList,
     } = parsed.data;
     const fallbackCategory = "todo" as const;
-    const normalize = (
-      arr?: typeof parsed.data.masterChecklist
-    ): ChecklistItem[] | undefined =>
+    const normalize = (arr?: ZChecklistItem[]): ChecklistItem[] | undefined =>
       arr
-        ? (arr.map((i) => ({
+        ? (arr.map((i: ZChecklistItem) => ({
             ...i,
             completed: !!i.completed,
             category: (i.category ??
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     await ensureIndexes();
 
     // Calculate basic score (you can enhance this)
-    const score = blocks.reduce((acc: number, block: Block) => {
+    const score = (blocks as Block[]).reduce((acc: number, block: Block) => {
       return acc + (block.complete ? 1 : 0);
     }, 0);
 
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
       const data = await UserData.findOne({
         userId: user._id!.toString(),
         date,
-      }).lean();
+      }).lean<IUserData | null>();
 
       if (!data) {
         // Get default data from content templates
@@ -194,29 +194,41 @@ export async function GET(request: NextRequest) {
         );
 
         if (contentTemplate) {
-          const defaultData = {
+          const defaultData: {
+            blocks: Block[];
+            masterChecklist: ChecklistItem[];
+            wakeTime: string;
+            habitBreakChecklist: ChecklistItem[];
+            todoList: ChecklistItem[];
+          } = {
             blocks:
-              contentTemplate.content.timeBlocks?.map((tb) => ({
-                time: tb.time,
-                label: tb.label,
-                notes: [],
-                complete: false,
-              })) || [],
+              contentTemplate.content.timeBlocks?.map(
+                (tb: TimeBlockTemplate) => ({
+                  time: tb.time,
+                  label: tb.label,
+                  notes: [],
+                  complete: false,
+                })
+              ) || [],
             masterChecklist:
-              contentTemplate.content.masterChecklist?.map((mc) => ({
-                id: mc.id,
-                text: mc.text,
-                completed: false,
-                category: mc.category,
-              })) || [],
+              contentTemplate.content.masterChecklist?.map(
+                (mc: ChecklistTemplate) => ({
+                  id: mc.id,
+                  text: mc.text,
+                  completed: false,
+                  category: mc.category as ChecklistItem["category"],
+                })
+              ) || [],
             wakeTime: "",
             habitBreakChecklist:
-              contentTemplate.content.habitBreakChecklist?.map((hb) => ({
-                id: hb.id,
-                text: hb.text,
-                completed: false,
-                category: hb.category,
-              })) || [],
+              contentTemplate.content.habitBreakChecklist?.map(
+                (hb: ChecklistTemplate) => ({
+                  id: hb.id,
+                  text: hb.text,
+                  completed: false,
+                  category: hb.category as ChecklistItem["category"],
+                })
+              ) || [],
             todoList: [],
           };
 
@@ -239,7 +251,7 @@ export async function GET(request: NextRequest) {
       // Get all user data organized by dates
       const allData = await UserData.find({
         userId: user._id!.toString(),
-      }).lean();
+      }).lean<IUserData[]>();
 
       const days: {
         [key: string]: {
@@ -251,7 +263,7 @@ export async function GET(request: NextRequest) {
         };
       } = {};
 
-      allData.forEach((item) => {
+      (allData as IUserData[]).forEach((item: IUserData) => {
         days[item.date] = {
           blocks: item.blocks,
           masterChecklist: item.masterChecklist,
