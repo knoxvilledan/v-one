@@ -10,7 +10,10 @@ export async function ensureIndexes() {
     await Promise.all([
       db
         .collection("user_data")
-        .createIndex({ userId: 1, date: 1 }, { unique: true }),
+        .createIndex(
+          { userId: 1, date: 1 },
+          { unique: true, partialFilterExpression: { userId: { $type: "string" } } }
+        ),
       db.collection("users").createIndex({ email: 1 }, { unique: true }),
       db
         .collection("content_templates")
