@@ -4,7 +4,9 @@ import { config } from "dotenv";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-const envPath = [".env.local", ".env"].map((f) => resolve(process.cwd(), f)).find((p) => existsSync(p));
+const envPath = [".env.local", ".env"]
+  .map((f) => resolve(process.cwd(), f))
+  .find((p) => existsSync(p));
 config(envPath ? { path: envPath } : undefined);
 
 const uri = process.env.MONGODB_URI;
@@ -25,7 +27,9 @@ async function listOwners(client) {
   const db = client.db();
   const col = db.collection("user_data");
   const ids = await col.distinct("userId", { userId: { $exists: true } });
-  console.log(JSON.stringify({ collection: "user_data", owners: ids }, null, 2));
+  console.log(
+    JSON.stringify({ collection: "user_data", owners: ids }, null, 2)
+  );
 }
 
 async function wipeUserOwned(client, userId) {
@@ -35,7 +39,13 @@ async function wipeUserOwned(client, userId) {
   const before = await col.countDocuments(filter);
   const res = await col.deleteMany(filter);
   const after = await col.countDocuments(filter);
-  console.log(JSON.stringify({ collection: "user_data", deleted: res.deletedCount, before, after }, null, 2));
+  console.log(
+    JSON.stringify(
+      { collection: "user_data", deleted: res.deletedCount, before, after },
+      null,
+      2
+    )
+  );
 }
 
 async function clearAuth(client, includeUsers) {
@@ -51,7 +61,13 @@ async function clearAuth(client, includeUsers) {
     const before = await col.countDocuments(t.filter);
     const res = await col.deleteMany(t.filter);
     const after = await col.countDocuments(t.filter);
-    console.log(JSON.stringify({ collection: t.name, deleted: res.deletedCount, before, after }, null, 2));
+    console.log(
+      JSON.stringify(
+        { collection: t.name, deleted: res.deletedCount, before, after },
+        null,
+        2
+      )
+    );
   }
 }
 
@@ -60,10 +76,16 @@ async function reindex() {
   await mongoose.connect(uri);
   const db = mongoose.connection.db;
   // Clean legacy/invalid docs that break unique indexes
-  await db.collection("user_data").deleteMany({ $or: [{ userId: null }, { userId: { $exists: false } }] });
-  await db.collection("user_data").createIndex({ userId: 1, date: 1 }, { unique: true });
+  await db
+    .collection("user_data")
+    .deleteMany({ $or: [{ userId: null }, { userId: { $exists: false } }] });
+  await db
+    .collection("user_data")
+    .createIndex({ userId: 1, date: 1 }, { unique: true });
   await db.collection("users").createIndex({ email: 1 }, { unique: true });
-  await db.collection("content_templates").createIndex({ userRole: 1 }, { unique: true });
+  await db
+    .collection("content_templates")
+    .createIndex({ userRole: 1 }, { unique: true });
   await mongoose.connection.close();
   console.log("REINDEX_OK");
 }
@@ -91,7 +113,13 @@ async function listDbs() {
   try {
     const admin = client.db().admin();
     const res = await admin.listDatabases();
-    console.log(JSON.stringify(res.databases.map((d) => ({ name: d.name, sizeOnDisk: d.sizeOnDisk })), null, 2));
+    console.log(
+      JSON.stringify(
+        res.databases.map((d) => ({ name: d.name, sizeOnDisk: d.sizeOnDisk })),
+        null,
+        2
+      )
+    );
   } finally {
     await client.close();
   }

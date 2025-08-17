@@ -4,7 +4,9 @@ import { config } from "dotenv";
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";
 
-const envPath = [".env.local", ".env"].map((f) => resolve(process.cwd(), f)).find((p) => existsSync(p));
+const envPath = [".env.local", ".env"]
+  .map((f) => resolve(process.cwd(), f))
+  .find((p) => existsSync(p));
 config(envPath ? { path: envPath } : undefined);
 
 const uri = process.env.MONGODB_URI;
@@ -14,8 +16,12 @@ if (!uri) throw new Error("MONGODB_URI not set");
 const args = process.argv.slice(2);
 const emailArgIdx = args.indexOf("--email");
 const passArgIdx = args.indexOf("--password");
-const email = (emailArgIdx >= 0 ? args[emailArgIdx + 1] : process.env.ADMIN_EMAIL) || "admin@example.com";
-const password = (passArgIdx >= 0 ? args[passArgIdx + 1] : process.env.ADMIN_PASSWORD) || "ChangeMe!123";
+const email =
+  (emailArgIdx >= 0 ? args[emailArgIdx + 1] : process.env.ADMIN_EMAIL) ||
+  "admin@example.com";
+const password =
+  (passArgIdx >= 0 ? args[passArgIdx + 1] : process.env.ADMIN_PASSWORD) ||
+  "ChangeMe!123";
 
 async function run() {
   await mongoose.connect(uri);
