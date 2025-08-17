@@ -26,13 +26,13 @@ export interface Block {
   complete: boolean;
   checklist?: ChecklistItem[];
   duration?: number; // Duration in minutes, defaults to 60
-  index?: number; // Block index (0-15)
+  index?: number; // Block index (dynamic based on configuration)
 }
 
 export interface WakeTimeSettings {
   wakeTime: string; // Format: "04:00" (24-hour format)
   blockDuration: number; // Default duration for each block in minutes
-  customDurations?: number[]; // Optional array of 16 custom durations
+  customDurations?: number[]; // Optional array of custom durations (length varies)
 }
 
 export interface DayData {

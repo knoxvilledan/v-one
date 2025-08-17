@@ -24,7 +24,7 @@ export interface TimeBlockTemplate {
   label: string;
   order: number;
   duration?: number; // Duration in minutes, defaults to 60
-  index?: number; // Block index (0-15)
+  index?: number; // Block index (0-17)
 }
 
 export interface ContentTemplate {

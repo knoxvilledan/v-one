@@ -1,6 +1,6 @@
 /**
  * Time Calculator Utility for Dynamic TimeBlock Scheduling
- * Supports 16 time blocks (index 0-15) with customizable wake times and durations
+ * Supports configurable number of time blocks with customizable wake times and durations
  */
 
 export interface TimeBlockConfig {
@@ -45,11 +45,12 @@ export function formatTo12Hour(timeString: string): string {
 }
 
 /**
- * Calculate all 16 time block configurations based on wake time
+ * Calculate time block configurations based on wake time and count
  */
 export function calculateTimeBlocks(
   wakeTimeSettings: WakeTimeSettings,
-  customDurations?: number[] // Optional array of 16 custom durations
+  customDurations?: number[], // Optional array of custom durations
+  blockCount: number = 18 // Default to 18 blocks for backward compatibility
 ): TimeBlockConfig[] {
   const { wakeTime, blockDuration } = wakeTimeSettings;
   const startMinutes = timeStringToMinutes(wakeTime);
@@ -57,7 +58,7 @@ export function calculateTimeBlocks(
   const timeBlocks: TimeBlockConfig[] = [];
   let currentMinutes = startMinutes;
 
-  for (let index = 0; index < 16; index++) {
+  for (let index = 0; index < blockCount; index++) {
     const duration = customDurations?.[index] || blockDuration;
     const timeLabel = formatTo12Hour(minutesToTimeString(currentMinutes));
 
@@ -152,8 +153,10 @@ export function getTimeBlockForCompletion(
     if (completionHour >= 15 && completionHour < 16) return 11;
     if (completionHour >= 16 && completionHour < 17) return 12;
     if (completionHour >= 17 && completionHour < 18) return 13;
-    if (completionHour >= 18 && completionHour < 20) return 14;
-    if (completionHour >= 20) return 15;
+    if (completionHour >= 18 && completionHour < 19) return 14;
+    if (completionHour >= 19 && completionHour < 20) return 15;
+    if (completionHour >= 20 && completionHour < 21) return 16;
+    if (completionHour >= 21) return 17;
   } else {
     // Cross-date scenarios
     const currentPageDateObj = new Date(currentPageDate + "T00:00:00");
@@ -161,7 +164,7 @@ export function getTimeBlockForCompletion(
 
     // If completing on the day before the current page (late night work)
     if (completionDateObj.getTime() < currentPageDateObj.getTime()) {
-      if (completionHour >= 21) return 15; // Late evening -> last block
+      if (completionHour >= 21) return 17; // Late evening -> last block
       if (completionHour >= 0 && completionHour < 5) return 0; // Early morning -> first block
     }
 
@@ -176,7 +179,7 @@ export function getTimeBlockForCompletion(
 }
 
 /**
- * Generate all 16 time block labels for dropdowns and displays
+ * Generate time block labels for dropdowns and displays
  */
 export function generateTimeBlockLabels(
   timeBlocks: TimeBlockConfig[]

@@ -7,6 +7,7 @@ import {
   ContentTemplate,
   type IContentTemplate,
 } from "../../../../models/ContentTemplate";
+import { getMaxCounts, invalidateConfigCache } from "../../../../lib/config";
 
 // PATCH /api/timeblocks/templates - Update global time block templates (admin only)
 export async function PATCH(request: NextRequest) {
@@ -29,7 +30,7 @@ export async function PATCH(request: NextRequest) {
     const { blockIndex, label, targetRole, time } = await request.json();
 
     // Validate input
-    if (blockIndex === undefined || blockIndex < 0 || blockIndex > 15) {
+    if (blockIndex === undefined || blockIndex < 0 || blockIndex > 17) {
       return NextResponse.json(
         { error: "Block index must be between 0 and 15" },
         { status: 400 }
@@ -105,6 +106,9 @@ export async function PATCH(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Invalidate configuration cache since template was updated
+    invalidateConfigCache();
 
     return NextResponse.json({
       message: "Time block template updated successfully",
@@ -232,10 +236,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // We limit to 16 blocks maximum
-    if (currentTimeBlocks.length >= 16) {
+    // Check against dynamic maximum limits
+    const maxCounts = getMaxCounts();
+    if (currentTimeBlocks.length >= maxCounts.timeBlocks) {
       return NextResponse.json(
-        { error: "Maximum of 16 time blocks allowed" },
+        { error: `Maximum of ${maxCounts.timeBlocks} time blocks allowed` },
         { status: 400 }
       );
     }
@@ -281,6 +286,9 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Invalidate configuration cache since template was updated
+    invalidateConfigCache();
 
     return NextResponse.json({
       message: "Time block added successfully",
@@ -392,6 +400,9 @@ export async function DELETE(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Invalidate configuration cache since template was updated
+    invalidateConfigCache();
 
     return NextResponse.json({
       message: "Time block removed successfully",

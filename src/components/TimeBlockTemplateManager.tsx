@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ApiService } from "../lib/api";
+import { getMaxCounts } from "../lib/config";
 
 interface TimeBlockTemplate {
   id: string;
@@ -28,12 +29,25 @@ export default function TimeBlockTemplateManager({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [editTime, setEditTime] = useState("");
+  const [maxTimeBlocks, setMaxTimeBlocks] = useState(24); // Dynamic max from config
 
   useEffect(() => {
     if (isVisible) {
       loadTemplates();
+      loadMaxCounts();
     }
   }, [isVisible]);
+
+  const loadMaxCounts = async () => {
+    try {
+      const maxCounts = getMaxCounts();
+      setMaxTimeBlocks(maxCounts.timeBlocks);
+    } catch (err) {
+      console.error("Failed to load max counts:", err);
+      // Fallback to default
+      setMaxTimeBlocks(24);
+    }
+  };
 
   const loadTemplates = async () => {
     setIsLoading(true);
@@ -253,14 +267,14 @@ export default function TimeBlockTemplateManager({
           <div className="flex justify-between items-center">
             <button
               onClick={addNewBlock}
-              disabled={isLoading || currentTemplates.length >= 16}
+              disabled={isLoading || currentTemplates.length >= maxTimeBlocks}
               className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               + Add New Block
             </button>
 
             <div className="text-sm text-gray-600">
-              {currentTemplates.length}/16 blocks
+              {currentTemplates.length}/{maxTimeBlocks} blocks
             </div>
 
             <button

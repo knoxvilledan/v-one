@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest) {
     const { blockIndex, label, date } = await request.json();
 
     // Validate input
-    if (blockIndex === undefined || blockIndex < 0 || blockIndex > 15) {
+    if (blockIndex === undefined || blockIndex < 0 || blockIndex > 17) {
       return NextResponse.json(
         { error: "Block index must be between 0 and 15" },
         { status: 400 }

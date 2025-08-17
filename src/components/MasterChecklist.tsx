@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChecklistItem } from "../types";
+import { getTimeBlockCount } from "../lib/config";
 
 interface MasterChecklistProps {
   items: ChecklistItem[];
@@ -40,8 +41,21 @@ export default function MasterChecklist({
   const [newItemCategory, setNewItemCategory] = useState<
     ChecklistItem["category"] | "completed"
   >("morning");
+  const [timeBlockCount, setTimeBlockCount] = useState(18); // Dynamic from config
 
-  // Get current time block based on actual time (approximated for 16-block system)
+  useEffect(() => {
+    // Load dynamic time block count
+    getTimeBlockCount()
+      .then((count) => {
+        setTimeBlockCount(count);
+      })
+      .catch((err) => {
+        console.error("Failed to load time block count:", err);
+        // Keep default value of 18
+      });
+  }, []);
+
+  // Get current time block based on actual time (dynamic block system)
   const getCurrentTimeBlock = (): number => {
     const now = new Date();
     const hour = now.getHours();
@@ -50,9 +64,9 @@ export default function MasterChecklist({
     // Convert time to minutes since midnight
     const totalMinutes = hour * 60 + minute;
 
-    // Assuming 16 blocks of 90 minutes each starting at 4:00 AM (240 minutes)
+    // Assuming dynamic blocks of 80 minutes each starting at 4:00 AM (240 minutes)
     // Block 0: 4:00 AM (240 min)
-    // Block 15: 2:30 AM next day (1590 min = 26.5 hours, wraps to 2:30 AM)
+    // Last block depends on timeBlockCount
     const startTime = 240; // 4:00 AM in minutes
     let adjustedMinutes = totalMinutes;
 
@@ -63,8 +77,8 @@ export default function MasterChecklist({
 
     const blockIndex = Math.floor((adjustedMinutes - startTime) / 90);
 
-    // Ensure we stay within 0-15 range
-    return Math.max(0, Math.min(15, blockIndex));
+    // Ensure we stay within 0-(timeBlockCount-1) range
+    return Math.max(0, Math.min(timeBlockCount - 1, blockIndex));
   };
 
   const toggleSection = (category: string) => {
@@ -343,7 +357,7 @@ export default function MasterChecklist({
                             <option value="" className="bg-gray-800 text-white">
                               Auto-assign
                             </option>
-                            {Array.from({ length: 16 }, (_, i) => (
+                            {Array.from({ length: timeBlockCount }, (_, i) => (
                               <option
                                 key={i}
                                 value={i}
@@ -414,15 +428,18 @@ export default function MasterChecklist({
                                 >
                                   Auto-assign
                                 </option>
-                                {Array.from({ length: 16 }, (_, i) => (
-                                  <option
-                                    key={i}
-                                    value={i}
-                                    className="bg-gray-800 text-white"
-                                  >
-                                    Block {i}
-                                  </option>
-                                ))}
+                                {Array.from(
+                                  { length: timeBlockCount },
+                                  (_, i) => (
+                                    <option
+                                      key={i}
+                                      value={i}
+                                      className="bg-gray-800 text-white"
+                                    >
+                                      Block {i}
+                                    </option>
+                                  )
+                                )}
                               </select>
                             </div>
                           )}

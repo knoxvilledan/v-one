@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest) {
       if (
         update.blockIndex === undefined ||
         update.blockIndex < 0 ||
-        update.blockIndex > 15
+        update.blockIndex > 17
       ) {
         return NextResponse.json(
           { error: "All block indices must be between 0 and 15" },
