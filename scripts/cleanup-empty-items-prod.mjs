@@ -3,6 +3,9 @@
 /**
  * Production cleanup script for empty placeholder items
  * Run this AFTER deploying to production to clean up existing user data
+ * 
+ * IMPORTANT: Make sure your .env.local has the correct production MONGODB_URI
+ * before running this script.
  */
 
 import mongoose from 'mongoose';

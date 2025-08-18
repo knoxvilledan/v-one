@@ -8,15 +8,15 @@ You need to configure these environment variables in your Vercel dashboard:
 
 ```bash
 # MongoDB Configuration
-MONGODB_URI=mongodb+srv://knoxvilledan2:AAAWWW333mmm@cluster1.fc7watg.mongodb.net/AmpTrack?retryWrites=true&w=majority&appName=Cluster1
+MONGODB_URI=mongodb+srv://[USERNAME]:[PASSWORD]@[CLUSTER].mongodb.net/[DATABASE]?retryWrites=true&w=majority&appName=[APPNAME]
 
 # NextAuth Configuration  
-NEXTAUTH_URL=https://www.jfm-enterprises.com
-NEXTAUTH_SECRET=eEMKYPqbdoB30ODUnnyAKYYe+UqPCB8xj60cXUvADIZU=
+NEXTAUTH_URL=https://your-production-domain.com
+NEXTAUTH_SECRET=[YOUR_NEXTAUTH_SECRET]
 
 # Google OAuth Configuration
-GOOGLE_CLIENT_ID=388177290405-ohdf2qthc0e0bg5mh63ks3g5mb6bh35i.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+GOOGLE_CLIENT_ID=[YOUR_GOOGLE_CLIENT_ID]
+GOOGLE_CLIENT_SECRET=[YOUR_GOOGLE_CLIENT_SECRET]
 
 # Maintenance Mode
 NEXT_PUBLIC_MAINTENANCE_MODE=false
@@ -89,9 +89,9 @@ If you still see API 400 errors after deployment:
 ## 📊 Database Connection:
 
 Your MongoDB URI is correct for production:
-- **Cluster**: cluster1.fc7watg.mongodb.net  
-- **Database**: AmpTrack
-- **User**: knoxvilledan2
+- **Cluster**: [YOUR_CLUSTER].mongodb.net  
+- **Database**: [YOUR_DATABASE_NAME]
+- **User**: [YOUR_USERNAME]
 
 ## 🔐 Security Notes:
 
