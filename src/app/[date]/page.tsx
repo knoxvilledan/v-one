@@ -65,6 +65,7 @@ export default function DailyPage() {
     const timeBlockConfigs = calculateTimeBlocks(defaultWakeSettings);
 
     const defaultBlocks = timeBlockConfigs.map((config, index) => ({
+      id: contentData.content.timeBlocks?.[index]?.id || crypto.randomUUID(),
       time: config.timeLabel,
       label:
         contentData.content.timeBlocks?.[index]?.label ||
@@ -573,32 +574,36 @@ export default function DailyPage() {
     }
   };
 
-  const toggleComplete = async (i: number) => {
+  const toggleComplete = async (blockId: string) => {
     const copy = [...blocks];
-    copy[i].complete = !copy[i].complete;
-    setBlocks(copy);
+    const blockIndex = copy.findIndex((block) => block.id === blockId);
+    if (blockIndex !== -1) {
+      copy[blockIndex].complete = !copy[blockIndex].complete;
+      setBlocks(copy);
 
-    // Save to database immediately
-    try {
-      if (session?.user?.email && date) {
-        const dayData = {
-          wakeTime,
-          blocks: copy,
-          masterChecklist,
-          habitBreakChecklist,
-          todoList,
-        };
-        await ApiService.saveDayData(session.user.email, date, dayData);
+      // Save to database immediately
+      try {
+        if (session?.user?.email && date) {
+          const dayData = {
+            wakeTime,
+            blocks: copy,
+            masterChecklist,
+            habitBreakChecklist,
+            todoList,
+          };
+          await ApiService.saveDayData(session.user.email, date, dayData);
+        }
+      } catch (error) {
+        console.error("Error saving block completion:", error);
       }
-    } catch (error) {
-      console.error("Error saving block completion:", error);
     }
   };
 
-  const addNote = async (i: number, text: string) => {
+  const addNote = async (blockId: string, text: string) => {
     const copy = [...blocks];
-    if (text.trim()) {
-      copy[i].notes.push(text);
+    const blockIndex = copy.findIndex((block) => block.id === blockId);
+    if (blockIndex !== -1 && text.trim()) {
+      copy[blockIndex].notes.push(text);
       setBlocks(copy);
 
       // Save to database immediately
@@ -619,8 +624,12 @@ export default function DailyPage() {
     }
   };
 
-  const deleteNote = async (blockIndex: number, noteIndex: number) => {
+  const deleteNote = async (blockId: string, noteIndex: number) => {
     const copy = [...blocks];
+    const blockIndex = copy.findIndex((block) => block.id === blockId);
+
+    if (blockIndex === -1) return;
+
     const deletedNote = copy[blockIndex].notes[noteIndex];
 
     // Check if this is a completed checklist item note (starts with ✓)
@@ -1006,7 +1015,7 @@ export default function DailyPage() {
 
       <div className="columns-1 md:columns-2 xl:columns-3 gap-12">
         {blocks.map((block, i) => (
-          <div key={i} className="break-inside-avoid mb-4">
+          <div key={block.id} className="break-inside-avoid mb-4">
             <TimeBlock
               block={block}
               index={i}
@@ -1016,8 +1025,13 @@ export default function DailyPage() {
               deleteNote={deleteNote}
               onLabelUpdate={(blockIndex, newLabel) => {
                 const updatedBlocks = [...blocks];
-                updatedBlocks[blockIndex].label = newLabel;
-                setBlocks(updatedBlocks);
+                const realBlockIndex = updatedBlocks.findIndex(
+                  (b) => b.id === block.id
+                );
+                if (realBlockIndex !== -1) {
+                  updatedBlocks[realBlockIndex].label = newLabel;
+                  setBlocks(updatedBlocks);
+                }
               }}
               onError={(error) => {
                 console.error("TimeBlock error:", error);

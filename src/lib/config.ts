@@ -41,7 +41,7 @@ export interface AppConfig {
 const DEFAULT_CONFIG: AppConfig = {
   timeBlocks: {
     maxCount: 24, // Allow up to 24 time blocks
-    defaultCount: 18,
+    defaultCount: 18, // Updated to match migration
     currentCount: {
       public: 18,
       admin: 18,
@@ -51,21 +51,21 @@ const DEFAULT_CONFIG: AppConfig = {
     masterChecklist: {
       maxCount: 50, // Allow up to 50 checklist items
       currentCount: {
-        public: 10,
-        admin: 10,
+        public: 18, // Updated to match migration
+        admin: 18,
       },
     },
     habitBreakChecklist: {
       maxCount: 20, // Allow up to 20 habit items
       currentCount: {
-        public: 5,
-        admin: 5,
+        public: 8, // Updated to match migration
+        admin: 8,
       },
     },
   },
   todoList: {
     maxCount: 100, // Allow up to 100 todo items
-    defaultCount: 20,
+    defaultCount: 20, // Updated to match migration
   },
 };
 
@@ -114,15 +114,15 @@ export async function getAppConfig(forceRefresh = false): Promise<AppConfig> {
         masterChecklist: {
           ...DEFAULT_CONFIG.checklists.masterChecklist,
           currentCount: {
-            public: publicTemplate?.content?.masterChecklist?.length || 5,
-            admin: adminTemplate?.content?.masterChecklist?.length || 5,
+            public: publicTemplate?.content?.masterChecklist?.length || 18,
+            admin: adminTemplate?.content?.masterChecklist?.length || 18,
           },
         },
         habitBreakChecklist: {
           ...DEFAULT_CONFIG.checklists.habitBreakChecklist,
           currentCount: {
-            public: publicTemplate?.content?.habitBreakChecklist?.length || 3,
-            admin: adminTemplate?.content?.habitBreakChecklist?.length || 3,
+            public: publicTemplate?.content?.habitBreakChecklist?.length || 8,
+            admin: adminTemplate?.content?.habitBreakChecklist?.length || 8,
           },
         },
       },

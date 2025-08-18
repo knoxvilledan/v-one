@@ -20,6 +20,7 @@ export interface ChecklistItem {
 }
 
 export interface Block {
+  id: string; // Stable unique identifier for the block
   time: string;
   label: string;
   notes: string[];

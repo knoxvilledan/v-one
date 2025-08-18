@@ -6,10 +6,10 @@ type Props = {
   block: Block;
   index: number;
   date: string;
-  toggleComplete: (index: number) => void;
-  addNote: (index: number, note: string) => void;
-  deleteNote: (blockIndex: number, noteIndex: number) => void;
-  onLabelUpdate?: (blockIndex: number, newLabel: string) => void;
+  toggleComplete: (blockId: string) => void;
+  addNote: (blockId: string, note: string) => void;
+  deleteNote: (blockId: string, noteIndex: number) => void;
+  onLabelUpdate?: (blockId: string, newLabel: string) => void;
   onError?: (error: string) => void;
   isAdmin?: boolean;
 };
@@ -38,7 +38,7 @@ export default function TimeBlock({
     if (trimmedInput && trimmedInput.length > 0) {
       setIsSaving(true);
       try {
-        await addNote(index, trimmedInput);
+        await addNote(block.id, trimmedInput);
         setInput("");
       } catch (error) {
         console.error("Error adding note:", error);
@@ -59,13 +59,15 @@ export default function TimeBlock({
             blockIndex={index}
             currentLabel={block.label}
             date={date}
-            onLabelUpdate={onLabelUpdate}
+            onLabelUpdate={(blockIndex, newLabel) =>
+              onLabelUpdate?.(block.id, newLabel)
+            }
             onError={onError}
             isAdmin={isAdmin}
           />
         </div>
         <button
-          onClick={() => toggleComplete(index)}
+          onClick={() => toggleComplete(block.id)}
           className={`text-sm ml-2 ${
             block.complete ? "text-green-400" : "text-gray-500"
           }`}
@@ -86,7 +88,7 @@ export default function TimeBlock({
             >
               <span className="flex-1 text-sm">{note}</span>
               <button
-                onClick={() => deleteNote(index, noteIndex)}
+                onClick={() => deleteNote(block.id, noteIndex)}
                 className="text-red-500 hover:text-red-700"
                 title="Delete note"
               >
@@ -135,7 +137,7 @@ export default function TimeBlock({
                   {note}
                 </span>
                 <button
-                  onClick={() => deleteNote(index, noteIndex)}
+                  onClick={() => deleteNote(block.id, noteIndex)}
                   className="text-red-500 hover:text-red-700"
                   title="Delete note"
                 >

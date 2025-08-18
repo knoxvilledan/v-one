@@ -15,6 +15,7 @@ import { z } from "zod";
 import { ensureIndexes } from "../../../lib/db-indexes";
 
 const blockSchema = z.object({
+  id: z.string(),
   time: z.string(),
   label: z.string().max(120),
   notes: z.array(z.string()).default([]),
@@ -204,6 +205,7 @@ export async function GET(request: NextRequest) {
             blocks:
               contentTemplate.content.timeBlocks?.map(
                 (tb: TimeBlockTemplate) => ({
+                  id: tb.id,
                   time: tb.time,
                   label: tb.label,
                   notes: [],
