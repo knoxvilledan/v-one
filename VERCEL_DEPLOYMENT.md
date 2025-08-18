@@ -5,22 +5,25 @@
 Configure these in your Vercel dashboard under Settings > Environment Variables:
 
 ### Required Variables:
+
 - `MONGODB_URI` - Your MongoDB Atlas connection string
 - `NEXTAUTH_URL` - Your production domain (e.g., https://your-domain.com)
 - `NEXTAUTH_SECRET` - Generate at https://generate-secret.vercel.app/32
 - `GOOGLE_CLIENT_ID` - From Google Cloud Console
-- `GOOGLE_CLIENT_SECRET` - From Google Cloud Console  
+- `GOOGLE_CLIENT_SECRET` - From Google Cloud Console
 - `NEXT_PUBLIC_MAINTENANCE_MODE` - Set to "false"
 
 ## 🔧 Deployment Process
 
 ### 1. Set Environment Variables in Vercel
+
 1. Go to your Vercel dashboard
 2. Select your project
 3. Navigate to Settings > Environment Variables
 4. Add all required variables listed above
 
 ### 2. Deploy Changes
+
 ```bash
 git add .
 git commit -m "Deploy remaining count fixes"
@@ -28,6 +31,7 @@ git push origin master
 ```
 
 ### 3. Verify Deployment
+
 - Check Vercel deployment logs
 - Visit your production site
 - Test checklist remaining counts
@@ -46,6 +50,7 @@ This will clean up any empty placeholder items in your production database.
 ## � Troubleshooting
 
 If you see API 400 errors:
+
 1. Verify all environment variables are set in Vercel
 2. Check deployment logs for errors
 3. Ensure NEXTAUTH_URL matches your domain exactly
