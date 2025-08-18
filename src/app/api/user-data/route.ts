@@ -15,16 +15,18 @@ import { z } from "zod";
 import { ensureIndexes } from "../../../lib/db-indexes";
 
 const blockSchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   time: z.string(),
   label: z.string().max(120),
   notes: z.array(z.string()).default([]),
   complete: z.boolean().default(false),
   duration: z.number().optional(),
   index: z.number().optional(),
+  todos: z.array(z.any()).optional().default([]),
 });
 
 const checklistItemSchema = z.object({
+  _id: z.any().optional(),
   id: z.string(),
   text: z.string().max(200),
   completed: z.boolean().optional(),
@@ -78,6 +80,7 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const parsed = payloadSchema.safeParse(json);
     if (!parsed.success) {
+      console.error("Validation failed:", parsed.error.flatten());
       return NextResponse.json(
         { error: "Invalid payload", details: parsed.error.flatten() },
         { status: 400 }
@@ -117,17 +120,26 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     await ensureIndexes();
 
+    // Ensure blocks have IDs
+    const blocksWithIds = blocks.map((block, index) => ({
+      ...block,
+      id: block.id || `block-${index}`,
+    }));
+
     // Calculate basic score (you can enhance this)
-    const score = (blocks as Block[]).reduce((acc: number, block: Block) => {
-      return acc + (block.complete ? 1 : 0);
-    }, 0);
+    const score = (blocksWithIds as Block[]).reduce(
+      (acc: number, block: Block) => {
+        return acc + (block.complete ? 1 : 0);
+      },
+      0
+    );
 
     // Create the day data object
     const dayData: Partial<DayData> = {
       date,
       displayDate,
       wakeTime,
-      blocks,
+      blocks: blocksWithIds,
       masterChecklist: normalizedMaster,
       habitBreakChecklist: normalizedHabits,
       todoList: normalizedTodos,
@@ -242,7 +254,10 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         data: {
-          blocks: data.blocks,
+          blocks: data.blocks.map((block, index) => ({
+            ...block,
+            id: block.id || `block-${index}`, // Ensure blocks have IDs
+          })),
           masterChecklist: data.masterChecklist,
           wakeTime: data.wakeTime,
           habitBreakChecklist: data.habitBreakChecklist,

@@ -257,8 +257,13 @@ export default function MasterChecklist({
     });
   }
 
-  const totalIncompleteItems = items.filter((item) => !item.completed).length;
-  const completedToday = items.filter((item) => item.completed).length;
+  // Calculate counts based on items with actual content (non-empty text)
+  const itemsWithContent = items.filter((item) => item.text.trim() !== "");
+  const completedToday = itemsWithContent.filter(
+    (item) => item.completed
+  ).length;
+  const userTargetCount = itemsWithContent.length; // User's customized list size
+  const remainingCount = userTargetCount - completedToday;
 
   return (
     <div className="mb-6 border border-gray-300 rounded-lg bg-white dark:bg-gray-800 shadow-md">
@@ -273,7 +278,7 @@ export default function MasterChecklist({
             Daily Checklist
           </h2>
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            {completedToday} completed • {totalIncompleteItems} remaining
+            {completedToday} completed • {remainingCount} remaining
           </span>
         </div>
         <button

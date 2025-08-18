@@ -1015,7 +1015,10 @@ export default function DailyPage() {
 
       <div className="columns-1 md:columns-2 xl:columns-3 gap-12">
         {blocks.map((block, i) => (
-          <div key={block.id} className="break-inside-avoid mb-4">
+          <div
+            key={block.id || `block-${i}`}
+            className="break-inside-avoid mb-4"
+          >
             <TimeBlock
               block={block}
               index={i}

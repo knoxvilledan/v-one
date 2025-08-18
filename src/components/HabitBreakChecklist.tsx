@@ -207,8 +207,13 @@ export default function HabitBreakChecklist({
     });
   }
 
-  const totalIncompleteItems = items.filter((item) => !item.completed).length;
-  const completedToday = items.filter((item) => item.completed).length;
+  // Calculate counts based on items with actual content (non-empty text)
+  const itemsWithContent = items.filter((item) => item.text.trim() !== "");
+  const completedToday = itemsWithContent.filter(
+    (item) => item.completed
+  ).length;
+  const userTargetCount = itemsWithContent.length; // User's customized list size
+  const remainingCount = userTargetCount - completedToday;
 
   return (
     <div className="mb-6 border border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20 shadow-md">
@@ -225,7 +230,7 @@ export default function HabitBreakChecklist({
             🚫 Habit Break Checklist
           </h2>
           <span className="text-sm text-red-600 dark:text-red-400">
-            {completedToday} broken today • {totalIncompleteItems} to avoid
+            {completedToday} broken today • {remainingCount} to avoid
           </span>
         </div>
         <button
