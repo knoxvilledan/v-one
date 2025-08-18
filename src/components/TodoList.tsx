@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { ChecklistItem } from "../types";
-import { getTimeBlockCount } from "../lib/config";
+import { useAppConfig } from "../hooks/useAppConfig";
 
 interface TodoListProps {
   items: ChecklistItem[];
@@ -33,18 +33,13 @@ export default function TodoList({
   const [hasBeenMoved, setHasBeenMoved] = useState(false);
   const [timeBlockCount, setTimeBlockCount] = useState(18); // Dynamic from config
   const dragRef = useRef<HTMLDivElement>(null);
+  const { getTimeBlockCount } = useAppConfig();
 
   // Load dynamic time block count
   useEffect(() => {
-    getTimeBlockCount()
-      .then((count) => {
-        setTimeBlockCount(count);
-      })
-      .catch((err) => {
-        console.error("Failed to load time block count:", err);
-        // Keep default value of 18
-      });
-  }, []);
+    const count = getTimeBlockCount();
+    setTimeBlockCount(count);
+  }, [getTimeBlockCount]);
 
   // Reset position when resetPosition prop changes
   useEffect(() => {

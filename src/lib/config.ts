@@ -3,6 +3,7 @@
  * Provides dynamic counts and configurations pulled from database templates
  */
 
+import "server-only";
 import { ContentTemplate, IContentTemplate } from "../models/ContentTemplate";
 import dbConnect from "./dbConnect";
 

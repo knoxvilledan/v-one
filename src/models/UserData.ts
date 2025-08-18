@@ -1,3 +1,4 @@
+import "server-only";
 import mongoose, { Schema, Document } from "mongoose";
 import { Block, ChecklistItem } from "../types";
 

@@ -1,3 +1,4 @@
+import "server-only";
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface ITimeBlockTemplate {
@@ -54,7 +55,6 @@ const ContentTemplateSchema = new Schema<IContentTemplate>(
     userRole: {
       type: String,
       enum: ["public", "admin"],
-      unique: true,
       required: true,
     },
     type: {

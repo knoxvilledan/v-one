@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ApiService } from "../lib/api";
-import { getMaxCounts } from "../lib/config";
+import { useAppConfig } from "../hooks/useAppConfig";
 
 interface TimeBlockTemplate {
   id: string;
@@ -30,15 +30,9 @@ export default function TimeBlockTemplateManager({
   const [editLabel, setEditLabel] = useState("");
   const [editTime, setEditTime] = useState("");
   const [maxTimeBlocks, setMaxTimeBlocks] = useState(24); // Dynamic max from config
+  const { getMaxCounts } = useAppConfig();
 
-  useEffect(() => {
-    if (isVisible) {
-      loadTemplates();
-      loadMaxCounts();
-    }
-  }, [isVisible]);
-
-  const loadMaxCounts = async () => {
+  const loadMaxCounts = useCallback(async () => {
     try {
       const maxCounts = getMaxCounts();
       setMaxTimeBlocks(maxCounts.timeBlocks);
@@ -47,7 +41,14 @@ export default function TimeBlockTemplateManager({
       // Fallback to default
       setMaxTimeBlocks(24);
     }
-  };
+  }, [getMaxCounts]);
+
+  useEffect(() => {
+    if (isVisible) {
+      loadTemplates();
+      loadMaxCounts();
+    }
+  }, [isVisible, loadMaxCounts]);
 
   const loadTemplates = async () => {
     setIsLoading(true);

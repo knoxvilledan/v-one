@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { ChecklistItem } from "../types";
-import { getTimeBlockCount } from "../lib/config";
+import { useAppConfig } from "../hooks/useAppConfig";
 
 interface MasterChecklistProps {
   items: ChecklistItem[];
@@ -42,18 +42,13 @@ export default function MasterChecklist({
     ChecklistItem["category"] | "completed"
   >("morning");
   const [timeBlockCount, setTimeBlockCount] = useState(18); // Dynamic from config
+  const { getTimeBlockCount } = useAppConfig();
 
   useEffect(() => {
     // Load dynamic time block count
-    getTimeBlockCount()
-      .then((count) => {
-        setTimeBlockCount(count);
-      })
-      .catch((err) => {
-        console.error("Failed to load time block count:", err);
-        // Keep default value of 18
-      });
-  }, []);
+    const count = getTimeBlockCount();
+    setTimeBlockCount(count);
+  }, [getTimeBlockCount]);
 
   // Get current time block based on actual time (dynamic block system)
   const getCurrentTimeBlock = (): number => {

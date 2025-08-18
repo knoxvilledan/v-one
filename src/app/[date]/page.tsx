@@ -1023,10 +1023,10 @@ export default function DailyPage() {
               toggleComplete={toggleComplete}
               addNote={addNote}
               deleteNote={deleteNote}
-              onLabelUpdate={(blockIndex, newLabel) => {
+              onLabelUpdate={(blockId, newLabel) => {
                 const updatedBlocks = [...blocks];
                 const realBlockIndex = updatedBlocks.findIndex(
-                  (b) => b.id === block.id
+                  (b) => b.id === blockId
                 );
                 if (realBlockIndex !== -1) {
                   updatedBlocks[realBlockIndex].label = newLabel;
