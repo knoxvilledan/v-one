@@ -17,6 +17,9 @@ export interface ChecklistItem {
   completedAt?: Date;
   targetBlock?: number;
   dueDate?: string; // Format: YYYY-MM-DD - for todo items with specific dates
+  // New fields for enhanced time tracking
+  completionTimezone?: string; // IANA timezone used at completion
+  timezoneOffset?: number; // Offset used at completion for DST audit
 }
 
 export interface Block {
@@ -49,6 +52,9 @@ export interface DayData {
   createdAt: Date;
   updatedAt: Date;
   userId: string; // Reference to user
+  // New fields for daily wake settings
+  dailyWakeTime?: string; // Format: "03:30" - specific wake time for this day
+  userTimezone?: string; // IANA timezone for this user
 }
 
 // Re-export content types

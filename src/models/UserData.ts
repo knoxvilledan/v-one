@@ -14,6 +14,9 @@ export interface IUserData extends Document {
   userId: string;
   createdAt: Date;
   updatedAt: Date;
+  // New fields for daily wake settings and timezone
+  dailyWakeTime?: string; // Format: "03:30"
+  userTimezone?: string; // IANA timezone
 }
 
 const ChecklistItemSchema = new Schema(
@@ -25,6 +28,9 @@ const ChecklistItemSchema = new Schema(
     completedAt: { type: Date },
     targetBlock: { type: Number },
     dueDate: { type: String },
+    // New fields for enhanced time tracking
+    completionTimezone: { type: String },
+    timezoneOffset: { type: Number },
   },
   { _id: false }
 );
@@ -53,6 +59,9 @@ const UserDataSchema = new Schema<IUserData>(
     todoList: { type: [ChecklistItemSchema], default: [] },
     score: { type: Number, default: 0 },
     userId: { type: String, required: true, index: true },
+    // New fields for daily wake settings and timezone
+    dailyWakeTime: { type: String }, // Format: "03:30"
+    userTimezone: { type: String }, // IANA timezone
   },
   { timestamps: true, collection: "user_data" }
 );

@@ -47,6 +47,9 @@ const checklistItemSchema = z.object({
     .optional(),
   completedAt: z.any().optional(),
   targetBlock: z.number().optional(),
+  // New fields for enhanced time tracking
+  completionTimezone: z.string().optional(),
+  timezoneOffset: z.number().optional(),
 });
 
 type ZChecklistItem = z.infer<typeof checklistItemSchema>;
@@ -58,6 +61,9 @@ const payloadSchema = z.object({
   masterChecklist: z.array(checklistItemSchema).optional(),
   habitBreakChecklist: z.array(checklistItemSchema).optional(),
   todoList: z.array(checklistItemSchema).optional(),
+  // New fields for daily wake settings and timezone
+  dailyWakeTime: z.string().optional(),
+  userTimezone: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -93,6 +99,8 @@ export async function POST(request: NextRequest) {
       masterChecklist,
       habitBreakChecklist,
       todoList,
+      dailyWakeTime,
+      userTimezone,
     } = parsed.data;
     const fallbackCategory = "todo" as const;
     const normalize = (arr?: ZChecklistItem[]): ChecklistItem[] | undefined =>
@@ -146,6 +154,9 @@ export async function POST(request: NextRequest) {
       score,
       userId: user._id!.toString(),
       updatedAt: new Date(),
+      // Store new wake time and timezone fields
+      dailyWakeTime,
+      userTimezone,
     };
 
     // Upsert user data for the specific date
@@ -213,6 +224,8 @@ export async function GET(request: NextRequest) {
             wakeTime: string;
             habitBreakChecklist: ChecklistItem[];
             todoList: ChecklistItem[];
+            dailyWakeTime?: string;
+            userTimezone?: string;
           } = {
             blocks:
               contentTemplate.content.timeBlocks?.map(
@@ -262,6 +275,8 @@ export async function GET(request: NextRequest) {
           wakeTime: data.wakeTime,
           habitBreakChecklist: data.habitBreakChecklist,
           todoList: data.todoList || [],
+          dailyWakeTime: data.dailyWakeTime,
+          userTimezone: data.userTimezone,
         },
       });
     } else {
@@ -277,6 +292,8 @@ export async function GET(request: NextRequest) {
           wakeTime: string;
           habitBreakChecklist: ChecklistItem[];
           todoList: ChecklistItem[];
+          dailyWakeTime?: string;
+          userTimezone?: string;
         };
       } = {};
 
@@ -287,6 +304,8 @@ export async function GET(request: NextRequest) {
           wakeTime: item.wakeTime,
           habitBreakChecklist: item.habitBreakChecklist,
           todoList: item.todoList || [],
+          dailyWakeTime: item.dailyWakeTime,
+          userTimezone: item.userTimezone,
         };
       });
 

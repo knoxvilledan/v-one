@@ -482,3 +482,136 @@ export const defaultAdminBlocks: Omit<
     index: 15,
   }, // 2-hour sleep prep
 ];
+
+// Enhanced 18-block time blocks from 4:00 a.m. to 9:00 p.m.
+export const defaultTimeBlocks18Hour: Omit<
+  Block,
+  "notes" | "complete" | "checklist"
+>[] = [
+  {
+    id: "block-0",
+    time: "4:00 a.m.",
+    label: "Early Morning Focus",
+    duration: 60,
+    index: 0,
+  },
+  {
+    id: "block-1",
+    time: "5:00 a.m.",
+    label: "Morning Routine",
+    duration: 60,
+    index: 1,
+  },
+  {
+    id: "block-2",
+    time: "6:00 a.m.",
+    label: "Family Morning",
+    duration: 60,
+    index: 2,
+  },
+  {
+    id: "block-3",
+    time: "7:00 a.m.",
+    label: "Preparation",
+    duration: 60,
+    index: 3,
+  },
+  {
+    id: "block-4",
+    time: "8:00 a.m.",
+    label: "Work Block 1",
+    duration: 60,
+    index: 4,
+  },
+  {
+    id: "block-5",
+    time: "9:00 a.m.",
+    label: "Work Block 2",
+    duration: 60,
+    index: 5,
+  },
+  {
+    id: "block-6",
+    time: "10:00 a.m.",
+    label: "Work Block 3",
+    duration: 60,
+    index: 6,
+  },
+  {
+    id: "block-7",
+    time: "11:00 a.m.",
+    label: "Work Block 4",
+    duration: 60,
+    index: 7,
+  },
+  {
+    id: "block-8",
+    time: "12:00 p.m.",
+    label: "Lunch Break",
+    duration: 60,
+    index: 8,
+  },
+  {
+    id: "block-9",
+    time: "1:00 p.m.",
+    label: "Afternoon Block 1",
+    duration: 60,
+    index: 9,
+  },
+  {
+    id: "block-10",
+    time: "2:00 p.m.",
+    label: "Afternoon Block 2",
+    duration: 60,
+    index: 10,
+  },
+  {
+    id: "block-11",
+    time: "3:00 p.m.",
+    label: "Afternoon Block 3",
+    duration: 60,
+    index: 11,
+  },
+  {
+    id: "block-12",
+    time: "4:00 p.m.",
+    label: "Afternoon Block 4",
+    duration: 60,
+    index: 12,
+  },
+  {
+    id: "block-13",
+    time: "5:00 p.m.",
+    label: "Evening Transition",
+    duration: 60,
+    index: 13,
+  },
+  {
+    id: "block-14",
+    time: "6:00 p.m.",
+    label: "Evening Block 1",
+    duration: 60,
+    index: 14,
+  },
+  {
+    id: "block-15",
+    time: "7:00 p.m.",
+    label: "Evening Block 2",
+    duration: 60,
+    index: 15,
+  },
+  {
+    id: "block-16",
+    time: "8:00 p.m.",
+    label: "Evening Block 3",
+    duration: 60,
+    index: 16,
+  },
+  {
+    id: "block-17",
+    time: "9:00 p.m.",
+    label: "Evening Wrap-up",
+    duration: 60,
+    index: 17,
+  },
+];
