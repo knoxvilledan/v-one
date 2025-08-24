@@ -219,6 +219,9 @@ export default function DailyPage() {
           // Load new daily wake time and timezone settings
           if (dayData.dailyWakeTime) {
             setDailyWakeTime(dayData.dailyWakeTime);
+          } else if (dayData.wakeTime) {
+            // Sync dailyWakeTime with wakeTime if only wakeTime is set
+            setDailyWakeTime(dayData.wakeTime);
           }
           if (dayData.userTimezone) {
             setUserTimezone(dayData.userTimezone);
@@ -895,6 +898,10 @@ export default function DailyPage() {
   // Handler for daily wake time changes
   const handleDailyWakeTimeChange = (newWakeTime: string) => {
     setDailyWakeTime(newWakeTime);
+    // Also sync with the main wakeTime field to hide the banner
+    if (newWakeTime) {
+      setWakeTime(newWakeTime);
+    }
   };
 
   const score = calculateScore(blocks);
@@ -934,13 +941,20 @@ export default function DailyPage() {
               htmlFor="wake-time"
               className="text-sm font-medium whitespace-nowrap"
             >
-              Woke Time:
+              Wake Time:
             </label>
             <input
               id="wake-time"
               type="time"
               value={wakeTime}
-              onChange={(e) => setWakeTime(e.target.value)}
+              onChange={(e) => {
+                const newWakeTime = e.target.value;
+                setWakeTime(newWakeTime);
+                // Sync with dailyWakeTime for time block calculations
+                if (newWakeTime) {
+                  setDailyWakeTime(newWakeTime);
+                }
+              }}
               className="border rounded-md px-4 py-2 text-sm"
               placeholder="Enter wake time"
             />
@@ -966,12 +980,14 @@ export default function DailyPage() {
         </div>
       </div>
 
-      {/* Daily Wake Time Input for Time Block Assignment */}
-      <WakeTimeInput
-        currentWakeTime={dailyWakeTime}
-        onWakeTimeChange={handleDailyWakeTimeChange}
-        date={date}
-      />
+      {/* Daily Wake Time Input for Time Block Assignment - only show if no wake time is set */}
+      {!wakeTime && !dailyWakeTime && (
+        <WakeTimeInput
+          currentWakeTime={dailyWakeTime}
+          onWakeTimeChange={handleDailyWakeTimeChange}
+          date={date}
+        />
+      )}
 
       <ScoreBar score={score} />
       <MasterChecklist

@@ -64,7 +64,7 @@ export default function WakeTimeInput({
           </h3>
           {!isEditing ? (
             <div className="flex items-center gap-2">
-              <span className="text-blue-700">
+              <span className="text-blue-700 font-medium">
                 {formatDisplayTime(currentWakeTime)}
               </span>
               <button
@@ -81,18 +81,18 @@ export default function WakeTimeInput({
                 value={tempWakeTime}
                 onChange={(e) => setTempWakeTime(e.target.value)}
                 placeholder="HH:MM (24-hour format, e.g., 03:30)"
-                className="px-2 py-1 border border-blue-300 rounded text-sm w-40"
+                className="px-3 py-2 border border-blue-300 rounded text-sm w-48 bg-white text-gray-900"
                 autoFocus
               />
               <button
                 onClick={handleSave}
-                className="px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
               >
                 Save
               </button>
               <button
                 onClick={handleCancel}
-                className="px-2 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                className="px-3 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
               >
                 Cancel
               </button>
@@ -101,8 +101,8 @@ export default function WakeTimeInput({
         </div>
 
         {currentWakeTime && (
-          <div className="text-xs text-blue-600">
-            <p>
+          <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded">
+            <p className="font-medium">
               Early-morning completions ({formatDisplayTime(currentWakeTime)} -
               4:59 AM)
             </p>
@@ -111,10 +111,14 @@ export default function WakeTimeInput({
         )}
       </div>
 
-      {error && <div className="mt-2 text-sm text-red-600">{error}</div>}
+      {error && (
+        <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
+          {error}
+        </div>
+      )}
 
       {!currentWakeTime && !isEditing && (
-        <div className="mt-2 text-xs text-blue-600">
+        <div className="mt-2 text-xs text-blue-600 bg-blue-100 p-2 rounded">
           Set a wake time to enable early-morning special assignment rules
         </div>
       )}
