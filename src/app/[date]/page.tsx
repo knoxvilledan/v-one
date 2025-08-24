@@ -252,24 +252,30 @@ export default function DailyPage() {
             dayData.masterChecklist || defaultMasterChecklist;
           const habitBreakChecklist =
             dayData.habitBreakChecklist || defaultHabitBreakChecklist;
-          
+
           // Load customized workout items (preserves user customizations, resets completion)
           let workoutChecklist = dayData.workoutChecklist || [];
           if (workoutChecklist.length === 0) {
             // No workout data for today, load customized list from previous days
-            workoutChecklist = await loadCustomizedWorkoutItems(userData, date, defaultWorkoutChecklist);
+            workoutChecklist = await loadCustomizedWorkoutItems(
+              userData,
+              date,
+              defaultWorkoutChecklist
+            );
           } else {
             // Reset completion status for existing workout items (daily reset)
-            workoutChecklist = workoutChecklist.map((workout: ChecklistItem) => ({
-              ...workout,
-              completed: false,
-              completedAt: undefined,
-              targetBlock: undefined,
-              completionTimezone: undefined,
-              timezoneOffset: undefined,
-            }));
+            workoutChecklist = workoutChecklist.map(
+              (workout: ChecklistItem) => ({
+                ...workout,
+                completed: false,
+                completedAt: undefined,
+                targetBlock: undefined,
+                completionTimezone: undefined,
+                timezoneOffset: undefined,
+              })
+            );
           }
-          
+
           let todoList = dayData.todoList || [];
 
           // Auto-load uncompleted todo items from previous days
@@ -282,8 +288,12 @@ export default function DailyPage() {
         } else {
           // If no data for this day, load customized workouts and previous uncompleted todos
           const todoList = await loadPreviousTodoItems(userData, date, []);
-          const workoutChecklist = await loadCustomizedWorkoutItems(userData, date, defaultWorkoutChecklist);
-          
+          const workoutChecklist = await loadCustomizedWorkoutItems(
+            userData,
+            date,
+            defaultWorkoutChecklist
+          );
+
           setTodoList(ensureDateObjects(todoList));
           setWorkoutChecklist(ensureDateObjects(workoutChecklist));
         }
@@ -336,7 +346,7 @@ export default function DailyPage() {
   ): Promise<ChecklistItem[]> => {
     // Get all dates and find the most recent one with workout customizations
     const dates = Object.keys(userData.days).sort().reverse();
-    
+
     for (const dateKey of dates) {
       const dayData = userData.days[dateKey];
       if (dayData.workoutChecklist && dayData.workoutChecklist.length > 0) {
@@ -1138,7 +1148,9 @@ export default function DailyPage() {
                   ? "bg-purple-500 text-white hover:bg-purple-600"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               }`}
-              title={workoutListVisible ? "Close P90X Workout" : "Open P90X Workout"}
+              title={
+                workoutListVisible ? "Close P90X Workout" : "Open P90X Workout"
+              }
             >
               💪 P90X
             </button>

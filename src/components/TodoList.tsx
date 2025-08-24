@@ -321,11 +321,11 @@ export default function TodoList({
                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white resize-none overflow-hidden"
                       autoFocus
                       style={{
-                        minHeight: '28px',
-                        maxHeight: '28px',
-                        lineHeight: '1.2',
-                        whiteSpace: 'nowrap',
-                        textOverflow: 'ellipsis'
+                        minHeight: "28px",
+                        maxHeight: "28px",
+                        lineHeight: "1.2",
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis",
                       }}
                     />
                   ) : (

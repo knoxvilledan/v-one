@@ -159,7 +159,7 @@ export default function WorkoutChecklist({
       id: `workout-${timestamp}-${random}-${sequence}`,
       text: "New workout",
       completed: false,
-      category: (category || "cardio") as ChecklistItem['category'], // Default category
+      category: (category || "cardio") as ChecklistItem["category"], // Default category
     };
     const updatedItems = [...items, newItem];
     onUpdateItems(updatedItems);
@@ -203,7 +203,9 @@ export default function WorkoutChecklist({
 
   const handleCategoryChange = (itemId: string, newCategory: string) => {
     const updatedItems = items.map((item) =>
-      item.id === itemId ? { ...item, category: newCategory as ChecklistItem['category'] } : item
+      item.id === itemId
+        ? { ...item, category: newCategory as ChecklistItem["category"] }
+        : item
     );
     onUpdateItems(updatedItems);
   };
@@ -219,17 +221,49 @@ export default function WorkoutChecklist({
 
   // P90X Category definitions based on P90X program structure
   const workoutCategories = [
-    { value: "strength", label: "💪 Strength Training", emoji: "💪", color: "red" },
-    { value: "cardio", label: "❤️ Cardio & Plyometrics", emoji: "❤️", color: "blue" },
-    { value: "yoga", label: "🧘 Yoga & Flexibility", emoji: "🧘", color: "green" },
-    { value: "stretching", label: "🤸 Stretching & Recovery", emoji: "🤸", color: "purple" },
-    { value: "sports", label: "⚽ Sports & Activities", emoji: "⚽", color: "orange" },
-    { value: "walking", label: "🚶 Walking & Light Activity", emoji: "🚶", color: "gray" },
+    {
+      value: "strength",
+      label: "💪 Strength Training",
+      emoji: "💪",
+      color: "red",
+    },
+    {
+      value: "cardio",
+      label: "❤️ Cardio & Plyometrics",
+      emoji: "❤️",
+      color: "blue",
+    },
+    {
+      value: "yoga",
+      label: "🧘 Yoga & Flexibility",
+      emoji: "🧘",
+      color: "green",
+    },
+    {
+      value: "stretching",
+      label: "🤸 Stretching & Recovery",
+      emoji: "🤸",
+      color: "purple",
+    },
+    {
+      value: "sports",
+      label: "⚽ Sports & Activities",
+      emoji: "⚽",
+      color: "orange",
+    },
+    {
+      value: "walking",
+      label: "🚶 Walking & Light Activity",
+      emoji: "🚶",
+      color: "gray",
+    },
   ];
 
   // Group items by category for P90X style display
   const groupedItems = workoutCategories.reduce((acc, category) => {
-    acc[category.value] = items.filter((item) => item.category === category.value);
+    acc[category.value] = items.filter(
+      (item) => item.category === category.value
+    );
     return acc;
   }, {} as Record<string, ChecklistItem[]>);
 
@@ -311,8 +345,12 @@ export default function WorkoutChecklist({
           {/* P90X Workout Categories */}
           {workoutCategories.map((category) => {
             const categoryItems = groupedItems[category.value] || [];
-            const completedCategoryItems = categoryItems.filter((item) => item.completed);
-            const pendingCategoryItems = categoryItems.filter((item) => !item.completed);
+            const completedCategoryItems = categoryItems.filter(
+              (item) => item.completed
+            );
+            const pendingCategoryItems = categoryItems.filter(
+              (item) => !item.completed
+            );
 
             return (
               <div key={category.value} className="mb-4">
@@ -361,11 +399,11 @@ export default function WorkoutChecklist({
                             className="w-full px-2 py-1 text-sm border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-600 dark:border-green-500 dark:text-white resize-none overflow-hidden"
                             autoFocus
                             style={{
-                              minHeight: '28px',
-                              maxHeight: '28px',
-                              lineHeight: '1.2',
-                              whiteSpace: 'nowrap',
-                              textOverflow: 'ellipsis'
+                              minHeight: "28px",
+                              maxHeight: "28px",
+                              lineHeight: "1.2",
+                              whiteSpace: "nowrap",
+                              textOverflow: "ellipsis",
                             }}
                           />
                         ) : (
@@ -382,12 +420,15 @@ export default function WorkoutChecklist({
                       {/* Category Dropdown */}
                       <select
                         value={item.category || "cardio"}
-                        onChange={(e) => handleCategoryChange(item.id, e.target.value)}
+                        onChange={(e) =>
+                          handleCategoryChange(item.id, e.target.value)
+                        }
                         className="px-1 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-600 dark:border-green-500 dark:text-white w-24 flex-shrink-0"
                       >
                         {workoutCategories.map((cat) => (
                           <option key={cat.value} value={cat.value}>
-                            {cat.label.split(" ")[1]} {/* Remove emoji for dropdown */}
+                            {cat.label.split(" ")[1]}{" "}
+                            {/* Remove emoji for dropdown */}
                           </option>
                         ))}
                       </select>
@@ -446,9 +487,7 @@ export default function WorkoutChecklist({
                           onChange={() => onCompleteItem(item.id)}
                           className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                         />
-                        <span className="text-lg">
-                          {category.emoji}
-                        </span>
+                        <span className="text-lg">{category.emoji}</span>
                         <span className="flex-1 text-sm text-green-600 dark:text-green-400 line-through">
                           {item.text}
                         </span>
@@ -472,7 +511,8 @@ export default function WorkoutChecklist({
               <div className="flex justify-between items-center text-sm">
                 <span className="font-medium">P90X Progress:</span>
                 <span className="font-bold text-lg">
-                  {completedCount}/{totalCount} ({Math.round((completedCount / totalCount) * 100)}%)
+                  {completedCount}/{totalCount} (
+                  {Math.round((completedCount / totalCount) * 100)}%)
                 </span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">

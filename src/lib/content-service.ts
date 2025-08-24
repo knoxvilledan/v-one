@@ -245,7 +245,8 @@ export class ContentService {
             todoTitle: "Todo List",
             todoDescription: "You can add and edit your daily tasks here",
             workoutTitle: "P90X Workout Tracker",
-            workoutDescription: "Track your daily P90X workouts and fitness activities",
+            workoutDescription:
+              "Track your daily P90X workouts and fitness activities",
             timeBlocksTitle: "Time Blocks",
             timeBlocksDescription:
               "You can customize these time blocks for your daily schedule",
@@ -457,7 +458,8 @@ export class ContentService {
             todoTitle: "Daily Tasks",
             todoDescription: "Today's action items and priorities",
             workoutTitle: "AMP P90X Workout Tracker",
-            workoutDescription: "Your personalized P90X fitness routine and tracking",
+            workoutDescription:
+              "Your personalized P90X fitness routine and tracking",
             timeBlocksTitle: "AMP Time Blocks",
             timeBlocksDescription: "Your optimized daily schedule",
           },
