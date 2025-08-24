@@ -56,6 +56,7 @@ export const authOptions = {
   },
   pages: {
     signIn: "/auth/signin",
+    signOut: "/auth/signin", // Redirect to signin page after signout
   },
   events: {
     async createUser({ user }: { user: any }) {

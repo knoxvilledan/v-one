@@ -1276,7 +1276,7 @@ export default function DailyPage() {
       </div>
       <Footer
         onExport={() => exportCSVByDate(date, blocks)}
-        onSignOut={() => signOut()}
+        onSignOut={() => signOut({ callbackUrl: "/auth/signin" })}
         onResetDay={resetDay} // Add reset day function to footer
       />
     </main>

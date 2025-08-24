@@ -54,7 +54,7 @@ export default function AuthButton() {
         <p className="text-xs text-gray-500">ID: {user?.id || "Loading..."}</p>
       </div>
       <button
-        onClick={() => signOut()}
+        onClick={() => signOut({ callbackUrl: "/auth/signin" })}
         className="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50"
       >
         Sign out

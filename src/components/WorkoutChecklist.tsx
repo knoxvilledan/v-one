@@ -20,7 +20,7 @@ export default function WorkoutChecklist({
   onUpdateItems,
   isVisible,
   isMobile = false,
-  currentDate,
+  currentDate, // eslint-disable-line @typescript-eslint/no-unused-vars
   resetPosition = false,
   onPositionReset,
 }: WorkoutChecklistProps) {
