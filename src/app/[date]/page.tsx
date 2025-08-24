@@ -12,6 +12,7 @@ import ScoreBar from "../../components/ScoreBar";
 import MasterChecklist from "../../components/MasterChecklist";
 import HabitBreakChecklist from "../../components/HabitBreakChecklist";
 import TodoList from "../../components/TodoList";
+import WorkoutChecklist from "../../components/WorkoutChecklist";
 import Footer from "../../components/Footer";
 import WakeTimeInput from "../../components/WakeTimeInput";
 import { calculateScore } from "../../lib/scoring";
@@ -43,6 +44,9 @@ export default function DailyPage() {
   const [habitBreakChecklist, setHabitBreakChecklist] = useState<
     ChecklistItem[]
   >([]);
+  const [workoutChecklist, setWorkoutChecklist] = useState<ChecklistItem[]>([]);
+  const [workoutListVisible, setWorkoutListVisible] = useState(false);
+  const [resetWorkoutPosition, setResetWorkoutPosition] = useState(false);
   // New state for enhanced time tracking
   const [dailyWakeTime, setDailyWakeTime] = useState<string>("");
   const [userTimezone, setUserTimezone] = useState<string>("");
@@ -66,6 +70,7 @@ export default function DailyPage() {
         defaultBlocks,
         defaultMasterChecklist: [],
         defaultHabitBreakChecklist: [],
+        defaultWorkoutChecklist: [],
         defaultWakeTimeSettings: getDefaultWakeSettings(),
       };
     }
@@ -105,10 +110,19 @@ export default function DailyPage() {
         category: hb.category,
       })) || [];
 
+    const defaultWorkoutChecklist =
+      contentData.content.workoutChecklist?.map((wc) => ({
+        id: wc.id,
+        text: wc.text,
+        completed: false,
+        category: wc.category as ChecklistItem["category"],
+      })) || [];
+
     return {
       defaultBlocks,
       defaultMasterChecklist,
       defaultHabitBreakChecklist,
+      defaultWorkoutChecklist,
       defaultWakeTimeSettings: defaultWakeSettings,
     };
   }, [contentData?.content]);
@@ -152,6 +166,7 @@ export default function DailyPage() {
           defaultBlocks,
           defaultMasterChecklist,
           defaultHabitBreakChecklist,
+          defaultWorkoutChecklist,
           defaultWakeTimeSettings,
         } = defaults;
 
@@ -170,6 +185,9 @@ export default function DailyPage() {
         if (habitBreakChecklist.length === 0) {
           setHabitBreakChecklist(defaultHabitBreakChecklist as ChecklistItem[]);
         }
+        if (workoutChecklist.length === 0) {
+          setWorkoutChecklist(defaultWorkoutChecklist as ChecklistItem[]);
+        }
       }
     }
   }, [
@@ -177,6 +195,7 @@ export default function DailyPage() {
     blocks.length,
     masterChecklist.length,
     habitBreakChecklist.length,
+    workoutChecklist.length,
     wakeTimeSettings,
     getDefaultContent,
   ]);
@@ -203,6 +222,7 @@ export default function DailyPage() {
           defaultBlocks,
           defaultMasterChecklist,
           defaultHabitBreakChecklist,
+          defaultWorkoutChecklist,
         } = defaults;
 
         if (dayData) {
@@ -232,6 +252,24 @@ export default function DailyPage() {
             dayData.masterChecklist || defaultMasterChecklist;
           const habitBreakChecklist =
             dayData.habitBreakChecklist || defaultHabitBreakChecklist;
+          
+          // Load customized workout items (preserves user customizations, resets completion)
+          let workoutChecklist = dayData.workoutChecklist || [];
+          if (workoutChecklist.length === 0) {
+            // No workout data for today, load customized list from previous days
+            workoutChecklist = await loadCustomizedWorkoutItems(userData, date, defaultWorkoutChecklist);
+          } else {
+            // Reset completion status for existing workout items (daily reset)
+            workoutChecklist = workoutChecklist.map((workout: ChecklistItem) => ({
+              ...workout,
+              completed: false,
+              completedAt: undefined,
+              targetBlock: undefined,
+              completionTimezone: undefined,
+              timezoneOffset: undefined,
+            }));
+          }
+          
           let todoList = dayData.todoList || [];
 
           // Auto-load uncompleted todo items from previous days
@@ -239,11 +277,15 @@ export default function DailyPage() {
 
           setMasterChecklist(ensureDateObjects(masterChecklist));
           setHabitBreakChecklist(ensureDateObjects(habitBreakChecklist));
+          setWorkoutChecklist(ensureDateObjects(workoutChecklist));
           setTodoList(ensureDateObjects(todoList));
         } else {
-          // If no data for this day, still load previous uncompleted todos
+          // If no data for this day, load customized workouts and previous uncompleted todos
           const todoList = await loadPreviousTodoItems(userData, date, []);
+          const workoutChecklist = await loadCustomizedWorkoutItems(userData, date, defaultWorkoutChecklist);
+          
           setTodoList(ensureDateObjects(todoList));
+          setWorkoutChecklist(ensureDateObjects(workoutChecklist));
         }
       } catch (error) {
         console.error("Error loading day data:", error);
@@ -286,6 +328,34 @@ export default function DailyPage() {
     return allTodos;
   };
 
+  // Helper function to load customized workout items from most recent day (with completion reset)
+  const loadCustomizedWorkoutItems = async (
+    userData: { days: Record<string, { workoutChecklist?: ChecklistItem[] }> },
+    currentDate: string,
+    defaultWorkouts: ChecklistItem[]
+  ): Promise<ChecklistItem[]> => {
+    // Get all dates and find the most recent one with workout customizations
+    const dates = Object.keys(userData.days).sort().reverse();
+    
+    for (const dateKey of dates) {
+      const dayData = userData.days[dateKey];
+      if (dayData.workoutChecklist && dayData.workoutChecklist.length > 0) {
+        // Found customized workout list - reset completion status for new day
+        return dayData.workoutChecklist.map((workout: ChecklistItem) => ({
+          ...workout,
+          completed: false,
+          completedAt: undefined,
+          targetBlock: undefined,
+          completionTimezone: undefined,
+          timezoneOffset: undefined,
+        }));
+      }
+    }
+
+    // No customizations found, use default (ensure proper typing)
+    return defaultWorkouts.map((item) => ({ ...item }));
+  };
+
   // Save data to API when state changes (debounced)
   useEffect(() => {
     const saveData = async () => {
@@ -297,6 +367,7 @@ export default function DailyPage() {
           blocks,
           masterChecklist,
           habitBreakChecklist,
+          workoutChecklist,
           todoList,
           // Include new fields for daily wake time and timezone
           dailyWakeTime,
@@ -317,6 +388,7 @@ export default function DailyPage() {
     masterChecklist,
     wakeTime,
     habitBreakChecklist,
+    workoutChecklist,
     todoList,
     date,
     session,
@@ -429,6 +501,7 @@ export default function DailyPage() {
               blocks: updatedBlocks,
               masterChecklist,
               habitBreakChecklist: updatedItems,
+              workoutChecklist,
               todoList,
               // Include new fields for daily wake time and timezone
               dailyWakeTime,
@@ -535,6 +608,7 @@ export default function DailyPage() {
               blocks: updatedBlocks,
               masterChecklist,
               habitBreakChecklist,
+              workoutChecklist,
               todoList: updatedTodoList,
             };
             await ApiService.saveDayData(session.user.email, date, dayData);
@@ -561,6 +635,7 @@ export default function DailyPage() {
             blocks: copy,
             masterChecklist,
             habitBreakChecklist,
+            workoutChecklist,
             todoList,
           };
           await ApiService.saveDayData(session.user.email, date, dayData);
@@ -586,6 +661,7 @@ export default function DailyPage() {
             blocks: copy,
             masterChecklist,
             habitBreakChecklist,
+            workoutChecklist,
             todoList,
           };
           await ApiService.saveDayData(session.user.email, date, dayData);
@@ -783,6 +859,7 @@ export default function DailyPage() {
           blocks: blocksChanged ? blocksCopy : blocks,
           masterChecklist: updatedItems,
           habitBreakChecklist,
+          workoutChecklist,
           todoList,
         };
         await ApiService.saveDayData(session.user.email, date, dayData);
@@ -802,6 +879,7 @@ export default function DailyPage() {
           blocks,
           masterChecklist,
           habitBreakChecklist: updatedItems,
+          workoutChecklist,
           todoList,
         };
         await ApiService.saveDayData(session.user.email, date, dayData);
@@ -821,6 +899,7 @@ export default function DailyPage() {
           blocks,
           masterChecklist,
           habitBreakChecklist,
+          workoutChecklist,
           todoList: updatedItems,
         };
         await ApiService.saveDayData(session.user.email, date, dayData);
@@ -840,6 +919,7 @@ export default function DailyPage() {
           defaultBlocks,
           defaultMasterChecklist,
           defaultHabitBreakChecklist,
+          defaultWorkoutChecklist,
         } = defaults;
 
         // Reset all state to default values
@@ -854,6 +934,7 @@ export default function DailyPage() {
         );
         setMasterChecklist(defaultMasterChecklist as ChecklistItem[]);
         setHabitBreakChecklist(defaultHabitBreakChecklist as ChecklistItem[]);
+        setWorkoutChecklist(defaultWorkoutChecklist as ChecklistItem[]);
         setTodoList([]);
 
         // Save the reset data to database
@@ -868,6 +949,7 @@ export default function DailyPage() {
             })),
             masterChecklist: defaultMasterChecklist as ChecklistItem[],
             habitBreakChecklist: defaultHabitBreakChecklist as ChecklistItem[],
+            workoutChecklist: defaultWorkoutChecklist as ChecklistItem[],
             todoList: [],
           };
           await ApiService.saveDayData(session.user.email, date, dayData);
@@ -893,6 +975,82 @@ export default function DailyPage() {
   // Callback when todo position is reset
   const handleTodoPositionReset = () => {
     setResetTodoPosition(false);
+  };
+
+  // Handler for workout button with close/reset functionality
+  const handleWorkoutButtonClick = () => {
+    if (workoutListVisible) {
+      // If already visible, close it
+      setWorkoutListVisible(false);
+    } else {
+      // If not visible, show it and reset position
+      setWorkoutListVisible(true);
+      setResetWorkoutPosition(true);
+    }
+  };
+
+  // Callback when workout position is reset
+  const handleWorkoutPositionReset = () => {
+    setResetWorkoutPosition(false);
+  };
+
+  // Update workout checklist
+  const updateWorkoutChecklist = async (updatedItems: ChecklistItem[]) => {
+    try {
+      setWorkoutChecklist(updatedItems);
+      // Save to database immediately
+      if (session?.user?.email && date) {
+        const dayData = {
+          wakeTime,
+          blocks,
+          masterChecklist,
+          habitBreakChecklist,
+          workoutChecklist: updatedItems,
+          todoList,
+        };
+        await ApiService.saveDayData(session.user.email, date, dayData);
+      }
+    } catch (error) {
+      console.error("Error updating workout checklist:", error);
+    }
+  };
+
+  // Handle workout item completion
+  const handleCompleteWorkoutItem = (itemId: string) => {
+    const completedItem = workoutChecklist.find((item) => item.id === itemId);
+    if (completedItem) {
+      const completionTime = new Date();
+      // Use manually assigned target block or auto-assign based on new time rules
+      const targetBlockIndex =
+        completedItem.targetBlock !== undefined
+          ? completedItem.targetBlock
+          : getTimeBlockForCompletion(completionTime, date);
+
+      const timestamp = completionTime.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const noteText = `💪 ${completedItem.text} (completed ${timestamp})`;
+
+      const updatedBlocks = [...blocks];
+      updatedBlocks[targetBlockIndex].notes.push(noteText);
+      setBlocks(updatedBlocks);
+
+      const updatedChecklist = workoutChecklist.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              completed: true,
+              completedAt: completionTime,
+              targetBlock: targetBlockIndex,
+              // Store timezone information for audit (optional enhancement)
+              completionTimezone: userTimezone,
+              timezoneOffset: new Date().getTimezoneOffset(),
+            }
+          : item
+      );
+      setWorkoutChecklist(updatedChecklist);
+    }
   };
 
   // Handler for daily wake time changes
@@ -972,6 +1130,19 @@ export default function DailyPage() {
               📝 To-Do
             </button>
           </div>
+          <div className="flex items-center">
+            <button
+              onClick={handleWorkoutButtonClick}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                workoutListVisible
+                  ? "bg-purple-500 text-white hover:bg-purple-600"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              }`}
+              title={workoutListVisible ? "Close P90X Workout" : "Open P90X Workout"}
+            >
+              💪 P90X
+            </button>
+          </div>
         </div>
         <div className="flex items-center">
           <span className="text-base lg:text-lg font-medium">
@@ -1007,6 +1178,20 @@ export default function DailyPage() {
           currentDate={date}
           resetPosition={resetTodoPosition}
           onPositionReset={handleTodoPositionReset}
+        />
+      </div>
+
+      {/* Workout Checklist - Responsive positioning for desktop */}
+      <div className="relative hidden md:block">
+        <WorkoutChecklist
+          items={workoutChecklist}
+          onCompleteItem={handleCompleteWorkoutItem}
+          onUpdateItems={updateWorkoutChecklist}
+          isVisible={workoutListVisible}
+          isMobile={false}
+          currentDate={date}
+          resetPosition={resetWorkoutPosition}
+          onPositionReset={handleWorkoutPositionReset}
         />
       </div>
 
@@ -1054,6 +1239,20 @@ export default function DailyPage() {
             currentDate={date}
             resetPosition={resetTodoPosition}
             onPositionReset={handleTodoPositionReset}
+          />
+        </div>
+
+        {/* Workout Checklist for mobile - appears above HabitBreakChecklist */}
+        <div className="block md:hidden mb-6">
+          <WorkoutChecklist
+            items={workoutChecklist}
+            onCompleteItem={handleCompleteWorkoutItem}
+            onUpdateItems={updateWorkoutChecklist}
+            isVisible={workoutListVisible}
+            isMobile={true}
+            currentDate={date}
+            resetPosition={resetWorkoutPosition}
+            onPositionReset={handleWorkoutPositionReset}
           />
         </div>
 

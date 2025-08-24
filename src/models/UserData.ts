@@ -10,6 +10,7 @@ export interface IUserData extends Document {
   masterChecklist: ChecklistItem[];
   habitBreakChecklist: ChecklistItem[];
   todoList: ChecklistItem[];
+  workoutChecklist: ChecklistItem[]; // New workout checklist field
   score: number;
   userId: string;
   createdAt: Date;
@@ -57,6 +58,7 @@ const UserDataSchema = new Schema<IUserData>(
     masterChecklist: { type: [ChecklistItemSchema], default: [] },
     habitBreakChecklist: { type: [ChecklistItemSchema], default: [] },
     todoList: { type: [ChecklistItemSchema], default: [] },
+    workoutChecklist: { type: [ChecklistItemSchema], default: [] }, // New workout checklist field
     score: { type: Number, default: 0 },
     userId: { type: String, required: true, index: true },
     // New fields for daily wake settings and timezone

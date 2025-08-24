@@ -22,6 +22,7 @@ export interface IContentTemplate extends Document {
   content: {
     masterChecklist?: IChecklistTemplate[];
     habitBreakChecklist?: IChecklistTemplate[];
+    workoutChecklist?: IChecklistTemplate[]; // New workout checklist field
     timeBlocks?: ITimeBlockTemplate[];
     placeholderText?: Record<string, string>;
   };
@@ -65,6 +66,7 @@ const ContentTemplateSchema = new Schema<IContentTemplate>(
     content: {
       masterChecklist: { type: [ChecklistTemplateSchema], default: [] },
       habitBreakChecklist: { type: [ChecklistTemplateSchema], default: [] },
+      workoutChecklist: { type: [ChecklistTemplateSchema], default: [] }, // New workout checklist field
       timeBlocks: { type: [TimeBlockTemplateSchema], default: [] },
       placeholderText: { type: Schema.Types.Mixed },
     },

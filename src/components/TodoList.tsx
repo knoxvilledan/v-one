@@ -150,8 +150,12 @@ export default function TodoList({
   if (!isVisible) return null;
 
   const handleAddItem = () => {
+    // Generate unique ID with timestamp, random component, and sequence to prevent collisions
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    const sequence = items.length;
     const newItem: ChecklistItem = {
-      id: `todo-${Date.now()}`,
+      id: `todo-${timestamp}-${random}-${sequence}`,
       text: "New task",
       completed: false,
       category: "todo",
@@ -306,7 +310,7 @@ export default function TodoList({
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 flex-shrink-0"
                 />
 
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   {editingItemId === item.id ? (
                     <input
                       type="text"
@@ -314,14 +318,22 @@ export default function TodoList({
                       onChange={(e) => setEditingText(e.target.value)}
                       onBlur={() => handleEditSave(item.id)}
                       onKeyDown={(e) => handleKeyPress(e, item.id)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white resize-none overflow-hidden"
                       autoFocus
+                      style={{
+                        minHeight: '28px',
+                        maxHeight: '28px',
+                        lineHeight: '1.2',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis'
+                      }}
                     />
                   ) : (
                     <div>
                       <span
                         onClick={() => handleEditStart(item)}
-                        className="cursor-pointer text-sm hover:text-blue-600 dark:hover:text-blue-400"
+                        className="cursor-pointer text-sm hover:text-blue-600 dark:hover:text-blue-400 block truncate"
+                        title={item.text}
                       >
                         {item.text}
                       </span>

@@ -165,6 +165,32 @@ export class ContentService {
               order: 4,
             },
           ],
+          workoutChecklist: [
+            {
+              id: "wo-cardio-001",
+              text: "Morning walk or jog",
+              category: "cardio",
+              order: 1,
+            },
+            {
+              id: "wo-strength-001",
+              text: "Strength training session",
+              category: "strength",
+              order: 2,
+            },
+            {
+              id: "wo-stretching-001",
+              text: "Daily stretching routine",
+              category: "stretching",
+              order: 3,
+            },
+            {
+              id: "wo-cardio-002",
+              text: "Add your cardio workout here",
+              category: "cardio",
+              order: 4,
+            },
+          ],
           timeBlocks: [
             {
               id: "tb-04h-001",
@@ -218,6 +244,8 @@ export class ContentService {
               "You can change this box to track habits you want to break",
             todoTitle: "Todo List",
             todoDescription: "You can add and edit your daily tasks here",
+            workoutTitle: "P90X Workout Tracker",
+            workoutDescription: "Track your daily P90X workouts and fitness activities",
             timeBlocksTitle: "Time Blocks",
             timeBlocksDescription:
               "You can customize these time blocks for your daily schedule",
@@ -332,6 +360,38 @@ export class ContentService {
               order: 5,
             },
           ],
+          workoutChecklist: [
+            {
+              id: "wo-cardio-101",
+              text: "Morning AMP Workout",
+              category: "cardio",
+              order: 1,
+            },
+            {
+              id: "wo-strength-101",
+              text: "Strength Training [101] [201] [301]",
+              category: "strength",
+              order: 2,
+            },
+            {
+              id: "wo-stretching-101",
+              text: "Stretch & Build up…EVERYTHING",
+              category: "stretching",
+              order: 3,
+            },
+            {
+              id: "wo-cardio-102",
+              text: "Cardio Session",
+              category: "cardio",
+              order: 4,
+            },
+            {
+              id: "wo-yoga-101",
+              text: "Evening Wind Down Yoga",
+              category: "yoga",
+              order: 5,
+            },
+          ],
           timeBlocks: [
             {
               id: "tb-04h-101",
@@ -396,6 +456,8 @@ export class ContentService {
             habitBreakDescription: "Track and break negative patterns",
             todoTitle: "Daily Tasks",
             todoDescription: "Today's action items and priorities",
+            workoutTitle: "AMP P90X Workout Tracker",
+            workoutDescription: "Your personalized P90X fitness routine and tracking",
             timeBlocksTitle: "AMP Time Blocks",
             timeBlocksDescription: "Your optimized daily schedule",
           },

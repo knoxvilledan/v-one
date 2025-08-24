@@ -33,11 +33,13 @@ export interface ContentTemplate {
   type:
     | "masterChecklist"
     | "habitBreakChecklist"
+    | "workoutChecklist"
     | "timeBlocks"
     | "placeholderText";
   content: {
     masterChecklist?: ChecklistTemplate[];
     habitBreakChecklist?: ChecklistTemplate[];
+    workoutChecklist?: ChecklistTemplate[];
     timeBlocks?: TimeBlockTemplate[];
     placeholderText?: {
       masterChecklistTitle?: string;
@@ -46,6 +48,8 @@ export interface ContentTemplate {
       habitBreakDescription?: string;
       todoTitle?: string;
       todoDescription?: string;
+      workoutTitle?: string;
+      workoutDescription?: string;
       timeBlocksTitle?: string;
       timeBlocksDescription?: string;
     };

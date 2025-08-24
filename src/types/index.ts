@@ -13,7 +13,14 @@ export interface ChecklistItem {
     | "youtube"
     | "time"
     | "entertainment"
-    | "todo";
+    | "todo"
+    | "cardio"
+    | "strength"
+    | "stretching"
+    | "sports"
+    | "yoga"
+    | "walking"
+    | "workout";
   completedAt?: Date;
   targetBlock?: number;
   dueDate?: string; // Format: YYYY-MM-DD - for todo items with specific dates
@@ -48,6 +55,7 @@ export interface DayData {
   masterChecklist: ChecklistItem[];
   habitBreakChecklist: ChecklistItem[];
   todoList: ChecklistItem[];
+  workoutChecklist: ChecklistItem[]; // New workout checklist field
   score?: number;
   createdAt: Date;
   updatedAt: Date;

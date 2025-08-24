@@ -43,6 +43,12 @@ const checklistItemSchema = z.object({
       "time",
       "entertainment",
       "todo",
+      "strength",
+      "cardio",
+      "yoga",
+      "stretching",
+      "sports",
+      "walking",
     ])
     .optional(),
   completedAt: z.any().optional(),
@@ -60,6 +66,7 @@ const payloadSchema = z.object({
   blocks: z.array(blockSchema),
   masterChecklist: z.array(checklistItemSchema).optional(),
   habitBreakChecklist: z.array(checklistItemSchema).optional(),
+  workoutChecklist: z.array(checklistItemSchema).optional(),
   todoList: z.array(checklistItemSchema).optional(),
   // New fields for daily wake settings and timezone
   dailyWakeTime: z.string().optional(),
@@ -98,6 +105,7 @@ export async function POST(request: NextRequest) {
       blocks,
       masterChecklist,
       habitBreakChecklist,
+      workoutChecklist,
       todoList,
       dailyWakeTime,
       userTimezone,
@@ -115,6 +123,7 @@ export async function POST(request: NextRequest) {
 
     const normalizedMaster = normalize(masterChecklist);
     const normalizedHabits = normalize(habitBreakChecklist);
+    const normalizedWorkouts = normalize(workoutChecklist);
     const normalizedTodos = normalize(todoList);
 
     if (!date) {
@@ -150,6 +159,7 @@ export async function POST(request: NextRequest) {
       blocks: blocksWithIds,
       masterChecklist: normalizedMaster,
       habitBreakChecklist: normalizedHabits,
+      workoutChecklist: normalizedWorkouts,
       todoList: normalizedTodos,
       score,
       userId: user._id!.toString(),
@@ -223,6 +233,7 @@ export async function GET(request: NextRequest) {
             masterChecklist: ChecklistItem[];
             wakeTime: string;
             habitBreakChecklist: ChecklistItem[];
+            workoutChecklist: ChecklistItem[];
             todoList: ChecklistItem[];
             dailyWakeTime?: string;
             userTimezone?: string;
@@ -256,6 +267,15 @@ export async function GET(request: NextRequest) {
                   category: hb.category as ChecklistItem["category"],
                 })
               ) || [],
+            workoutChecklist:
+              contentTemplate.content.workoutChecklist?.map(
+                (wc: ChecklistTemplate) => ({
+                  id: wc.id,
+                  text: wc.text,
+                  completed: false,
+                  category: wc.category as ChecklistItem["category"],
+                })
+              ) || [],
             todoList: [],
           };
 
@@ -274,6 +294,7 @@ export async function GET(request: NextRequest) {
           masterChecklist: data.masterChecklist,
           wakeTime: data.wakeTime,
           habitBreakChecklist: data.habitBreakChecklist,
+          workoutChecklist: data.workoutChecklist || [],
           todoList: data.todoList || [],
           dailyWakeTime: data.dailyWakeTime,
           userTimezone: data.userTimezone,
@@ -291,6 +312,7 @@ export async function GET(request: NextRequest) {
           masterChecklist: ChecklistItem[];
           wakeTime: string;
           habitBreakChecklist: ChecklistItem[];
+          workoutChecklist: ChecklistItem[];
           todoList: ChecklistItem[];
           dailyWakeTime?: string;
           userTimezone?: string;
@@ -303,6 +325,7 @@ export async function GET(request: NextRequest) {
           masterChecklist: item.masterChecklist,
           wakeTime: item.wakeTime,
           habitBreakChecklist: item.habitBreakChecklist,
+          workoutChecklist: item.workoutChecklist || [],
           todoList: item.todoList || [],
           dailyWakeTime: item.dailyWakeTime,
           userTimezone: item.userTimezone,
