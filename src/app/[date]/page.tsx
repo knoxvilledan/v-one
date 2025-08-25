@@ -51,6 +51,8 @@ export default function DailyPage() {
   // New state for enhanced time tracking
   const [dailyWakeTime, setDailyWakeTime] = useState<string>("");
   const [userTimezone, setUserTimezone] = useState<string>("");
+  // Time blocks collapse state
+  const [timeBlocksCollapsed, setTimeBlocksCollapsed] = useState(false);
 
   // Get default content from dynamic templates
   const getDefaultContent = useCallback(() => {
@@ -1211,37 +1213,76 @@ export default function DailyPage() {
         />
       </div>
 
-      <div className="columns-1 md:columns-2 xl:columns-3 gap-12">
-        {blocks.map((block, i) => (
-          <div
-            key={block.id || `block-${i}`}
-            className="break-inside-avoid mb-4"
+      {/* Time Blocks Section with Collapse */}
+      <div className="mb-8">
+        {/* Time Blocks Header */}
+        <div className="flex items-center justify-between mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+            Time Blocks ({blocks.length})
+          </h2>
+          <button
+            onClick={() => setTimeBlocksCollapsed(!timeBlocksCollapsed)}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
+            title={
+              timeBlocksCollapsed
+                ? "Expand Time Blocks"
+                : "Collapse Time Blocks"
+            }
           >
-            <TimeBlock
-              block={block}
-              index={i}
-              date={date}
-              toggleComplete={toggleComplete}
-              addNote={addNote}
-              deleteNote={deleteNote}
-              onLabelUpdate={(blockId, newLabel) => {
-                const updatedBlocks = [...blocks];
-                const realBlockIndex = updatedBlocks.findIndex(
-                  (b) => b.id === blockId
-                );
-                if (realBlockIndex !== -1) {
-                  updatedBlocks[realBlockIndex].label = newLabel;
-                  setBlocks(updatedBlocks);
-                }
-              }}
-              onError={(error) => {
-                console.error("TimeBlock error:", error);
-                // You could add a toast notification here
-              }}
-              isAdmin={contentData?.userRole === "admin"}
-            />
+            <span>{timeBlocksCollapsed ? "Expand" : "Collapse"}</span>
+            <svg
+              className={`w-4 h-4 transition-transform ${
+                timeBlocksCollapsed ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Time Blocks Grid */}
+        {!timeBlocksCollapsed && (
+          <div className="columns-1 md:columns-2 xl:columns-3 gap-12">
+            {blocks.map((block, i) => (
+              <div
+                key={block.id || `block-${i}`}
+                className="break-inside-avoid mb-4"
+              >
+                <TimeBlock
+                  block={block}
+                  index={i}
+                  date={date}
+                  toggleComplete={toggleComplete}
+                  addNote={addNote}
+                  deleteNote={deleteNote}
+                  onLabelUpdate={(blockId, newLabel) => {
+                    const updatedBlocks = [...blocks];
+                    const realBlockIndex = updatedBlocks.findIndex(
+                      (b) => b.id === blockId
+                    );
+                    if (realBlockIndex !== -1) {
+                      updatedBlocks[realBlockIndex].label = newLabel;
+                      setBlocks(updatedBlocks);
+                    }
+                  }}
+                  onError={(error) => {
+                    console.error("TimeBlock error:", error);
+                    // You could add a toast notification here
+                  }}
+                  isAdmin={contentData?.userRole === "admin"}
+                />
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
       <div className="mt-8">
         {/* Todo List for mobile - appears above HabitBreakChecklist */}

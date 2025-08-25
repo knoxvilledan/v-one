@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChecklistItem } from "../types";
 import { useAppConfig } from "../hooks/useAppConfig";
+import { generateOptimizedId } from "../lib/id-generation";
 
 interface WorkoutChecklistProps {
   items: ChecklistItem[];
@@ -151,12 +152,10 @@ export default function WorkoutChecklist({
   if (!isVisible) return null;
 
   const handleAddItem = (category?: string) => {
-    // Generate unique ID with timestamp, random component, and sequence to prevent collisions
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 10000);
-    const sequence = items.length;
+    // Generate unique ID with enhanced collision resistance
+    const existingIds = items.map((item) => item.id);
     const newItem: ChecklistItem = {
-      id: `workout-${timestamp}-${random}-${sequence}`,
+      id: generateOptimizedId.workout(existingIds, items.length),
       text: "New workout",
       completed: false,
       category: (category || "cardio") as ChecklistItem["category"], // Default category
@@ -375,100 +374,131 @@ export default function WorkoutChecklist({
                   {pendingCategoryItems.map((item) => (
                     <div
                       key={item.id}
-                      className={`flex items-center gap-2 p-2 border-l-4 border-${category.color}-400 bg-gray-50 dark:bg-gray-700 rounded`}
+                      className={`p-2 border-l-4 border-${category.color}-400 bg-gray-50 dark:bg-gray-700 rounded`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={item.completed}
-                        onChange={() => onCompleteItem(item.id)}
-                        className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 flex-shrink-0"
-                      />
+                      {/* First row - Checkbox, emoji, and editable text */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <input
+                          type="checkbox"
+                          checked={item.completed}
+                          onChange={() => onCompleteItem(item.id)}
+                          className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 flex-shrink-0"
+                        />
 
-                      <span className="text-lg flex-shrink-0">
-                        {category.emoji}
-                      </span>
+                        <span className="text-lg flex-shrink-0">
+                          {category.emoji}
+                        </span>
 
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        {editingItemId === item.id ? (
-                          <input
-                            type="text"
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            onBlur={() => handleEditSave(item.id)}
-                            onKeyDown={(e) => handleKeyPress(e, item.id)}
-                            className="w-full px-2 py-1 text-sm border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-600 dark:border-green-500 dark:text-white resize-none overflow-hidden"
-                            autoFocus
-                            style={{
-                              minHeight: "28px",
-                              maxHeight: "28px",
-                              lineHeight: "1.2",
-                              whiteSpace: "nowrap",
-                              textOverflow: "ellipsis",
-                            }}
-                          />
-                        ) : (
-                          <span
-                            onClick={() => handleEditStart(item)}
-                            className="cursor-pointer text-sm hover:text-green-600 dark:hover:text-green-400 block truncate"
-                            title={item.text}
-                          >
-                            {item.text}
-                          </span>
-                        )}
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          {editingItemId === item.id ? (
+                            <input
+                              type="text"
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              onBlur={() => handleEditSave(item.id)}
+                              onKeyDown={(e) => handleKeyPress(e, item.id)}
+                              className="w-full px-2 py-1 text-sm border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-600 dark:border-green-500 dark:text-white resize-none overflow-hidden"
+                              autoFocus
+                              style={{
+                                minHeight: "28px",
+                                maxHeight: "28px",
+                                lineHeight: "1.2",
+                                whiteSpace: "nowrap",
+                                textOverflow: "ellipsis",
+                              }}
+                            />
+                          ) : (
+                            <span
+                              onClick={() => handleEditStart(item)}
+                              className="cursor-pointer text-sm hover:text-green-600 dark:hover:text-green-400 block truncate"
+                              title={item.text}
+                            >
+                              {item.text}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Category Dropdown */}
-                      <select
-                        value={item.category || "cardio"}
-                        onChange={(e) =>
-                          handleCategoryChange(item.id, e.target.value)
-                        }
-                        className="px-1 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-600 dark:border-green-500 dark:text-white w-24 flex-shrink-0"
+                      {/* Second row - Controls in mobile-friendly layout */}
+                      <div
+                        className={`flex gap-2 ${
+                          isMobile ? "flex-col space-y-2" : "items-center"
+                        }`}
                       >
-                        {workoutCategories.map((cat) => (
-                          <option key={cat.value} value={cat.value}>
-                            {cat.label.split(" ")[1]}{" "}
-                            {/* Remove emoji for dropdown */}
-                          </option>
-                        ))}
-                      </select>
+                        {/* Category Dropdown */}
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-600 dark:text-gray-400 min-w-0">
+                            Type:
+                          </label>
+                          <select
+                            value={item.category || "cardio"}
+                            onChange={(e) =>
+                              handleCategoryChange(item.id, e.target.value)
+                            }
+                            className={`px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-600 dark:border-green-500 dark:text-white ${
+                              isMobile ? "flex-1" : "w-28"
+                            }`}
+                          >
+                            {workoutCategories.map((cat) => (
+                              <option key={cat.value} value={cat.value}>
+                                {cat.label.split(" ")[1]}{" "}
+                                {/* Remove emoji for dropdown */}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                      {/* Block Assignment Dropdown */}
-                      <select
-                        value={item.targetBlock ?? ""}
-                        onChange={(e) =>
-                          handleBlockAssignment(
-                            item.id,
-                            e.target.value ? parseInt(e.target.value) : -1
-                          )
-                        }
-                        className="px-1 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-600 dark:border-green-500 dark:text-white w-20 flex-shrink-0"
-                      >
-                        <option value="">Auto</option>
-                        {Array.from({ length: timeBlockCount }, (_, i) => (
-                          <option key={i} value={i}>
-                            Block {i}
-                          </option>
-                        ))}
-                      </select>
+                        {/* Block Assignment Dropdown */}
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-600 dark:text-gray-400 min-w-0">
+                            Block:
+                          </label>
+                          <select
+                            value={item.targetBlock ?? ""}
+                            onChange={(e) =>
+                              handleBlockAssignment(
+                                item.id,
+                                e.target.value ? parseInt(e.target.value) : -1
+                              )
+                            }
+                            className={`px-2 py-1 text-xs border border-green-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 dark:bg-gray-600 dark:border-green-500 dark:text-white ${
+                              isMobile ? "flex-1" : "w-20"
+                            }`}
+                          >
+                            <option value="">Auto</option>
+                            {Array.from({ length: timeBlockCount }, (_, i) => (
+                              <option key={i} value={i}>
+                                Block {i}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex-shrink-0"
-                        title="Delete workout"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
+                        {/* Delete Button */}
+                        <div
+                          className={`flex ${
+                            isMobile ? "justify-center" : "justify-end"
+                          }`}
                         >
-                          <path
-                            fillRule="evenodd"
-                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                            title="Delete workout"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
