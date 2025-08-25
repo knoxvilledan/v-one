@@ -258,6 +258,16 @@ export default function SignIn() {
                   </button>
                 </div>
               </form>
+
+              {/* Forgot password link */}
+              <div className="text-center mt-4">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-indigo-600 hover:text-indigo-500"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
             </div>
           )}
 

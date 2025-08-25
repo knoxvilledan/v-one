@@ -30,7 +30,14 @@ export async function ensureIndexes() {
         ),
     ]);
   } catch (e) {
-    console.error("Index creation error", e);
+    // Ignore index creation errors - indexes might already exist with different names
+    // This is normal and doesn't affect functionality
+    if (e && typeof e === "object" && "code" in e && e.code === 85) {
+      // IndexOptionsConflict - index already exists with different options/name
+      console.log("⚠️ MongoDB indexes already exist (this is normal)");
+    } else {
+      console.error("Index creation error", e);
+    }
   }
   initialized = true;
 }

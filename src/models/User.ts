@@ -9,6 +9,8 @@ export interface IUser extends Document {
   isEmailVerified: boolean; // optional, for later email verification
   role: "admin" | "public" | "guest";
   wakeTime: string; // "HH:mm" or "--:--"
+  resetToken?: string; // for password reset
+  resetTokenExpiry?: Date; // expiry for reset token
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +46,12 @@ const UserSchema = new Schema<IUser>(
     wakeTime: {
       type: String,
       default: "--:--", // "HH:mm" or "--:--"
+    },
+    resetToken: {
+      type: String,
+    },
+    resetTokenExpiry: {
+      type: Date,
     },
   },
   {
