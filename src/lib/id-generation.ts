@@ -90,17 +90,17 @@ export const generateOptimizedId = {
     let id: string;
     let attempts = 0;
     const maxAttempts = 100;
-    
+
     do {
       id = generateId.todo(sequence + attempts);
       attempts++;
     } while (existingIds.includes(id) && attempts < maxAttempts);
-    
+
     if (attempts >= maxAttempts) {
       // Fallback to UUID-based approach if collision persists
       id = `todo-${Date.now()}-${randomUUID().slice(0, 8)}-${sequence}`;
     }
-    
+
     return id;
   },
 
@@ -108,17 +108,17 @@ export const generateOptimizedId = {
     let id: string;
     let attempts = 0;
     const maxAttempts = 100;
-    
+
     do {
       id = generateId.workout(sequence + attempts);
       attempts++;
     } while (existingIds.includes(id) && attempts < maxAttempts);
-    
+
     if (attempts >= maxAttempts) {
       // Fallback to UUID-based approach if collision persists
       id = `workout-${Date.now()}-${randomUUID().slice(0, 8)}-${sequence}`;
     }
-    
+
     return id;
   },
 
