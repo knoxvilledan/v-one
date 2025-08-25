@@ -15,6 +15,7 @@ import TodoList from "../../components/TodoList";
 import WorkoutChecklist from "../../components/WorkoutChecklist";
 import Footer from "../../components/Footer";
 import WakeTimeInput from "../../components/WakeTimeInput";
+import AdminViewToggle from "../../components/AdminViewToggle";
 import { calculateScore } from "../../lib/scoring";
 import {
   generateTimeBlocks,
@@ -1155,6 +1156,9 @@ export default function DailyPage() {
               💪 P90X
             </button>
           </div>
+
+          {/* Admin View Toggle - only visible to admin users */}
+          <AdminViewToggle />
         </div>
         <div className="flex items-center">
           <span className="text-base lg:text-lg font-medium">

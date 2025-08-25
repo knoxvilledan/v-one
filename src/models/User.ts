@@ -11,6 +11,7 @@ export interface IUser extends Document {
   wakeTime: string; // "HH:mm" or "--:--"
   resetToken?: string; // for password reset
   resetTokenExpiry?: Date; // expiry for reset token
+  adminViewMode?: "admin" | "public"; // allows admin to toggle between admin/public view
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,6 +53,11 @@ const UserSchema = new Schema<IUser>(
     },
     resetTokenExpiry: {
       type: Date,
+    },
+    adminViewMode: {
+      type: String,
+      enum: ["admin", "public"],
+      default: "admin", // admins default to admin view
     },
   },
   {

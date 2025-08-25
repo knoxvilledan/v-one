@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import AdminPanel from "../../components/AdminPanel";
+import AdminViewToggle from "../../components/AdminViewToggle";
 
 export default function AdminPage() {
   const { data: session } = useSession();
@@ -20,6 +21,9 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {/* Admin View Toggle */}
+      <AdminViewToggle />
+
       <div className="max-w-4xl mx-auto px-4">
         <h1 className="text-3xl font-bold text-center mb-8">
           AMP Tracker - Admin Panel

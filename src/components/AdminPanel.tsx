@@ -7,6 +7,7 @@ interface User {
   email: string;
   name?: string;
   role: "admin" | "public";
+  adminViewMode?: "admin" | "public";
 }
 
 export default function AdminPanel() {
@@ -102,6 +103,22 @@ export default function AdminPanel() {
                 {user.role}
               </span>
             </p>
+            {user.role === "admin" && (
+              <p>
+                <strong>Current View Mode:</strong>
+                <span
+                  className={`ml-2 px-2 py-1 rounded text-sm ${
+                    user.adminViewMode === "admin"
+                      ? "bg-purple-100 text-purple-800"
+                      : "bg-green-100 text-green-800"
+                  }`}
+                >
+                  {user.adminViewMode === "admin"
+                    ? "👑 Personal Content"
+                    : "👥 Public Demo"}
+                </span>
+              </p>
+            )}
           </div>
 
           <div className="border-t pt-4">
@@ -125,13 +142,20 @@ export default function AdminPanel() {
           </div>
 
           <div className="border-t pt-4 text-sm text-gray-600">
-            <h4 className="font-semibold">Role Differences:</h4>
+            <h4 className="font-semibold">Role & View Mode Info:</h4>
             <ul className="list-disc ml-4 mt-2 space-y-1">
               <li>
-                <strong>Admin:</strong> Sees personalized AMP tracker content
+                <strong>Admin Role:</strong> Access to personalized content and
+                public demo mode
               </li>
               <li>
-                <strong>Public:</strong> Sees generic placeholder content
+                <strong>Public Role:</strong> Sees generic placeholder content
+                only
+              </li>
+              <li>
+                <strong>Admin View Toggle:</strong> Use the toggle in the
+                top-right corner to switch between your personal content and
+                public demo
               </li>
             </ul>
           </div>
