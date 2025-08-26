@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
-// Initialize Resend with API key
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend with API key only if available
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function sendPasswordResetEmail(
   email: string,
@@ -29,7 +29,7 @@ export async function sendPasswordResetEmail(
   }
 
   // Check if Resend is configured
-  if (!process.env.RESEND_API_KEY) {
+  if (!process.env.RESEND_API_KEY || !resend) {
     throw new Error("RESEND_API_KEY environment variable is required");
   }
 
