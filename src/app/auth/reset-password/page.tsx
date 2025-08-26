@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function ResetPassword() {
+function ResetPasswordForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -228,5 +228,28 @@ export default function ResetPassword() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading component for Suspense fallback
+function LoadingResetPassword() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={<LoadingResetPassword />}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
