@@ -7,6 +7,34 @@
 
 import { randomUUID } from "crypto";
 
+// canonical ID API
+export const ID_PREFIX = {
+  check: "ck",   // for all checklist items
+  habit: "hb",
+  workout: "wx",
+  todo: "td",
+  block: "tb",   // time block
+  note: "nt",
+  section: "sc", // subsection headers
+} as const;
+
+export type IdKind = keyof typeof ID_PREFIX;
+
+export function makeId(kind: IdKind): string {
+  // Use crypto.randomUUID() if available, else import from 'crypto'
+  return `${ID_PREFIX[kind]}_${crypto.randomUUID()}`;
+}
+
+export function isValidId(id: string): boolean {
+  return /^[a-z]{2}_[0-9a-f-]{36}$/.test(id);
+}
+
+export function assertId(id: string, ctx = "id"): void {
+  if (!id || /^\d+$/.test(id) || !isValidId(id)) {
+    throw new Error(`[${ctx}] expected stable ID, got "${id}"`);
+  }
+}
+
 /**
  * Generate collision-resistant IDs for user-created items
  */
