@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { makeId } from "@/lib/id-generation";
 
 export interface ChecklistItem {
   id: string;
@@ -54,7 +55,7 @@ export default function EditableChecklist({
   const addNewItem = () => {
     if (newItemText.trim()) {
       const newItem: ChecklistItem = {
-        id: Date.now().toString(),
+        id: makeId("check"),
         text: newItemText.trim(),
         completed: false,
       };
