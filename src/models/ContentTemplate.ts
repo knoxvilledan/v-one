@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface ITimeBlockTemplate {
   id: string;
+  blockId?: string; // Stable unique identifier across templates/instances (optional for backward compatibility)
   time: string;
   label: string;
   order: number;
@@ -11,6 +12,7 @@ export interface ITimeBlockTemplate {
 
 export interface IChecklistTemplate {
   id: string;
+  itemId?: string; // Stable unique identifier across templates/instances (optional for backward compatibility)
   text: string;
   category: string;
   order: number;
@@ -25,6 +27,12 @@ export interface IContentTemplate extends Document {
     workoutChecklist?: IChecklistTemplate[]; // New workout checklist field
     timeBlocks?: ITimeBlockTemplate[];
     placeholderText?: Record<string, string>;
+    // Order arrays for stable sorting
+    timeBlocksOrder?: string[]; // Array of blockIds in order
+    checklistSectionOrder?: string[]; // Array of section names in order
+    masterChecklistOrder?: string[]; // Array of itemIds in order
+    habitBreakChecklistOrder?: string[]; // Array of itemIds in order
+    workoutChecklistOrder?: string[]; // Array of itemIds in order
   };
   createdAt: Date;
   updatedAt: Date;
@@ -33,6 +41,7 @@ export interface IContentTemplate extends Document {
 const ChecklistTemplateSchema = new Schema(
   {
     id: { type: String, required: true },
+    itemId: { type: String }, // Stable unique identifier (optional for backward compatibility)
     text: { type: String, required: true },
     category: { type: String, required: true },
     order: { type: Number, required: true },
@@ -43,6 +52,7 @@ const ChecklistTemplateSchema = new Schema(
 const TimeBlockTemplateSchema = new Schema(
   {
     id: { type: String, required: true },
+    blockId: { type: String }, // Stable unique identifier (optional for backward compatibility)
     time: { type: String, required: true },
     label: { type: String, required: true },
     order: { type: Number, required: true },
@@ -69,6 +79,12 @@ const ContentTemplateSchema = new Schema<IContentTemplate>(
       workoutChecklist: { type: [ChecklistTemplateSchema], default: [] }, // New workout checklist field
       timeBlocks: { type: [TimeBlockTemplateSchema], default: [] },
       placeholderText: { type: Schema.Types.Mixed },
+      // Order arrays for stable sorting
+      timeBlocksOrder: { type: [String], default: [] },
+      checklistSectionOrder: { type: [String], default: [] },
+      masterChecklistOrder: { type: [String], default: [] },
+      habitBreakChecklistOrder: { type: [String], default: [] },
+      workoutChecklistOrder: { type: [String], default: [] },
     },
   },
   { timestamps: true, collection: "content_templates" }

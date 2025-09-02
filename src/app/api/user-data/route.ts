@@ -13,6 +13,7 @@ import { formatDisplayDate, parseStorageDate } from "../../../lib/date-utils";
 import { ContentService } from "../../../lib/content-service";
 import { z } from "zod";
 import { ensureIndexes } from "../../../lib/db-indexes";
+import { migrateUserData } from "../../../lib/migration";
 
 const blockSchema = z.object({
   id: z.string().optional(),
@@ -220,6 +221,21 @@ export async function GET(request: NextRequest) {
         userId: user._id!.toString(),
         date,
       }).lean<IUserData | null>();
+
+      // Migrate data if necessary
+      if (data) {
+        const { modified, userData } = migrateUserData(data);
+        if (modified) {
+          await UserData.findOneAndUpdate(
+            { userId: user._id!.toString(), date },
+            { $set: userData },
+            { new: true }
+          );
+          console.log(
+            `✅ UserData migration completed for user ${user._id} date ${date}`
+          );
+        }
+      }
 
       if (!data) {
         // Get default data from content templates

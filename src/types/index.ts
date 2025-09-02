@@ -1,5 +1,6 @@
 export interface ChecklistItem {
   id: string;
+  itemId?: string; // Stable unique identifier for the item across templates/instances (optional for backward compatibility)
   text: string;
   completed: boolean;
   category:
@@ -29,8 +30,17 @@ export interface ChecklistItem {
   timezoneOffset?: number; // Offset used at completion for DST audit
 }
 
+export interface ChecklistSection {
+  id: string;
+  sectionId: string; // Stable unique identifier for the section across templates/instances
+  name: string;
+  items: ChecklistItem[];
+  itemOrder: string[]; // Array of itemIds in order
+}
+
 export interface Block {
   id: string; // Stable unique identifier for the block
+  blockId?: string; // Stable unique identifier for the block across templates/instances (optional for backward compatibility)
   time: string;
   label: string;
   notes: string[];
@@ -52,10 +62,12 @@ export interface DayData {
   wakeTime: string;
   wakeTimeSettings?: WakeTimeSettings; // Enhanced wake time configuration
   blocks: Block[];
+  timeBlocksOrder?: string[]; // Array of blockIds in order (optional for backward compatibility)
   masterChecklist: ChecklistItem[];
   habitBreakChecklist: ChecklistItem[];
   todoList: ChecklistItem[];
   workoutChecklist: ChecklistItem[]; // New workout checklist field
+  checklistSectionOrder?: string[]; // Array of sectionIds in order (optional for backward compatibility)
   score?: number;
   createdAt: Date;
   updatedAt: Date;

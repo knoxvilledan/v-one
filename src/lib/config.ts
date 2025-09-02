@@ -6,6 +6,7 @@
 import "server-only";
 import { ContentTemplate, IContentTemplate } from "../models/ContentTemplate";
 import { connectMongoose } from "./db";
+import { migrateContentTemplate } from "./migration";
 
 export interface AppConfig {
   timeBlocks: {
@@ -97,6 +98,41 @@ export async function getAppConfig(forceRefresh = false): Promise<AppConfig> {
       ContentTemplate.findOne({ userRole: "public" }).lean<IContentTemplate>(),
       ContentTemplate.findOne({ userRole: "admin" }).lean<IContentTemplate>(),
     ]);
+
+    // Migrate templates if necessary
+    const migrationPromises: Promise<IContentTemplate | null>[] = [];
+
+    if (publicTemplate) {
+      const { modified, template } = migrateContentTemplate(publicTemplate);
+      if (modified) {
+        migrationPromises.push(
+          ContentTemplate.findOneAndUpdate(
+            { userRole: "public" },
+            { $set: template },
+            { new: true }
+          )
+        );
+      }
+    }
+
+    if (adminTemplate) {
+      const { modified, template } = migrateContentTemplate(adminTemplate);
+      if (modified) {
+        migrationPromises.push(
+          ContentTemplate.findOneAndUpdate(
+            { userRole: "admin" },
+            { $set: template },
+            { new: true }
+          )
+        );
+      }
+    }
+
+    // Wait for migrations to complete
+    if (migrationPromises.length > 0) {
+      await Promise.all(migrationPromises);
+      console.log("✅ ContentTemplate migration completed");
+    }
 
     const config: AppConfig = {
       ...DEFAULT_CONFIG,

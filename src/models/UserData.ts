@@ -7,10 +7,16 @@ export interface IUserData extends Document {
   displayDate: string;
   wakeTime: string;
   blocks: Block[];
+  timeBlocksOrder?: string[]; // Array of blockIds in order (optional for backward compatibility)
   masterChecklist: ChecklistItem[];
   habitBreakChecklist: ChecklistItem[];
   todoList: ChecklistItem[];
   workoutChecklist: ChecklistItem[]; // New workout checklist field
+  checklistSectionOrder?: string[]; // Array of section names in order (optional for backward compatibility)
+  masterChecklistOrder?: string[]; // Array of itemIds in order (optional for backward compatibility)
+  habitBreakChecklistOrder?: string[]; // Array of itemIds in order (optional for backward compatibility)
+  workoutChecklistOrder?: string[]; // Array of itemIds in order (optional for backward compatibility)
+  todoListOrder?: string[]; // Array of itemIds in order (optional for backward compatibility)
   score: number;
   userId: string;
   createdAt: Date;
@@ -23,6 +29,7 @@ export interface IUserData extends Document {
 const ChecklistItemSchema = new Schema(
   {
     id: { type: String, required: true },
+    itemId: { type: String }, // Stable unique identifier (optional for backward compatibility)
     text: { type: String, required: true },
     completed: { type: Boolean, default: false },
     category: { type: String },
@@ -38,6 +45,8 @@ const ChecklistItemSchema = new Schema(
 
 const BlockSchema = new Schema(
   {
+    id: { type: String, required: true }, // For backward compatibility
+    blockId: { type: String }, // Stable unique identifier (optional for backward compatibility)
     time: { type: String, required: true },
     label: { type: String, required: true },
     notes: { type: [String], default: [] },
@@ -55,10 +64,16 @@ const UserDataSchema = new Schema<IUserData>(
     displayDate: { type: String, required: true },
     wakeTime: { type: String, default: "" },
     blocks: { type: [BlockSchema], default: [] },
+    timeBlocksOrder: { type: [String], default: [] },
     masterChecklist: { type: [ChecklistItemSchema], default: [] },
     habitBreakChecklist: { type: [ChecklistItemSchema], default: [] },
     todoList: { type: [ChecklistItemSchema], default: [] },
     workoutChecklist: { type: [ChecklistItemSchema], default: [] }, // New workout checklist field
+    checklistSectionOrder: { type: [String], default: [] },
+    masterChecklistOrder: { type: [String], default: [] },
+    habitBreakChecklistOrder: { type: [String], default: [] },
+    workoutChecklistOrder: { type: [String], default: [] },
+    todoListOrder: { type: [String], default: [] },
     score: { type: Number, default: 0 },
     userId: { type: String, required: true, index: true },
     // New fields for daily wake settings and timezone
