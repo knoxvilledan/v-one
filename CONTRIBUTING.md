@@ -7,6 +7,7 @@
 2. **No New Helper Scripts for Index Patches**: Do not create new standalone scripts for patching indexes or data structures. Migrations should be handled within the server code itself.
 
 3. **File Replacement Protocol**: If you must replace a file:
+
    - Rename the old file with `.old` extension
    - Commit the changes
    - Delete the `.old` file only after tests pass
@@ -24,6 +25,7 @@
 ## Testing Requirements
 
 Before submitting changes:
+
 - Run `pnpm install`, `pnpm build`, `pnpm lint`, and `pnpm test:smoke`
 - Perform end-to-end testing of user workflows
 - Verify template/user seeding works correctly

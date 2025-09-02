@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import CredentialsProvider from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import clientPromise from "./mongodb";
-import dbConnect from "./dbConnect";
+import { mongoClientPromise, connectMongoose } from "./db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
-  adapter: MongoDBAdapter(clientPromise, { databaseName: "AmpTrack" }),
+  adapter: MongoDBAdapter(mongoClientPromise, { databaseName: "AmpTrack" }),
   providers: [
     CredentialsProvider({
       name: "Email & Password",
@@ -21,7 +20,7 @@ export const authOptions = {
         }
 
         try {
-          await dbConnect();
+          await connectMongoose();
           const user = await User.findOne({
             email: credentials.email.toLowerCase(),
           });
@@ -62,7 +61,7 @@ export const authOptions = {
     async createUser({ user }: { user: any }) {
       // Create app-level user record when NextAuth creates a user (OAuth flow)
       try {
-        await dbConnect();
+        await connectMongoose();
         await User.updateOne(
           { email: user.email },
           {

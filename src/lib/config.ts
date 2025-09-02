@@ -5,7 +5,7 @@
 
 import "server-only";
 import { ContentTemplate, IContentTemplate } from "../models/ContentTemplate";
-import dbConnect from "./dbConnect";
+import { connectMongoose } from "./db";
 
 export interface AppConfig {
   timeBlocks: {
@@ -90,7 +90,7 @@ export async function getAppConfig(forceRefresh = false): Promise<AppConfig> {
   }
 
   try {
-    await dbConnect();
+    await connectMongoose();
 
     // Get both public and admin templates
     const [publicTemplate, adminTemplate] = await Promise.all([

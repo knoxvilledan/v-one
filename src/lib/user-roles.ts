@@ -1,12 +1,9 @@
-import { MongoClient } from "mongodb";
+import { mongoClientPromise } from "./db";
 import { User, UserRole } from "../types/content";
-
-const MONGODB_URI = process.env.MONGODB_URI!;
-const client = new MongoClient(MONGODB_URI);
 
 export class UserRoleService {
   private static async getDatabase() {
-    await client.connect();
+    const client = await mongoClientPromise;
     return client.db("AmpTrack");
   }
 

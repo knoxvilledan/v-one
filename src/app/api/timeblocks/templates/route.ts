@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../lib/auth";
 import { ContentService } from "../../../../lib/content-service";
-import dbConnect from "../../../../lib/dbConnect";
+import { connectMongoose } from "../../../../lib/db";
 import {
   ContentTemplate,
   type IContentTemplate,
@@ -49,7 +49,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get the current content template
-    await dbConnect();
+    await connectMongoose();
     const contentTemplate = await ContentTemplate.findOne({
       userRole: targetRole,
     }).lean<IContentTemplate>();
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get the content template for the specified role
-    await dbConnect();
+    await connectMongoose();
     const contentTemplate = await ContentTemplate.findOne({
       userRole: targetRole,
     }).lean<IContentTemplate>();
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the current content template
-    await dbConnect();
+    await connectMongoose();
     const contentTemplate = await ContentTemplate.findOne({
       userRole: targetRole,
     }).lean<IContentTemplate>();
