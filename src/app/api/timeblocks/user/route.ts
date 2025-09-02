@@ -4,6 +4,7 @@ import { authOptions } from "../../../../lib/auth";
 import { ContentService } from "../../../../lib/content-service";
 import { connectMongoose } from "../../../../lib/db";
 import { UserData, type IUserData } from "../../../../models/UserData";
+import { getBlockById, validateIdMembership } from "../../../../lib/id-helpers";
 
 // PATCH /api/timeblocks/user - Update user's personal time block labels
 export async function PATCH(request: NextRequest) {
@@ -14,12 +15,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { blockIndex, label, date } = await request.json();
+    const { targetBlockId, label, date } = await request.json();
 
     // Validate input
-    if (blockIndex === undefined || blockIndex < 0 || blockIndex > 17) {
+    if (!targetBlockId || typeof targetBlockId !== "string") {
       return NextResponse.json(
-        { error: "Block index must be between 0 and 15" },
+        { error: "targetBlockId is required and must be a string" },
         { status: 400 }
       );
     }
@@ -59,11 +60,20 @@ export async function PATCH(request: NextRequest) {
 
     // Update the specific block label
     const updatedBlocks = [...(existingData?.blocks || [])];
-    if (updatedBlocks[blockIndex]) {
-      updatedBlocks[blockIndex].label = label.trim();
-    } else {
+
+    // Validate that the targetBlockId exists in the user's blocks
+    const blockToUpdate = getBlockById(
+      existingData?.timeBlocksOrder || [],
+      updatedBlocks,
+      targetBlockId
+    );
+
+    if (!blockToUpdate) {
       return NextResponse.json({ error: "Block not found" }, { status: 404 });
     }
+
+    // Update the block label
+    blockToUpdate.label = label.trim();
 
     // Save the updated data
     await UserData.updateOne(
@@ -73,7 +83,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       message: "Time block label updated successfully",
-      blockIndex,
+      targetBlockId,
       newLabel: label.trim(),
     });
   } catch (error) {

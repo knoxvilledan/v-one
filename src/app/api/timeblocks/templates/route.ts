@@ -8,6 +8,7 @@ import {
   type IContentTemplate,
 } from "../../../../models/ContentTemplate";
 import { getMaxCounts, invalidateConfigCache } from "../../../../lib/config";
+import { getTimeBlockTemplateById } from "../../../../lib/id-helpers";
 
 // PATCH /api/timeblocks/templates - Update global time block templates (admin only)
 export async function PATCH(request: NextRequest) {
@@ -27,12 +28,12 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { blockIndex, label, targetRole, time } = await request.json();
+    const { targetBlockId, label, targetRole, time } = await request.json();
 
     // Validate input
-    if (blockIndex === undefined || blockIndex < 0 || blockIndex > 17) {
+    if (!targetBlockId || typeof targetBlockId !== "string") {
       return NextResponse.json(
-        { error: "Block index must be between 0 and 15" },
+        { error: "targetBlockId is required and must be a string" },
         { status: 400 }
       );
     }
@@ -72,18 +73,24 @@ export async function PATCH(request: NextRequest) {
 
     const updatedTimeBlocks = [...timeBlocks];
 
-    if (updatedTimeBlocks[blockIndex]) {
-      updatedTimeBlocks[blockIndex].label = label.trim();
+    // Find the block to update by ID
+    const blockToUpdate = getTimeBlockTemplateById(
+      contentTemplate.content.timeBlocksOrder || [],
+      updatedTimeBlocks,
+      targetBlockId
+    );
 
-      // Update time if provided
-      if (time) {
-        updatedTimeBlocks[blockIndex].time = time;
-      }
-    } else {
+    if (!blockToUpdate) {
       return NextResponse.json(
         { error: "Block not found in template" },
         { status: 404 }
       );
+    }
+
+    // Update the block
+    blockToUpdate.label = label.trim();
+    if (time) {
+      blockToUpdate.time = time;
     }
 
     // Update the content template
@@ -112,7 +119,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       message: "Time block template updated successfully",
-      blockIndex,
+      targetBlockId,
       newLabel: label.trim(),
       targetRole,
     });
@@ -322,12 +329,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { blockIndex, targetRole } = await request.json();
+    const { targetBlockId, targetRole } = await request.json();
 
     // Validate input
-    if (blockIndex === undefined || blockIndex < 0) {
+    if (!targetBlockId || typeof targetBlockId !== "string") {
       return NextResponse.json(
-        { error: "Valid block index is required" },
+        { error: "targetBlockId is required and must be a string" },
         { status: 400 }
       );
     }
@@ -367,26 +374,37 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (blockIndex >= currentTimeBlocks.length) {
-      return NextResponse.json(
-        { error: "Block index out of range" },
-        { status: 400 }
-      );
+    // Find the block to remove by ID
+    const blockToRemove = getTimeBlockTemplateById(
+      (contentTemplate.content as any).timeBlocksOrder || [],
+      currentTimeBlocks,
+      targetBlockId
+    );
+
+    if (!blockToRemove) {
+      return NextResponse.json({ error: "Block not found" }, { status: 404 });
     }
 
     // Remove the block
-    const updatedTimeBlocks = [...currentTimeBlocks];
-    const removedBlock = updatedTimeBlocks.splice(blockIndex, 1)[0];
+    const updatedTimeBlocks = currentTimeBlocks.filter(
+      (block) => ((block as any).blockId || block.id) !== targetBlockId
+    );
 
     // Reorder the remaining blocks
     updatedTimeBlocks.forEach((block, index) => {
       block.order = index + 1;
     });
 
+    // Update the order array to remove the deleted block ID
+    const updatedOrder = (
+      (contentTemplate.content as any).timeBlocksOrder || []
+    ).filter((id: string) => id !== targetBlockId);
+
     // Update the content template
     const updatedContent = {
       ...contentTemplate.content,
       timeBlocks: updatedTimeBlocks,
+      timeBlocksOrder: updatedOrder,
     };
 
     const success = await ContentService.updateContentTemplate(
@@ -406,7 +424,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       message: "Time block removed successfully",
-      removedBlock,
+      targetBlockId,
       targetRole,
     });
   } catch (error) {

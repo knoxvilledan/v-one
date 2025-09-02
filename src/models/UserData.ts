@@ -34,7 +34,8 @@ const ChecklistItemSchema = new Schema(
     completed: { type: Boolean, default: false },
     category: { type: String },
     completedAt: { type: Date },
-    targetBlock: { type: Number },
+    targetBlock: { type: Number }, // Legacy field for backward compatibility
+    targetBlockId: { type: String }, // New ID-based field
     dueDate: { type: String },
     // New fields for enhanced time tracking
     completionTimezone: { type: String },

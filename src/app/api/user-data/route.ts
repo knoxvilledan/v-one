@@ -53,7 +53,8 @@ const checklistItemSchema = z.object({
     ])
     .optional(),
   completedAt: z.any().optional(),
-  targetBlock: z.number().optional(),
+  targetBlock: z.number().optional(), // Legacy field for backward compatibility
+  targetBlockId: z.string().optional(), // New ID-based field
   // New fields for enhanced time tracking
   completionTimezone: z.string().optional(),
   timezoneOffset: z.number().optional(),

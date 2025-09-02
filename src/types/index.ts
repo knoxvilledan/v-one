@@ -23,7 +23,8 @@ export interface ChecklistItem {
     | "walking"
     | "workout";
   completedAt?: Date;
-  targetBlock?: number;
+  targetBlock?: number; // Legacy field for backward compatibility
+  targetBlockId?: string; // New ID-based field
   dueDate?: string; // Format: YYYY-MM-DD - for todo items with specific dates
   // New fields for enhanced time tracking
   completionTimezone?: string; // IANA timezone used at completion

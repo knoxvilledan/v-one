@@ -3,6 +3,7 @@
  */
 
 import { Block, ChecklistItem } from "../types";
+import { ITimeBlockTemplate } from "../models/ContentTemplate";
 
 /**
  * Find a block by its blockId from an ordered list
@@ -116,4 +117,17 @@ export function getOrderedItems(
   });
 
   return orderedItems;
+}
+
+/**
+ * Find a time block template by its blockId from an ordered list
+ */
+export function getTimeBlockTemplateById(
+  order: string[],
+  blocks: ITimeBlockTemplate[],
+  blockId: string
+): ITimeBlockTemplate | undefined {
+  return blocks.find(
+    (block) => block.blockId === blockId || block.id === blockId // Fallback for backward compatibility
+  );
 }
