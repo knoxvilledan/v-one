@@ -1,9 +1,0 @@
-{
-  "name": "mongodb-setup-scripts",
-  "description": "Clean, essential scripts for database operations and content setup",
-  "scripts": {
-    "setup-content": "node setup-content-templates.js",
-    "populate-content": "node populate-content-templates.mjs",
-    "dev-seed": "node seed.mjs"
-  }
-}

@@ -2,6 +2,7 @@
   "name": "v-one",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "engines": {
     "node": "22.x"
   },
@@ -12,11 +13,10 @@
     "lint": "next lint",
     "db:backup": "node scripts/backup-database.mjs",
     "db:check": "node scripts/check-database.mjs",
-    "app:smoke": "node scripts/smoke-test.mjs",
-    "templates:setup": "node scripts/setup-content-templates.js",
+    "templates:setup": "node scripts/setup-content-templates.mjs",
     "templates:populate": "node scripts/populate-content-templates.mjs",
-    "seed": "node scripts/seed.mjs",
     "migrate:ids": "node scripts/migrate-ids.mjs",
+    "seed": "node scripts/seed.mjs",
     "test:smoke": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
