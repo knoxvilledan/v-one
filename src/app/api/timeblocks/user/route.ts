@@ -4,7 +4,7 @@ import { authOptions } from "../../../../lib/auth";
 import { ContentService } from "../../../../lib/content-service";
 import { connectMongoose } from "../../../../lib/db";
 import { UserData, type IUserData } from "../../../../models/UserData";
-import { getBlockById, validateIdMembership } from "../../../../lib/id-helpers";
+import { getBlockById } from "../../../../lib/id-helpers";
 
 // PATCH /api/timeblocks/user - Update user's personal time block labels
 export async function PATCH(request: NextRequest) {

@@ -75,7 +75,8 @@ export async function PATCH(request: NextRequest) {
 
     // Find the block to update by ID
     const blockToUpdate = getTimeBlockTemplateById(
-      contentTemplate.content.timeBlocksOrder || [],
+      ((contentTemplate.content as Record<string, unknown>)
+        .timeBlocksOrder as string[]) || [],
       updatedTimeBlocks,
       targetBlockId
     );
@@ -376,7 +377,8 @@ export async function DELETE(request: NextRequest) {
 
     // Find the block to remove by ID
     const blockToRemove = getTimeBlockTemplateById(
-      (contentTemplate.content as any).timeBlocksOrder || [],
+      ((contentTemplate.content as Record<string, unknown>)
+        .timeBlocksOrder as string[]) || [],
       currentTimeBlocks,
       targetBlockId
     );
@@ -387,7 +389,10 @@ export async function DELETE(request: NextRequest) {
 
     // Remove the block
     const updatedTimeBlocks = currentTimeBlocks.filter(
-      (block) => ((block as any).blockId || block.id) !== targetBlockId
+      (block) =>
+        (((block as unknown as Record<string, unknown>).blockId as string) ||
+          ((block as unknown as Record<string, unknown>).id as string)) !==
+        targetBlockId
     );
 
     // Reorder the remaining blocks
@@ -397,7 +402,8 @@ export async function DELETE(request: NextRequest) {
 
     // Update the order array to remove the deleted block ID
     const updatedOrder = (
-      (contentTemplate.content as any).timeBlocksOrder || []
+      ((contentTemplate.content as unknown as Record<string, unknown>)
+        .timeBlocksOrder as string[]) || []
     ).filter((id: string) => id !== targetBlockId);
 
     // Update the content template
