@@ -98,7 +98,7 @@ export class ApiService {
 
   // Update a single time block label for a user
   static async updateTimeBlockLabel(
-    blockIndex: number,
+    targetBlockId: string,
     label: string,
     date: string
   ) {
@@ -109,7 +109,7 @@ export class ApiService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          blockIndex,
+          targetBlockId,
           label,
           date,
         }),
@@ -148,7 +148,7 @@ export class ApiService {
 
   // Bulk update multiple time block labels for a user
   static async bulkUpdateTimeBlockLabels(
-    updates: Array<{ blockIndex: number; label: string }>,
+    updates: Array<{ targetBlockId: string; label: string }>,
     date: string
   ) {
     try {
@@ -210,7 +210,7 @@ export class ApiService {
 
   // Update time block template (admin only)
   static async updateTimeBlockTemplate(
-    blockIndex: number,
+    targetBlockId: string,
     label: string,
     targetRole: "public" | "admin",
     time?: string
@@ -222,7 +222,7 @@ export class ApiService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          blockIndex,
+          targetBlockId,
           label,
           targetRole,
           time,
@@ -301,7 +301,7 @@ export class ApiService {
 
   // Remove time block from template (admin only)
   static async removeTimeBlockFromTemplate(
-    blockIndex: number,
+    targetBlockId: string,
     targetRole: "public" | "admin"
   ) {
     try {
@@ -311,7 +311,7 @@ export class ApiService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          blockIndex,
+          targetBlockId,
           targetRole,
         }),
       });
@@ -326,6 +326,53 @@ export class ApiService {
       return await response.json();
     } catch (error) {
       console.error("Error removing time block from template:", error);
+      throw error;
+    }
+  }
+
+  // Hydration API - Get complete user state
+  static async hydrateUserData(targetDate?: string) {
+    try {
+      const url = targetDate
+        ? `${this.baseUrl}/hydrate?date=${targetDate}`
+        : `${this.baseUrl}/hydrate`;
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to hydrate user data");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error hydrating user data:", error);
+      throw error;
+    }
+  }
+
+  // Force refresh user data for a specific date
+  static async refreshUserData(targetDate?: string, forceRefresh = false) {
+    try {
+      const response = await fetch(`${this.baseUrl}/hydrate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          targetDate,
+          forceRefresh,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to refresh user data");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error refreshing user data:", error);
       throw error;
     }
   }
