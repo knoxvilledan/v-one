@@ -41,7 +41,11 @@ export default function EditableTimeBlockLabel({
     setIsSaving(true);
 
     try {
-      await ApiService.updateTimeBlockLabel(blockIndex, trimmedText, date);
+      await ApiService.updateTimeBlockLabel(
+        blockIndex.toString(),
+        trimmedText,
+        date
+      );
       onLabelUpdate?.(blockIndex, trimmedText);
       setIsEditing(false);
     } catch (error) {
@@ -74,7 +78,7 @@ export default function EditableTimeBlockLabel({
     setIsSaving(true);
     try {
       await ApiService.updateTimeBlockTemplate(
-        blockIndex,
+        blockIndex.toString(),
         editText.trim(),
         targetRole
       );
