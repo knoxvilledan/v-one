@@ -1,0 +1,396 @@
+[
+  {
+    "_id": "68a2038db5872bacd5ca6ed0",
+    "email": "knoxvilledan@yahoo.com",
+    "createdAt": "2025-08-17T16:30:02.617Z",
+    "isEmailVerified": true,
+    "passwordHash": "$2b$12$a.PqI4jaQaIq0J1MHJtLXektHJsODgme8GdNhkAXDFbWLg.aqjJUm",
+    "role": "admin",
+    "updatedAt": "2025-08-29T04:50:01.609Z",
+    "wakeTime": "--:--",
+    "username": "knoxvilledan",
+    "adminViewMode": "public",
+    "data": {
+      "2025-08-25": {
+        "masterChecklist": [
+          {
+            "id": "mc-morning-001",
+            "text": "Wake up at target time",
+            "category": "morning",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-morning-002",
+            "text": "Morning meditation/prayer",
+            "category": "morning",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-morning-003",
+            "text": "Review daily goals",
+            "category": "morning",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-work-001",
+            "text": "Check and respond to priority emails",
+            "category": "work",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-work-002",
+            "text": "Complete most important task",
+            "category": "work",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-work-003",
+            "text": "Update project status",
+            "category": "work",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-tech-001",
+            "text": "Code review and commits",
+            "category": "tech",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-tech-002",
+            "text": "Learn something new (tech)",
+            "category": "tech",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-house-001",
+            "text": "Tidy living space",
+            "category": "house",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-house-002",
+            "text": "Meal prep/planning",
+            "category": "house",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-wrapup-001",
+            "text": "Review day accomplishments",
+            "category": "wrapup",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-wrapup-002",
+            "text": "Plan tomorrow priorities",
+            "category": "wrapup",
+            "completed": false,
+            "completedAt": null
+          }
+        ],
+        "habitBreakChecklist": [
+          {
+            "id": "hb-lsd-001",
+            "text": "Avoided mindless social media",
+            "category": "lsd",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "hb-lsd-002",
+            "text": "Limited news consumption",
+            "category": "lsd",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "hb-financial-001",
+            "text": "Tracked expenses",
+            "category": "financial",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "hb-financial-002",
+            "text": "No impulse purchases",
+            "category": "financial",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "hb-youtube-001",
+            "text": "Productive YouTube only",
+            "category": "youtube",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "hb-time-001",
+            "text": "Used time blocking effectively",
+            "category": "time",
+            "completed": false,
+            "completedAt": null
+          }
+        ],
+        "todoList": [],
+        "workoutChecklist": [],
+        "timeBlocks": [
+          {
+            "id": "tb-06h-001",
+            "hour": 6,
+            "activities": [
+              "Morning routine",
+              "Exercise"
+            ]
+          },
+          {
+            "id": "tb-07h-001",
+            "hour": 7,
+            "activities": [
+              "Breakfast",
+              "Planning"
+            ]
+          },
+          {
+            "id": "tb-08h-001",
+            "hour": 8,
+            "activities": [
+              "Deep work block 1"
+            ]
+          },
+          {
+            "id": "tb-09h-001",
+            "hour": 9,
+            "activities": [
+              "Deep work block 1"
+            ]
+          },
+          {
+            "id": "tb-10h-001",
+            "hour": 10,
+            "activities": [
+              "Meetings/Calls"
+            ]
+          },
+          {
+            "id": "tb-11h-001",
+            "hour": 11,
+            "activities": [
+              "Deep work block 2"
+            ]
+          },
+          {
+            "id": "tb-12h-001",
+            "hour": 12,
+            "activities": [
+              "Lunch break"
+            ]
+          },
+          {
+            "id": "tb-13h-001",
+            "hour": 13,
+            "activities": [
+              "Administrative tasks"
+            ]
+          },
+          {
+            "id": "tb-14h-001",
+            "hour": 14,
+            "activities": [
+              "Deep work block 3"
+            ]
+          },
+          {
+            "id": "tb-15h-001",
+            "hour": 15,
+            "activities": [
+              "Deep work block 3"
+            ]
+          },
+          {
+            "id": "tb-16h-001",
+            "hour": 16,
+            "activities": [
+              "Review and planning"
+            ]
+          },
+          {
+            "id": "tb-17h-001",
+            "hour": 17,
+            "activities": [
+              "Wrap up work"
+            ]
+          },
+          {
+            "id": "tb-18h-001",
+            "hour": 18,
+            "activities": [
+              "Personal time"
+            ]
+          },
+          {
+            "id": "tb-19h-001",
+            "hour": 19,
+            "activities": [
+              "Dinner"
+            ]
+          },
+          {
+            "id": "tb-20h-001",
+            "hour": 20,
+            "activities": [
+              "Family/Personal"
+            ]
+          },
+          {
+            "id": "tb-21h-001",
+            "hour": 21,
+            "activities": [
+              "Wind down"
+            ]
+          },
+          {
+            "id": "tb-22h-001",
+            "hour": 22,
+            "activities": [
+              "Prepare for sleep"
+            ]
+          }
+        ],
+        "notes": "",
+        "createdAt": "2025-08-25T13:40:06.509Z",
+        "updatedAt": "2025-08-25T13:40:06.509Z",
+        "templateUsed": "admin-default-template"
+      }
+    }
+  },
+  {
+    "_id": "68a21bece3d65e6fbfdf347c",
+    "email": "dannelsonjfn@gmail.com",
+    "username": "DANelson",
+    "passwordHash": "$2b$12$WENR1Uq1cYCiJVAsGcPBa.TmCDIaitumHzChznAE5ekhhnQWgf3RG",
+    "isEmailVerified": false,
+    "role": "public",
+    "wakeTime": "--:--",
+    "createdAt": "2025-08-17T18:14:04.490Z",
+    "updatedAt": "2025-08-25T13:40:06.561Z",
+    "__v": 0,
+    "data": {
+      "2025-08-25": {
+        "masterChecklist": [
+          {
+            "id": "mc-morning-001",
+            "text": "Morning routine",
+            "category": "morning",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-work-001",
+            "text": "Complete important task",
+            "category": "work",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-house-001",
+            "text": "Tidy space",
+            "category": "house",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "mc-wrapup-001",
+            "text": "Review day",
+            "category": "wrapup",
+            "completed": false,
+            "completedAt": null
+          }
+        ],
+        "habitBreakChecklist": [
+          {
+            "id": "hb-lsd-001",
+            "text": "Mindful social media use",
+            "category": "lsd",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "hb-financial-001",
+            "text": "Track spending",
+            "category": "financial",
+            "completed": false,
+            "completedAt": null
+          },
+          {
+            "id": "hb-time-001",
+            "text": "Use time wisely",
+            "category": "time",
+            "completed": false,
+            "completedAt": null
+          }
+        ],
+        "todoList": [],
+        "workoutChecklist": [],
+        "timeBlocks": [
+          {
+            "id": "tb-08h-001",
+            "hour": 8,
+            "activities": [
+              "Morning routine"
+            ]
+          },
+          {
+            "id": "tb-09h-001",
+            "hour": 9,
+            "activities": [
+              "Work focus"
+            ]
+          },
+          {
+            "id": "tb-12h-001",
+            "hour": 12,
+            "activities": [
+              "Lunch"
+            ]
+          },
+          {
+            "id": "tb-14h-001",
+            "hour": 14,
+            "activities": [
+              "Afternoon work"
+            ]
+          },
+          {
+            "id": "tb-18h-001",
+            "hour": 18,
+            "activities": [
+              "Personal time"
+            ]
+          },
+          {
+            "id": "tb-21h-001",
+            "hour": 21,
+            "activities": [
+              "Wind down"
+            ]
+          }
+        ],
+        "notes": "",
+        "createdAt": "2025-08-25T13:40:06.561Z",
+        "updatedAt": "2025-08-25T13:40:06.561Z",
+        "templateUsed": "public-default-template"
+      }
+    }
+  }
+]

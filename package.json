@@ -10,13 +10,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:smoke": "node scripts/smoke-test.mjs",
+    "db:backup": "node scripts/backup-database.mjs",
+    "db:check": "node scripts/check-database.mjs",
+    "app:smoke": "node scripts/smoke-test.mjs",
+    "templates:setup": "node scripts/setup-content-templates.js",
+    "templates:populate": "node scripts/populate-content-templates.mjs",
     "seed": "node scripts/seed.mjs",
-    "db:list-owners": "node scripts/db-maintenance.mjs list-owners",
-    "db:wipe-user-owned": "node scripts/db-maintenance.mjs wipe-user-owned",
-    "db:clear-auth": "node scripts/db-maintenance.mjs clear-auth --all",
-    "db:reindex": "node scripts/db-maintenance.mjs reindex",
-    "admin:create": "node scripts/create-admin.mjs"
+    "migrate:ids": "node scripts/migrate-ids.mjs",
+    "test:smoke": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.10.0",

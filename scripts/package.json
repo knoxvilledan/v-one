@@ -1,10 +1,9 @@
 {
-  "name": "MongoDB Test Setup Scripts",
-  "description": "Scripts to set up and test MongoDB with 3 random users for public profile testing",
+  "name": "mongodb-setup-scripts",
+  "description": "Clean, essential scripts for database operations and content setup",
   "scripts": {
-    "setup-users": "node scripts/setup-test-users.js",
-    "setup-content": "node scripts/setup-content-templates.js",
-    "test-setup": "node scripts/test-database-setup.js",
-    "full-setup": "npm run setup-users && npm run setup-content && npm run test-setup"
+    "setup-content": "node setup-content-templates.js",
+    "populate-content": "node populate-content-templates.mjs",
+    "dev-seed": "node seed.mjs"
   }
 }

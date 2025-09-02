@@ -44,10 +44,15 @@
 
 ## 🛠️ Commands to Re-run Setup
 
-```bash
-# Update test users with new passwords
-node scripts/setup-test-users.js
+### ⚠️ DEPRECATED - Use new script aliases instead:
 
-# Verify database setup
-node scripts/test-database-setup.js
+```bash
+# OLD (deprecated scripts removed in cleanup):
+# node scripts/setup-test-users.js
+# node scripts/test-database-setup.js
+
+# NEW (use instead):
+npm run dev:seed    # Creates test users for development
+npm run db:check    # Verify database structure
+npm run app:smoke   # Run smoke test
 ```

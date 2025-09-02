@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-09-02T02:16:37.864Z",
+  "database": "AmpTrack",
+  "collections": [
+    {
+      "name": "user_data",
+      "documentCount": 23
+    },
+    {
+      "name": "userdatas",
+      "documentCount": 0
+    },
+    {
+      "name": "users",
+      "documentCount": 2
+    },
+    {
+      "name": "smoke_test",
+      "documentCount": 0
+    },
+    {
+      "name": "content_templates",
+      "documentCount": 2
+    }
+  ],
+  "totalCollections": 5,
+  "totalDocuments": 27
+}

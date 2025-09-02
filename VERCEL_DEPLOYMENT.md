@@ -39,13 +39,16 @@ git push origin master
 
 ## 🛠️ Post-Deployment Cleanup
 
-After successful deployment, run the production cleanup script:
+⚠️ **DEPRECATED**: The specific cleanup script was removed during scripts directory cleanup.
+
+For post-deployment verification, use the standard database tools:
 
 ```bash
-node scripts/cleanup-empty-items-prod.mjs
+npm run db:check    # Verify database structure and contents
+npm run app:smoke   # Run smoke test to verify functionality
 ```
 
-This will clean up any empty placeholder items in your production database.
+**Note**: One-off cleanup scripts were removed in favor of consistent database management through the `npm run db:*` aliases.
 
 ## � Troubleshooting
 
