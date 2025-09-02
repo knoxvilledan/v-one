@@ -86,7 +86,7 @@ export default function TimeBlockTemplateManager({
 
     try {
       await ApiService.updateTimeBlockTemplate(
-        editingIndex,
+        editingIndex.toString(),
         editLabel,
         activeTab,
         editTime
@@ -141,7 +141,7 @@ export default function TimeBlockTemplateManager({
     }
 
     try {
-      await ApiService.removeTimeBlockFromTemplate(index, activeTab);
+      await ApiService.removeTimeBlockFromTemplate(index.toString(), activeTab);
       await loadTemplates(); // Reload to get the updated templates
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to remove block");
