@@ -6,11 +6,28 @@ import {
   type ITimeBlockTemplate,
   type IChecklistTemplate,
 } from "../models/ContentTemplate";
-import UserData, { type IUserData } from "../models/UserData";
-import User, { type IUser } from "../models/User";
-import { ContentService } from "./content-service";
+import { UserData } from "../models/UserData";
 import { generateId } from "./id-generation";
-import { Block, ChecklistItem } from "../types";
+
+// Type definitions for template synchronization
+interface UserTimeBlock {
+  id?: string;
+  blockId?: string;
+  time: string;
+  label: string;
+  order: number;
+  completed?: boolean;
+  notes?: string[];
+}
+
+interface UserChecklistItem {
+  id?: string;
+  itemId?: string;
+  text: string;
+  category: string;
+  order: number;
+  completed?: boolean;
+}
 
 export interface TemplateSyncOptions {
   syncTimeBlocks?: boolean;
@@ -245,7 +262,9 @@ export class TemplateSyncService {
             );
             updatedData.blocks = syncedTimeBlocks;
             updatedData.timeBlocksOrder = this.generateUserOrder(
-              syncedTimeBlocks.map((b) => b.blockId || b.id || generateId())
+              syncedTimeBlocks.map(
+                (b) => b.blockId || b.id || generateId.block()
+              )
             );
           }
 
@@ -259,7 +278,8 @@ export class TemplateSyncService {
               );
               updatedData.masterChecklistOrder = this.generateUserOrder(
                 updatedData.masterChecklist.map(
-                  (item) => item.itemId || item.id || generateId()
+                  (item: UserChecklistItem) =>
+                    item.itemId || item.id || generateId.block()
                 )
               );
             }
@@ -272,7 +292,8 @@ export class TemplateSyncService {
               );
               updatedData.habitBreakChecklistOrder = this.generateUserOrder(
                 updatedData.habitBreakChecklist.map(
-                  (item) => item.itemId || item.id || generateId()
+                  (item: UserChecklistItem) =>
+                    item.itemId || item.id || generateId.block()
                 )
               );
             }
@@ -324,9 +345,9 @@ export class TemplateSyncService {
    * Convert admin template time blocks to public template format
    */
   private static convertTemplateTimeBlocks(
-    adminTimeBlocks: any[],
+    adminTimeBlocks: ITimeBlockTemplate[],
     targetRole: "public" | "admin"
-  ): any[] {
+  ): ITimeBlockTemplate[] {
     return adminTimeBlocks.map((block, index) => ({
       ...block,
       id: `${targetRole}-t${Date.now()}-${index}`,
@@ -339,9 +360,9 @@ export class TemplateSyncService {
    * Convert admin template checklist to public template format
    */
   private static convertTemplateChecklist(
-    adminChecklist: any[],
+    adminChecklist: IChecklistTemplate[],
     targetRole: "public" | "admin"
-  ): any[] {
+  ): IChecklistTemplate[] {
     return adminChecklist.map((item, index) => ({
       ...item,
       id: `${targetRole}-${item.category}-${Date.now()}-${index}`,
@@ -357,7 +378,7 @@ export class TemplateSyncService {
     adminOrder: string[],
     targetRole: "public" | "admin"
   ): string[] {
-    return adminOrder.map((id, index) =>
+    return adminOrder.map((id) =>
       id
         .replace(/^admin-/, `${targetRole}-`)
         .replace(/^public-/, `${targetRole}-`)
@@ -368,10 +389,10 @@ export class TemplateSyncService {
    * Sync user time blocks with template while preserving user data
    */
   private static syncUserTimeBlocks(
-    userBlocks: any[],
-    templateBlocks: any[],
+    userBlocks: UserTimeBlock[],
+    templateBlocks: ITimeBlockTemplate[],
     preserveUserIds: boolean
-  ): any[] {
+  ): UserTimeBlock[] {
     const syncedBlocks = [];
 
     for (const templateBlock of templateBlocks) {
@@ -409,10 +430,10 @@ export class TemplateSyncService {
    * Sync user checklist with template while preserving user data
    */
   private static syncUserChecklist(
-    userChecklist: any[],
-    templateChecklist: any[],
+    userChecklist: UserChecklistItem[],
+    templateChecklist: IChecklistTemplate[],
     preserveUserIds: boolean
-  ): any[] {
+  ): UserChecklistItem[] {
     const syncedChecklist = [];
 
     for (const templateItem of templateChecklist) {
@@ -490,7 +511,7 @@ export class TemplateSyncService {
       // Check admin template
       const adminTemplate = await ContentTemplate.findOne({
         userRole: "admin",
-      }).lean();
+      }).lean<IContentTemplate>();
       if (!adminTemplate) {
         issues.push("Admin template missing");
       } else {
@@ -500,7 +521,7 @@ export class TemplateSyncService {
       // Check public template
       const publicTemplate = await ContentTemplate.findOne({
         userRole: "public",
-      }).lean();
+      }).lean<IContentTemplate>();
       if (!publicTemplate) {
         issues.push("Public template missing");
       } else {
