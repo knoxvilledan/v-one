@@ -1,0 +1,211 @@
+// Server-only database utilities for daily page
+import { connectDB } from "../../lib/database";
+import { Block, ChecklistItem } from "../../types";
+import {
+  generateTimeBlocks,
+  getUserTimezone,
+  getDefaultWakeSettings,
+} from "../../lib/time-block-calculator";
+
+// Temporary type for Mongoose lean() result
+type LeanUserData = {
+  wakeTime?: string;
+  blocks?: Block[];
+  dailyWakeTime?: string;
+  userTimezone?: string;
+  masterChecklist?: ChecklistItem[];
+  habitBreakChecklist?: ChecklistItem[];
+  workoutChecklist?: ChecklistItem[];
+  todoList?: ChecklistItem[];
+};
+
+export interface DayData {
+  date: string;
+  userId: string;
+  wakeTime: string;
+  dailyWakeTime: string;
+  userTimezone: string;
+  blocks: Block[];
+  masterChecklist: ChecklistItem[];
+  habitBreakChecklist: ChecklistItem[];
+  workoutChecklist: ChecklistItem[];
+  todoList: ChecklistItem[];
+  settings: {
+    wakeTime: string;
+    timezone: string;
+  };
+}
+
+// Helper function to ensure date fields are proper Date objects
+function ensureDateObjects(items: ChecklistItem[]): ChecklistItem[] {
+  return items.map((item) => ({
+    ...item,
+    completedAt: item.completedAt ? new Date(item.completedAt) : undefined,
+  }));
+}
+
+// Get default content from templates
+async function getDefaultContent() {
+  await connectDB();
+
+  // Get content from templates (this should ideally be moved to a separate service)
+  // For now, using the same logic as the original
+  const defaultTimeBlocks = generateTimeBlocks();
+  const defaultBlocks = defaultTimeBlocks.map((config) => ({
+    id: `block-${config.index}`,
+    time: config.timeLabel,
+    label: `Block ${config.index + 1}`,
+    notes: [],
+    complete: false,
+    duration: 60,
+    index: config.index,
+  }));
+
+  return {
+    defaultBlocks,
+    defaultMasterChecklist: [],
+    defaultHabitBreakChecklist: [],
+    defaultWorkoutChecklist: [],
+    defaultWakeTimeSettings: getDefaultWakeSettings(),
+  };
+}
+
+/**
+ * Get complete day data for a user and date
+ * This is the main server-side data fetching function
+ */
+export async function getDay(date: string, userId: string): Promise<DayData> {
+  try {
+    await connectDB();
+
+    // Import UserData model here to avoid circular dependencies
+    const { UserData } = await import("../../lib/database");
+
+    // Find user data for this specific date
+    const dayEntry = await UserData.findOne({
+      userId: userId,
+      date: date,
+    }).lean();
+
+    // Get defaults
+    const defaults = await getDefaultContent();
+    const {
+      defaultBlocks,
+      defaultMasterChecklist,
+      defaultHabitBreakChecklist,
+      defaultWorkoutChecklist,
+    } = defaults;
+
+    let finalBlocks: Block[] = defaultBlocks.map((b) => ({
+      ...b,
+      notes: [],
+      complete: false,
+    }));
+    let finalMasterChecklist: ChecklistItem[] = defaultMasterChecklist;
+    let finalHabitBreakChecklist: ChecklistItem[] = defaultHabitBreakChecklist;
+    let finalWorkoutChecklist: ChecklistItem[] = defaultWorkoutChecklist;
+    let finalTodoList: ChecklistItem[] = [];
+    let wakeTime = "";
+    let dailyWakeTime = "";
+    let userTimezone = getUserTimezone();
+
+    if (dayEntry) {
+      const entry = dayEntry as LeanUserData;
+      wakeTime = entry.wakeTime || "";
+      if (entry.blocks) {
+        finalBlocks = entry.blocks;
+      }
+
+      // Load daily wake time and timezone settings
+      if (entry.dailyWakeTime) {
+        dailyWakeTime = entry.dailyWakeTime;
+      } else if (entry.wakeTime) {
+        // Sync dailyWakeTime with wakeTime if only wakeTime is set
+        dailyWakeTime = entry.wakeTime;
+      }
+      if (entry.userTimezone) {
+        userTimezone = entry.userTimezone;
+      }
+
+      // Ensure dates are proper Date objects
+      finalMasterChecklist = ensureDateObjects(
+        entry.masterChecklist || defaultMasterChecklist
+      );
+      finalHabitBreakChecklist = ensureDateObjects(
+        entry.habitBreakChecklist || defaultHabitBreakChecklist
+      );
+
+      // For workout checklist, reset completion status for daily reset
+      let workoutChecklist = entry.workoutChecklist || [];
+      if (workoutChecklist.length === 0) {
+        // No workout data for today, load from defaults
+        workoutChecklist = defaultWorkoutChecklist;
+      } else {
+        // Reset completion status for existing workout items (daily reset)
+        workoutChecklist = workoutChecklist.map((workout: ChecklistItem) => ({
+          ...workout,
+          completed: false,
+          completedAt: undefined,
+          targetBlock: undefined,
+          completionTimezone: undefined,
+          timezoneOffset: undefined,
+        }));
+      }
+      finalWorkoutChecklist = ensureDateObjects(workoutChecklist);
+
+      // For todo list, include items from this day
+      const todoList = entry.todoList || [];
+
+      // TODO: Load uncompleted todos from previous days
+      // This would require querying multiple UserData documents
+      // For now, just use today's todos
+      finalTodoList = ensureDateObjects(todoList);
+    } else {
+      // If no data for this day, use defaults
+      finalTodoList = ensureDateObjects([]);
+      finalWorkoutChecklist = ensureDateObjects(defaultWorkoutChecklist);
+    }
+
+    return {
+      date,
+      userId,
+      wakeTime,
+      dailyWakeTime,
+      userTimezone,
+      blocks: finalBlocks,
+      masterChecklist: finalMasterChecklist,
+      habitBreakChecklist: finalHabitBreakChecklist,
+      workoutChecklist: finalWorkoutChecklist,
+      todoList: finalTodoList,
+      settings: {
+        wakeTime: wakeTime || dailyWakeTime,
+        timezone: userTimezone,
+      },
+    };
+  } catch (error) {
+    console.error("Error loading day data:", error);
+
+    // Return sensible defaults on error
+    const defaults = await getDefaultContent();
+    return {
+      date,
+      userId,
+      wakeTime: "",
+      dailyWakeTime: "",
+      userTimezone: getUserTimezone(),
+      blocks: defaults.defaultBlocks.map((b) => ({
+        ...b,
+        notes: [],
+        complete: false,
+      })),
+      masterChecklist: defaults.defaultMasterChecklist,
+      habitBreakChecklist: defaults.defaultHabitBreakChecklist,
+      workoutChecklist: defaults.defaultWorkoutChecklist,
+      todoList: [],
+      settings: {
+        wakeTime: "",
+        timezone: getUserTimezone(),
+      },
+    };
+  }
+}
