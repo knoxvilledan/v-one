@@ -5,7 +5,7 @@
 
 import "server-only";
 import { ContentTemplate, IContentTemplate } from "../models/ContentTemplate";
-import { connectMongoose } from "./db";
+import { connectDB } from "./database";
 import { migrateContentTemplate } from "./migration";
 
 export interface AppConfig {
@@ -91,7 +91,7 @@ export async function getAppConfig(forceRefresh = false): Promise<AppConfig> {
   }
 
   try {
-    await connectMongoose();
+    await connectDB();
 
     // Get both public and admin templates
     const [publicTemplate, adminTemplate] = await Promise.all([

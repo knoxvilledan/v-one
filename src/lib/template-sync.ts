@@ -1,5 +1,5 @@
 import "server-only";
-import { connectMongoose } from "./db";
+import { connectDB } from "./database";
 import {
   ContentTemplate,
   type IContentTemplate,
@@ -59,7 +59,7 @@ export class TemplateSyncService {
     }
   ): Promise<SyncResult> {
     try {
-      await connectMongoose();
+      await connectDB();
 
       // Step 1: Get admin template (source of truth)
       const adminTemplate = await ContentTemplate.findOne({
@@ -504,7 +504,7 @@ export class TemplateSyncService {
     issues: string[];
   }> {
     try {
-      await connectMongoose();
+      await connectDB();
 
       const issues: string[] = [];
 

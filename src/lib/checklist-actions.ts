@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { DayEntry } from "../models/DayEntry";
-import { connectMongoose } from "./db";
+import { connectDB } from "./database";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth";
 
@@ -35,7 +35,7 @@ export async function completeChecklistItem(
       throw new Error("Not authenticated");
     }
 
-    await connectMongoose();
+    await connectDB();
 
     const date = targetDate || new Date().toISOString().split("T")[0];
     const completedAt = new Date();
@@ -112,7 +112,7 @@ export async function uncompleteChecklistItem(
       throw new Error("Not authenticated");
     }
 
-    await connectMongoose();
+    await connectDB();
 
     const date = targetDate || new Date().toISOString().split("T")[0];
 
@@ -175,7 +175,7 @@ export async function addChecklistNotes(
       throw new Error("Not authenticated");
     }
 
-    await connectMongoose();
+    await connectDB();
 
     const date = targetDate || new Date().toISOString().split("T")[0];
 

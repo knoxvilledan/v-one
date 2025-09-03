@@ -1,4 +1,4 @@
-import { connectMongoose } from "./db";
+import { connectDB } from "./database";
 import type {
   User,
   UserRole,
@@ -8,7 +8,7 @@ import { ContentTemplate as ContentTemplateModel } from "../models/ContentTempla
 
 export class ContentService {
   private static async ensureDb() {
-    await connectMongoose();
+    await connectDB();
   }
 
   // User Management

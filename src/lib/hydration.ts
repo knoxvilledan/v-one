@@ -1,4 +1,4 @@
-import { connectMongoose } from "./db";
+import { connectDB } from "./database";
 import { TemplateSet, type ITemplateSet } from "../models/TemplateSet";
 import { UserSpace, type IUserSpace } from "../models/UserSpace";
 import { DayEntry, type IDayEntry } from "../models/DayEntry";
@@ -68,7 +68,7 @@ export class HydrationService {
     targetDate?: string // YYYY-MM-DD format, defaults to today
   ): Promise<HydratedUserData | null> {
     try {
-      await connectMongoose();
+      await connectDB();
 
       // Get base user info
       const user = (await User.findOne({ email }).lean()) as {
