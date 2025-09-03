@@ -4,7 +4,10 @@ import { connectDB } from "@/lib/database";
 export async function GET() {
   try {
     await connectDB();
-    return NextResponse.json({ ok: true, message: "Database connection successful" });
+    return NextResponse.json({
+      ok: true,
+      message: "Database connection successful",
+    });
   } catch (error) {
     console.error("Database health check failed:", error);
     return NextResponse.json(

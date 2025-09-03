@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../lib/auth";
 import { ContentService } from "../../../../lib/content-service";
-import { connectMongoose } from "../../../../lib/db";
-import { UserData, type IUserData } from "../../../../models/UserData";
+import { connectDB, UserData, type IUserData } from "@/lib/database";
 import { getBlockById } from "../../../../lib/id-helpers";
 
 // PATCH /api/timeblocks/user - Update user's personal time block labels
@@ -43,7 +42,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    await connectMongoose();
+    await connectDB();
 
     // Get existing user data for the date
     const existingData = await UserData.findOne({
@@ -124,7 +123,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    await connectMongoose();
+    await connectDB();
 
     // Get user data for the specific date
     const data = await UserData.findOne({

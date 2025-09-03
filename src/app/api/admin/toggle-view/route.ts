@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../lib/auth";
-import dbConnect from "../../../../lib/dbConnect";
-import User from "../../../../models/User";
+import { connectDB, User } from "@/lib/database";
 
 // POST /api/admin/toggle-view - Toggle admin view mode between admin and public content
 export async function POST(request: NextRequest) {
@@ -13,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    await dbConnect();
+    await connectDB();
 
     // Find the user
     const user = await User.findOne({ email: session.user.email });
@@ -67,7 +66,7 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    await dbConnect();
+    await connectDB();
 
     // Find the user
     const user = await User.findOne({ email: session.user.email });

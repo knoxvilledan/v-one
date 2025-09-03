@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "../../../../lib/dbConnect";
-import User from "../../../../models/User";
+import { connectDB, User } from "@/lib/database";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    await dbConnect();
+    await connectDB();
 
     // Check if user exists
     const user = await User.findOne({ email: email.toLowerCase() });

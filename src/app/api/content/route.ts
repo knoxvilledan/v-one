@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth";
 import { ContentService } from "../../../lib/content-service";
-import dbConnect from "../../../lib/dbConnect";
 import {
+  connectDB,
   ContentTemplate,
   type IContentTemplate,
-} from "../../../models/ContentTemplate";
-import User from "../../../models/User";
+  User,
+} from "@/lib/database";
 
 // GET /api/content - Get content template for current user's role
 export async function GET() {
@@ -36,7 +36,7 @@ export async function GET() {
     // If user is admin, check their view mode preference
     if (user.role === "admin") {
       // Connect to database to get latest user data including adminViewMode
-      await dbConnect();
+      await connectDB();
       const userFromDb = await User.findOne({ email: session.user.email });
       const adminViewMode = userFromDb?.adminViewMode || "admin";
 
@@ -45,7 +45,7 @@ export async function GET() {
     }
 
     // Get content template for the effective role
-    await dbConnect();
+    await connectDB();
     const contentTemplate = await ContentTemplate.findOne({
       userRole: effectiveRole,
     }).lean<IContentTemplate>();

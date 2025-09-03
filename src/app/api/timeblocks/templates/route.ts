@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../lib/auth";
 import { ContentService } from "../../../../lib/content-service";
-import { connectMongoose } from "../../../../lib/db";
 import {
+  connectDB,
   ContentTemplate,
   type IContentTemplate,
-} from "../../../../models/ContentTemplate";
+} from "@/lib/database";
 import { getMaxCounts, invalidateConfigCache } from "../../../../lib/config";
 import { getTimeBlockTemplateById } from "../../../../lib/id-helpers";
 
@@ -50,7 +50,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get the current content template
-    await connectMongoose();
+    await connectDB();
     const contentTemplate = await ContentTemplate.findOne({
       userRole: targetRole,
     }).lean<IContentTemplate>();
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get the content template for the specified role
-    await connectMongoose();
+    await connectDB();
     const contentTemplate = await ContentTemplate.findOne({
       userRole: targetRole,
     }).lean<IContentTemplate>();
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the current content template
-    await connectMongoose();
+    await connectDB();
     const contentTemplate = await ContentTemplate.findOne({
       userRole: targetRole,
     }).lean<IContentTemplate>();
