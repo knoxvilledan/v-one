@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth";
-import { connectMongoose } from "../../../lib/db";
-import { UserData, type IUserData } from "../../../models/UserData";
+import { connectDB, UserData, type IUserData } from "@/lib/database";
 import type {
   TimeBlockTemplate,
   ChecklistTemplate,
@@ -136,7 +135,7 @@ export async function POST(request: NextRequest) {
     const dateObj = parseStorageDate(date);
     const displayDate = formatDisplayDate(dateObj);
 
-    await connectMongoose();
+    await connectDB();
     await ensureIndexes();
 
     // Ensure blocks have IDs
@@ -213,7 +212,7 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const date = url.searchParams.get("date");
 
-    await connectMongoose();
+    await connectDB();
     await ensureIndexes();
 
     if (date) {

@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../lib/auth";
 import { ContentService } from "../../../../lib/content-service";
-import dbConnect from "../../../../lib/dbConnect";
-import { UserData, type IUserData } from "../../../../models/UserData";
+import { connectDB, UserData, type IUserData } from "@/lib/database";
 import type {
   TimeBlockTemplate,
   ChecklistTemplate,
@@ -63,7 +62,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    await dbConnect();
+    await connectDB();
 
     // Get existing user data for the date
     const existingData = await UserData.findOne({
@@ -141,7 +140,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await dbConnect();
+    await connectDB();
 
     // Check if data already exists for this date
     const existingData = await UserData.findOne({

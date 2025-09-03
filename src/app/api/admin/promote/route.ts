@@ -1,11 +1,10 @@
 // TEMPORARY ADMIN PROMOTION ROUTE - REMOVE BEFORE PRODUCTION
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/dbConnect";
-import User from "@/models/User";
+import { connectDB, User } from "@/lib/database";
 
 export async function POST() {
   try {
-    await dbConnect();
+    await connectDB();
 
     // Replace with your actual email address
     const adminEmail = "your-email@gmail.com"; // TODO: Update this with your actual email
