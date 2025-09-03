@@ -7,6 +7,23 @@ import { redirect } from "next/navigation";
 import { connectDB } from "../../lib/database";
 import { ChecklistItem, Block } from "../../types";
 
+// Validation helpers
+function isValidDate(date: string): boolean {
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(date)) return false;
+
+  const parsedDate = new Date(date);
+  return parsedDate instanceof Date && !isNaN(parsedDate.getTime());
+}
+
+function isValidItemId(id: string): boolean {
+  return typeof id === "string" && id.length > 0 && id.length < 100;
+}
+
+function sanitizeText(text: string, maxLength: number = 500): string {
+  return text.trim().substring(0, maxLength);
+}
+
 /**
  * Toggle completion status of a checklist item
  */
@@ -19,6 +36,15 @@ export async function toggleChecklistItem(
     | "workoutChecklist"
     | "todoList"
 ) {
+  // Validate inputs
+  if (!isValidDate(date)) {
+    throw new Error("Invalid date format");
+  }
+
+  if (!isValidItemId(itemId)) {
+    throw new Error("Invalid item ID");
+  }
+
   const session = await getServerSession();
   if (!session?.user?.email) {
     redirect("/auth/signin");
@@ -83,6 +109,15 @@ export async function toggleChecklistItem(
  * Toggle completion status of a time block
  */
 export async function toggleTimeBlock(date: string, blockId: string) {
+  // Validate inputs
+  if (!isValidDate(date)) {
+    throw new Error("Invalid date format");
+  }
+
+  if (!isValidItemId(blockId)) {
+    throw new Error("Invalid block ID");
+  }
+
   const session = await getServerSession();
   if (!session?.user?.email) {
     redirect("/auth/signin");
@@ -165,10 +200,20 @@ export async function updateWakeTimeAction(formData: FormData) {
   const wakeTime = formData.get("wakeTime") as string;
   const date = formData.get("date") as string;
 
-  if (!wakeTime || !date) {
-    return; // Don't update if no wake time or date provided
+  // Validate inputs
+  if (!date || !isValidDate(date)) {
+    throw new Error("Invalid date format");
   }
 
+  if (!wakeTime || typeof wakeTime !== "string") {
+    throw new Error("Invalid wake time");
+  }
+
+  // Validate time format (HH:MM)
+  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  if (!timeRegex.test(wakeTime)) {
+    throw new Error("Invalid time format");
+  }
   try {
     await connectDB();
     const { UserData } = await import("../../lib/database");
@@ -203,7 +248,17 @@ export async function addBlockNote(
     redirect("/auth/signin");
   }
 
-  if (!note.trim()) {
+  // Validate inputs
+  if (!isValidDate(date)) {
+    throw new Error("Invalid date format");
+  }
+
+  if (!isValidItemId(blockId)) {
+    throw new Error("Invalid block ID");
+  }
+
+  const sanitizedNote = sanitizeText(note, 200);
+  if (!sanitizedNote) {
     return; // Don't add empty notes
   }
 
@@ -255,13 +310,19 @@ export async function addBlockNote(
  * Add a new todo item
  */
 export async function addTodoItem(date: string, text: string) {
+  // Validate inputs
+  if (!isValidDate(date)) {
+    throw new Error("Invalid date format");
+  }
+
+  const sanitizedText = sanitizeText(text, 200);
+  if (!sanitizedText) {
+    return; // Don't add empty todos
+  }
+
   const session = await getServerSession();
   if (!session?.user?.email) {
     redirect("/auth/signin");
-  }
-
-  if (!text.trim()) {
-    return; // Don't add empty todos
   }
 
   try {

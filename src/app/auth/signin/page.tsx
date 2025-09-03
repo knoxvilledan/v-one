@@ -26,10 +26,7 @@ export default function SignIn() {
       router.prefetch("/");
 
       // Prefetch API routes that will be called on dashboard load
-      await Promise.all([
-        fetch("/api/config", { method: "HEAD" }),
-        fetch("/api/user-data", { method: "HEAD" }),
-      ]);
+      await Promise.all([fetch("/api/config", { method: "HEAD" })]);
 
       console.log("Dashboard assets prefetched");
     } catch (error) {
