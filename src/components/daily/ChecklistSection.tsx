@@ -1,6 +1,9 @@
 // Server Component for checklist sections
 import { ChecklistItem } from "../../types";
-import { toggleChecklistItem } from "../../server/actions/daily";
+import {
+  completeChecklistItem,
+  uncompleteChecklistItem,
+} from "../../lib/checklist-actions";
 
 interface ChecklistSectionProps {
   title: string;
@@ -49,6 +52,7 @@ export default function ChecklistSection({
   date,
   colorScheme,
 }: ChecklistSectionProps) {
+  // Map listType to checklistId based on the title
   return (
     <div className="mb-8">
       <h2 className="text-lg font-semibold mb-4">{title}</h2>
@@ -58,7 +62,41 @@ export default function ChecklistSection({
             key={item.id}
             action={async () => {
               "use server";
-              await toggleChecklistItem(date, item.id, listType);
+              // Map listType/title to checklistId inline to avoid serialization issues
+              let checklistId = "";
+              if (title === "Daily Tasks") {
+                checklistId = "daily-master-checklist";
+              } else if (title === "Habit Breaks") {
+                checklistId = "habit-break-tracker";
+              } else if (title === "Workout Checklist") {
+                checklistId = "workout-checklist";
+              } else {
+                // Fallback mapping
+                switch (listType) {
+                  case "masterChecklist":
+                    checklistId = "daily-master-checklist";
+                    break;
+                  case "habitBreakChecklist":
+                    checklistId = "habit-break-tracker";
+                    break;
+                  case "workoutChecklist":
+                    checklistId = "workout-checklist";
+                    break;
+                  default:
+                    checklistId = "daily-master-checklist";
+                }
+              }
+
+              if (item.completed) {
+                await uncompleteChecklistItem(checklistId, item.id, date);
+              } else {
+                await completeChecklistItem(
+                  checklistId,
+                  item.id,
+                  item.text,
+                  date
+                );
+              }
             }}
             className={`flex items-center gap-3 p-3 rounded-lg border ${getColorClasses(
               colorScheme,

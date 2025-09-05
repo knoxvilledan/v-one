@@ -7,6 +7,9 @@ import {
   getDefaultWakeSettings,
 } from "../../lib/time-block-calculator";
 
+// Import template types
+import type { IChecklistTemplate } from "../../models/ContentTemplate";
+
 // Temporary type for Mongoose lean() result
 type LeanUserData = {
   wakeTime?: string;
@@ -48,8 +51,13 @@ function ensureDateObjects(items: ChecklistItem[]): ChecklistItem[] {
 async function getDefaultContent() {
   await connectDB();
 
-  // Get content from templates (this should ideally be moved to a separate service)
-  // For now, using the same logic as the original
+  // Get content from public template
+  const { ContentTemplate } = await import("../../lib/database");
+  const publicTemplate = await ContentTemplate.findOne({
+    userRole: "public",
+  }).lean();
+
+  // Generate default time blocks
   const defaultTimeBlocks = generateTimeBlocks();
   const defaultBlocks = defaultTimeBlocks.map((config) => ({
     id: `block-${config.index}`,
@@ -61,11 +69,59 @@ async function getDefaultContent() {
     index: config.index,
   }));
 
+  // Load checklists from template if available
+  let defaultMasterChecklist: ChecklistItem[] = [];
+  let defaultHabitBreakChecklist: ChecklistItem[] = [];
+  let defaultWorkoutChecklist: ChecklistItem[] = [];
+
+  if (publicTemplate?.content) {
+    // Convert template items to checklist items
+    if (publicTemplate.content.masterChecklist) {
+      defaultMasterChecklist = publicTemplate.content.masterChecklist.map(
+        (item: IChecklistTemplate) => ({
+          id:
+            item.id ||
+            `master-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          text: item.text,
+          completed: false,
+          category: item.category,
+        })
+      );
+    }
+
+    if (publicTemplate.content.habitBreakChecklist) {
+      defaultHabitBreakChecklist =
+        publicTemplate.content.habitBreakChecklist.map(
+          (item: IChecklistTemplate) => ({
+            id:
+              item.id ||
+              `habit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            text: item.text,
+            completed: false,
+            category: item.category,
+          })
+        );
+    }
+
+    if (publicTemplate.content.workoutChecklist) {
+      defaultWorkoutChecklist = publicTemplate.content.workoutChecklist.map(
+        (item: IChecklistTemplate) => ({
+          id:
+            item.id ||
+            `workout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          text: item.text,
+          completed: false,
+          category: item.category,
+        })
+      );
+    }
+  }
+
   return {
     defaultBlocks,
-    defaultMasterChecklist: [],
-    defaultHabitBreakChecklist: [],
-    defaultWorkoutChecklist: [],
+    defaultMasterChecklist,
+    defaultHabitBreakChecklist,
+    defaultWorkoutChecklist,
     defaultWakeTimeSettings: getDefaultWakeSettings(),
   };
 }
