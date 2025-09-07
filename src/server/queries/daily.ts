@@ -1,6 +1,7 @@
 // Server-only database utilities for daily page
 import { connectDB } from "../../lib/database";
 import { Block, ChecklistItem } from "../../types";
+import { generateOptimizedId } from "../../lib/id-generation";
 import {
   generateTimeBlocks,
   getUserTimezone,
@@ -53,9 +54,9 @@ async function getDefaultContent() {
 
   // Get content from public template
   const { ContentTemplate } = await import("../../lib/database");
-  const publicTemplate = await ContentTemplate.findOne({
+  const publicTemplate = (await ContentTemplate.findOne({
     userRole: "public",
-  }).lean();
+  }).lean()) as any; // Type assertion for now to fix immediate issues
 
   // Generate default time blocks
   const defaultTimeBlocks = generateTimeBlocks();
@@ -78,13 +79,14 @@ async function getDefaultContent() {
     // Convert template items to checklist items
     if (publicTemplate.content.masterChecklist) {
       defaultMasterChecklist = publicTemplate.content.masterChecklist.map(
-        (item: IChecklistTemplate) => ({
-          id:
-            item.id ||
-            `master-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        (item: IChecklistTemplate, index: number) => ({
+          id: item.id || generateOptimizedId.todo([], index),
+          itemId:
+            item.itemId ||
+            `mc-${item.category}-${String(index).padStart(3, "0")}`,
           text: item.text,
           completed: false,
-          category: item.category,
+          category: item.category as ChecklistItem["category"],
         })
       );
     }
@@ -92,26 +94,28 @@ async function getDefaultContent() {
     if (publicTemplate.content.habitBreakChecklist) {
       defaultHabitBreakChecklist =
         publicTemplate.content.habitBreakChecklist.map(
-          (item: IChecklistTemplate) => ({
-            id:
-              item.id ||
-              `habit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          (item: IChecklistTemplate, index: number) => ({
+            id: item.id || generateOptimizedId.todo([], index + 100),
+            itemId:
+              item.itemId ||
+              `hb-${item.category}-${String(index).padStart(3, "0")}`,
             text: item.text,
             completed: false,
-            category: item.category,
+            category: item.category as ChecklistItem["category"],
           })
         );
     }
 
     if (publicTemplate.content.workoutChecklist) {
       defaultWorkoutChecklist = publicTemplate.content.workoutChecklist.map(
-        (item: IChecklistTemplate) => ({
-          id:
-            item.id ||
-            `workout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        (item: IChecklistTemplate, index: number) => ({
+          id: item.id || generateOptimizedId.workout([], index),
+          itemId:
+            item.itemId ||
+            `wk-${item.category}-${String(index).padStart(3, "0")}`,
           text: item.text,
           completed: false,
-          category: item.category,
+          category: item.category as ChecklistItem["category"],
         })
       );
     }

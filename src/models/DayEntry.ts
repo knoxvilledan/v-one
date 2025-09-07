@@ -140,6 +140,13 @@ DayEntrySchema.index({ userId: 1, date: 1 }, { unique: true });
 DayEntrySchema.index({ email: 1, date: 1 });
 DayEntrySchema.index({ date: 1 });
 DayEntrySchema.index({ userId: 1, date: -1 }); // for recent entries
+// New indexes for audit trail
+DayEntrySchema.index({
+  userId: 1,
+  date: 1,
+  "checklistCompletions.completedItemIds": 1,
+});
+DayEntrySchema.index({ userId: 1, date: 1, "timeBlockCompletions.blockId": 1 });
 
 // Update timestamps
 DayEntrySchema.pre("save", function (this: IDayEntry) {

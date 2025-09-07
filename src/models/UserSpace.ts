@@ -132,6 +132,9 @@ const UserSpaceSchema = new Schema<IUserSpace>({
 UserSpaceSchema.index({ email: 1 });
 UserSpaceSchema.index({ userId: 1 }, { unique: true });
 UserSpaceSchema.index({ lastActiveAt: 1 });
+// New indexes for overrides
+UserSpaceSchema.index({ userId: 1, "checklistOverrides.checklistId": 1 });
+UserSpaceSchema.index({ userId: 1, "timeBlockOverrides.blockId": 1 });
 
 // Update timestamps
 UserSpaceSchema.pre("save", function (this: IUserSpace) {

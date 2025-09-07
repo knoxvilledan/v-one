@@ -12,7 +12,7 @@ export interface ITimeBlockTemplate {
 
 export interface IChecklistTemplate {
   id: string;
-  itemId?: string; // Stable unique identifier across templates/instances (optional for backward compatibility)
+  itemId: string; // Stable unique identifier across templates/instances (required)
   text: string;
   category: string;
   order: number;
@@ -41,7 +41,7 @@ export interface IContentTemplate extends Document {
 const ChecklistTemplateSchema = new Schema(
   {
     id: { type: String, required: true },
-    itemId: { type: String }, // Stable unique identifier (optional for backward compatibility)
+    itemId: { type: String, required: true }, // Stable unique identifier (required)
     text: { type: String, required: true },
     category: { type: String, required: true },
     order: { type: Number, required: true },

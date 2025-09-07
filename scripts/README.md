@@ -1,50 +1,71 @@
 # Scripts Directory - Clean & Essential ✅
 
-## Cleanup Complete
+## Cleanup Complete (September 2025)
 
-**Status**: ✅ **COMPLETED** - Successfully reduced from 48+ scripts to 9 essential scripts
+**Status**: ✅ **COMPLETED** - Successfully reduced from 48+ scripts to 7 essential scripts
 
-## Current Scripts (9 total)
+## Current Scripts (7 total)
 
-| Script                             | Purpose                        | NPM Alias                    | Usage                         |
-| ---------------------------------- | ------------------------------ | ---------------------------- | ----------------------------- |
-| **backup-database.mjs**            | Database backup utility        | `npm run db:backup`          | Create timestamped backup     |
-| **check-database.mjs**             | Database verification          | `npm run db:check`           | Verify DB structure           |
-| **smoke-test.mjs**                 | End-to-end sanity testing      | `npm run app:smoke`          | Quick system health check     |
-| **setup-content-templates.js**     | Bootstrap template definitions | `npm run templates:setup`    | Initialize content templates  |
-| **populate-content-templates.mjs** | Bootstrap template population  | `npm run templates:populate` | Populate user templates       |
-| **seed.mjs**                       | Dev user seeding (optional)    | `npm run dev:seed`           | Create test users             |
-| **migrate-ids.mjs**                | One-time ID migration          | `npm run migrate:ids`        | Migrate to ID-based structure |
-| **package.json**                   | Scripts package configuration  | -                            | NPM script definitions        |
-| **README.md**                      | Documentation                  | -                            | This file                     |
+| Script                  | Purpose                        | Usage                      |
+| ----------------------- | ------------------------------ | -------------------------- |
+| **backup-database.mjs** | Database backup utility        | `node backup-database.mjs` |
+| **check-database.mjs**  | Database verification          | `node check-database.mjs`  |
+| **check-ids.mjs**       | ID format validation           | `node check-ids.mjs`       |
+| **migrate-ids.mjs**     | 9-point audit Priority 1 fixes | `node migrate-ids.mjs`     |
+| **seed.mjs**            | Dev user seeding (optional)    | `node seed.mjs`            |
+| **smoke-test.mjs**      | End-to-end sanity testing      | `node smoke-test.mjs`      |
+| **README.md**           | Documentation                  | This file                  |
 
-## NPM Script Aliases
+## Recent Cleanup (September 2025)
 
-```bash
-# Database Operations
-npm run db:backup      # Create database backup
-npm run db:check       # Verify database structure
+### Removed Old Migration Scripts
 
-# Application Testing
-npm run app:smoke      # Run smoke test
+- ❌ `migrate-to-plan-system.mjs` - Outdated plan system migration
+- ❌ `sync-to-plan-system.mjs` - Outdated plan system sync
+- ❌ `create-hybrid-system.mjs` - Outdated hybrid migration
+- ❌ `test-api-customizations.mjs` - Old plan system tests
+- ❌ `test-customization-persistence.mjs` - Old plan system tests
+- ❌ `check-user-functionality.mjs` - Old plan system checks
 
-# Template Management
-npm run templates:setup     # Setup content templates
-npm run templates:populate  # Populate user templates
+### Current Focus: 9-Point Audit Implementation
 
-# Development
-npm run dev:seed       # Create test users
+- ✅ `migrate-ids.mjs` - Updated for Priority 1 fixes:
+  - Client-side ID generation fixes
+  - Required itemId enforcement
+  - Audit trail indexes
+  - ID migration utilities
 
-# One-time Migration
-npm run migrate:ids    # Run ID migration (remove after use)
-```
+## Script Descriptions
 
-## Cleanup Summary
+### **migrate-ids.mjs** - Priority 1 Migration
 
-- **Removed**: 41 redundant, one-off, and superseded scripts
-- **Kept**: 7 essential operational scripts + 2 config files
-- **Added**: NPM script aliases for easy access
-- **Result**: Clean, maintainable scripts directory
+Updates system for 9-point audit compliance:
+
+1. Add missing itemId to existing ContentTemplate items
+2. Migrate UserData to ensure all items have required itemId
+3. Create audit trail entries in DayEntry collection
+4. Validate ID consistency across collections
+5. Fix client-generated ID references
+
+### **check-ids.mjs** - ID Validation
+
+Quick utility to check current ID formats in the database for validation after migration.
+
+### **backup-database.mjs** - Database Backup
+
+Creates timestamped backups before major operations.
+
+### **check-database.mjs** - Database Health
+
+Verifies database structure and connectivity.
+
+### **seed.mjs** - Development Users
+
+Creates test users for development (optional).
+
+### **smoke-test.mjs** - System Health
+
+End-to-end sanity testing for core functionality.
 
 ---
 

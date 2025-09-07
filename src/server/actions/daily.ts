@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 import { connectDB } from "../../lib/database";
+import { generateOptimizedId } from "../../lib/id-generation";
 import { ChecklistItem, Block } from "../../types";
 
 // Validation helpers
@@ -329,8 +330,16 @@ export async function addTodoItem(date: string, text: string) {
     await connectDB();
     const { UserData } = await import("../../lib/database");
 
+    const existingTodos = (await UserData.findOne({
+      userId: session.user.email,
+      date,
+    }).select("todoList")) || { todoList: [] };
+    const existingIds =
+      existingTodos.todoList?.map((t: ChecklistItem) => t.id) || [];
+
     const newTodo: ChecklistItem = {
-      id: `todo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateOptimizedId.todo(existingIds, existingIds.length),
+      itemId: `todo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary until proper itemId system
       text: text.trim(),
       completed: false,
       category: "todo",

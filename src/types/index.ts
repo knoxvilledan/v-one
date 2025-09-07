@@ -1,6 +1,6 @@
 export interface ChecklistItem {
   id: string;
-  itemId?: string; // Stable unique identifier for the item across templates/instances (optional for backward compatibility)
+  itemId: string; // Stable unique identifier for the item across templates/instances (required)
   text: string;
   completed: boolean;
   category:
