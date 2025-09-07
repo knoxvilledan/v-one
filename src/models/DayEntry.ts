@@ -155,4 +155,4 @@ DayEntrySchema.pre("save", function (this: IDayEntry) {
 
 export const DayEntry =
   mongoose.models.DayEntry ||
-  mongoose.model<IDayEntry>("DayEntry", DayEntrySchema);
+  mongoose.model<IDayEntry>("DayEntry", DayEntrySchema, "dayEntries");

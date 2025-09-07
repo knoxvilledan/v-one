@@ -264,7 +264,7 @@ export class HydrationService {
     // Apply time block overrides
     const timeBlocks = templateSet.timeBlocks
       .map((block) => {
-        const override = userSpace.timeBlockOverrides.find(
+        const override = userSpace?.timeBlockOverrides?.find(
           (o) => o.blockId === block.blockId
         );
         if (override && override.isHidden) {
@@ -289,7 +289,7 @@ export class HydrationService {
     // Apply checklist overrides
     const checklists = templateSet.checklists
       .map((checklist) => {
-        const checklistOverride = userSpace.checklistOverrides.find(
+        const checklistOverride = userSpace?.checklistOverrides?.find(
           (o) => o.checklistId === checklist.checklistId
         );
         if (checklistOverride && checklistOverride.isHidden) {

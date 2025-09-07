@@ -15,6 +15,10 @@ export interface ChecklistItem {
     | "time"
     | "entertainment"
     | "todo"
+    | "general"
+    | "family"
+    | "household"
+    | "budget"
     | "cardio"
     | "strength"
     | "stretching"
@@ -46,6 +50,7 @@ export interface Block {
   label: string;
   notes: string[];
   complete: boolean;
+  completedAt?: Date; // Timestamp when block was completed
   checklist?: ChecklistItem[];
   duration?: number; // Duration in minutes, defaults to 60
   index?: number; // Block index (dynamic based on configuration)

@@ -143,4 +143,4 @@ UserSpaceSchema.pre("save", function (this: IUserSpace) {
 
 export const UserSpace =
   mongoose.models.UserSpace ||
-  mongoose.model<IUserSpace>("UserSpace", UserSpaceSchema);
+  mongoose.model<IUserSpace>("UserSpace", UserSpaceSchema, "userSpaces");

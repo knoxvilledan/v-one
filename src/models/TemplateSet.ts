@@ -130,4 +130,8 @@ TemplateSetSchema.pre("save", async function (this: ITemplateSet) {
 
 export const TemplateSet =
   mongoose.models.TemplateSet ||
-  mongoose.model<ITemplateSet>("TemplateSet", TemplateSetSchema);
+  mongoose.model<ITemplateSet>(
+    "TemplateSet",
+    TemplateSetSchema,
+    "templateSets"
+  );
