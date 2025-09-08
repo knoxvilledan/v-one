@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../lib/auth";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { HydrationService } from "../../lib/hydration";
 import { getTodayStorageDate } from "../../lib/date-utils";
 import EnhancedDailyLayout from "../../components/EnhancedDailyLayout";
@@ -227,6 +228,9 @@ export default async function DailyPage({ params }: PageProps) {
     try {
       await HydrationService.updateDayData(session.user.email, date, data);
       console.log("✅ Data updated successfully");
+
+      // Revalidate the current page to show the updated data
+      revalidatePath(`/${date}`);
     } catch (error) {
       console.error("❌ Failed to update data:", error);
       throw error;
@@ -250,6 +254,9 @@ export default async function DailyPage({ params }: PageProps) {
         category
       );
       console.log("✅ Item completed successfully");
+
+      // Revalidate the current page to show the completion
+      revalidatePath(`/${date}`);
     } catch (error) {
       console.error("❌ Failed to complete item:", error);
       throw error;
@@ -268,6 +275,9 @@ export default async function DailyPage({ params }: PageProps) {
     try {
       await HydrationService.toggleTimeBlock(session.user.email, date, blockId);
       console.log("✅ Time block toggled successfully");
+
+      // Revalidate the current page to show the toggle
+      revalidatePath(`/${date}`);
     } catch (error) {
       console.error("❌ Failed to toggle time block:", error);
       throw error;
@@ -291,6 +301,9 @@ export default async function DailyPage({ params }: PageProps) {
         note
       );
       console.log("✅ Note added successfully");
+
+      // Revalidate the current page to show the new note
+      revalidatePath(`/${date}`);
     } catch (error) {
       console.error("❌ Failed to add note:", error);
       throw error;
@@ -314,6 +327,9 @@ export default async function DailyPage({ params }: PageProps) {
         noteIndex
       );
       console.log("✅ Note deleted successfully");
+
+      // Revalidate the current page to show the note removal
+      revalidatePath(`/${date}`);
     } catch (error) {
       console.error("❌ Failed to delete note:", error);
       throw error;
@@ -337,6 +353,9 @@ export default async function DailyPage({ params }: PageProps) {
         newLabel
       );
       console.log("✅ Block label updated successfully");
+
+      // Revalidate the current page to show the updated label
+      revalidatePath(`/${date}`);
     } catch (error) {
       console.error("❌ Failed to update block label:", error);
       throw error;
@@ -363,6 +382,10 @@ export default async function DailyPage({ params }: PageProps) {
         { text, category }
       );
       console.log("✅ Checklist item added successfully:", itemId);
+
+      // Revalidate the current page to show the new item
+      revalidatePath(`/${date}`);
+
       return itemId;
     } catch (error) {
       console.error("❌ Failed to add checklist item:", error);
@@ -385,6 +408,10 @@ export default async function DailyPage({ params }: PageProps) {
         label,
       });
       console.log("✅ Time block added successfully:", blockId);
+
+      // Revalidate the current page to show the new time block
+      revalidatePath(`/${date}`);
+
       return blockId;
     } catch (error) {
       console.error("❌ Failed to add time block:", error);
@@ -411,6 +438,9 @@ export default async function DailyPage({ params }: PageProps) {
         category,
       });
       console.log("✅ Checklist item updated successfully");
+
+      // Revalidate the current page to show the updated item
+      revalidatePath(`/${date}`);
     } catch (error) {
       console.error("❌ Failed to update checklist item:", error);
       throw error;
@@ -429,6 +459,9 @@ export default async function DailyPage({ params }: PageProps) {
     try {
       await HydrationService.deleteChecklistItem(session.user.email, itemId);
       console.log("✅ Checklist item deleted successfully");
+
+      // Revalidate the current page to show the item removal
+      revalidatePath(`/${date}`);
     } catch (error) {
       console.error("❌ Failed to delete checklist item:", error);
       throw error;

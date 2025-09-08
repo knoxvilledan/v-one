@@ -498,34 +498,45 @@ export class HydrationService {
       const user = await User.findOne({ email }).lean();
       if (!user) throw new Error("User not found");
 
-      await DayEntry.findOneAndUpdate(
-        {
-          userId: user._id.toString(),
-          date,
-          "timeBlockCompletions.blockId": blockId,
-        },
-        {
-          $push: { "timeBlockCompletions.$.notes": note },
-          $set: { updatedAt: new Date() },
-        },
-        { upsert: false }
-      );
-
-      // If block doesn't exist, create it
-      const result = await DayEntry.findOne({
+      // Check if block completion already exists
+      const existingCompletion = await DayEntry.findOne({
         userId: user._id.toString(),
         date,
         "timeBlockCompletions.blockId": blockId,
       });
 
-      if (!result) {
+      if (existingCompletion) {
+        // Update existing completion's notes (append to existing notes if any)
+        await DayEntry.findOneAndUpdate(
+          {
+            userId: user._id.toString(),
+            date,
+            "timeBlockCompletions.blockId": blockId,
+          },
+          {
+            $set: {
+              "timeBlockCompletions.$.notes": note,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      } else {
+        // Get the time block details to create a proper completion
+        const timeBlockData = await this.getTimeBlockData(
+          user._id.toString(),
+          blockId
+        );
+
+        // Create new time block completion
         await DayEntry.findOneAndUpdate(
           { userId: user._id.toString(), date },
           {
             $push: {
               timeBlockCompletions: {
                 blockId,
-                notes: [note],
+                label: timeBlockData?.label || `Time Block ${blockId}`,
+                time: timeBlockData?.time || "Unknown",
+                notes: note,
                 completedAt: new Date(),
               },
             },
@@ -537,6 +548,57 @@ export class HydrationService {
     } catch (error) {
       console.error("Error adding block note:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Helper method to get time block data for completion creation
+   */
+  private static async getTimeBlockData(
+    userId: string,
+    blockId: string
+  ): Promise<{ label: string; time: string } | null> {
+    try {
+      // First check UserSpace for custom time blocks
+      const userSpace = (await UserSpace.findOne({
+        userId,
+      }).lean()) as IUserSpace | null;
+      if (userSpace?.timeBlockOverrides) {
+        const customBlock = userSpace.timeBlockOverrides.find(
+          (block) => block.blockId === blockId
+        );
+        if (customBlock) {
+          return {
+            label: customBlock.label || `Time Block ${blockId}`,
+            time: customBlock.time || "Unknown",
+          };
+        }
+      }
+
+      // Check template sets for standard blocks
+      const user = await User.findById(userId).lean();
+      if (user && "role" in user) {
+        const templateSet = (await TemplateSet.findOne({
+          role: user.role,
+          isActive: true,
+        }).lean()) as ITemplateSet | null;
+        if (templateSet?.timeBlocks) {
+          const templateBlock = templateSet.timeBlocks.find(
+            (block) => block.blockId === blockId
+          );
+          if (templateBlock) {
+            return {
+              label: templateBlock.label,
+              time: templateBlock.time,
+            };
+          }
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error getting time block data:", error);
+      return null;
     }
   }
 
