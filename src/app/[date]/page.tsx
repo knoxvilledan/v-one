@@ -214,43 +214,133 @@ export default async function DailyPage({ params }: PageProps) {
         ),
   };
 
-  // Server actions for data updates (will be passed to client component)
+  // Server actions for data updates
   const handleUpdateData = async (data: Partial<DayData>) => {
     "use server";
     console.log("Updating data:", data);
-    // TODO: Implement actual database update
-    // This is where we would save changes to MongoDB via the HydrationService
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      await HydrationService.updateDayData(session.user.email, date, data);
+      console.log("✅ Data updated successfully");
+    } catch (error) {
+      console.error("❌ Failed to update data:", error);
+      throw error;
+    }
   };
 
   const handleCompleteItem = async (itemId: string, category: string) => {
     "use server";
     console.log("Completing item:", itemId, "in category:", category);
-    // TODO: Implement actual completion in database
-    // This would update the dayEntry with the completed item
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      await HydrationService.completeItem(
+        session.user.email,
+        date,
+        itemId,
+        category
+      );
+      console.log("✅ Item completed successfully");
+    } catch (error) {
+      console.error("❌ Failed to complete item:", error);
+      throw error;
+    }
   };
 
   const handleToggleTimeBlock = async (blockId: string) => {
     "use server";
     console.log("Toggling time block:", blockId);
-    // TODO: Implement actual time block toggle in database
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      await HydrationService.toggleTimeBlock(session.user.email, date, blockId);
+      console.log("✅ Time block toggled successfully");
+    } catch (error) {
+      console.error("❌ Failed to toggle time block:", error);
+      throw error;
+    }
   };
 
   const handleAddBlockNote = async (blockId: string, note: string) => {
     "use server";
     console.log("Adding note to block:", blockId, "note:", note);
-    // TODO: Implement actual note addition to database
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      await HydrationService.addBlockNote(
+        session.user.email,
+        date,
+        blockId,
+        note
+      );
+      console.log("✅ Note added successfully");
+    } catch (error) {
+      console.error("❌ Failed to add note:", error);
+      throw error;
+    }
   };
 
   const handleDeleteBlockNote = async (blockId: string, noteIndex: number) => {
     "use server";
     console.log("Deleting note from block:", blockId, "index:", noteIndex);
-    // TODO: Implement actual note deletion from database
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      await HydrationService.deleteBlockNote(
+        session.user.email,
+        date,
+        blockId,
+        noteIndex
+      );
+      console.log("✅ Note deleted successfully");
+    } catch (error) {
+      console.error("❌ Failed to delete note:", error);
+      throw error;
+    }
   };
 
   const handleUpdateBlockLabel = async (blockId: string, newLabel: string) => {
     "use server";
     console.log("Updating block label:", blockId, "new label:", newLabel);
-    // TODO: Implement actual block label update in database
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      await HydrationService.updateBlockLabel(
+        session.user.email,
+        date,
+        blockId,
+        newLabel
+      );
+      console.log("✅ Block label updated successfully");
+    } catch (error) {
+      console.error("❌ Failed to update block label:", error);
+      throw error;
+    }
   };
 
   return (

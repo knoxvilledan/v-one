@@ -197,6 +197,7 @@ export default function MasterChecklist({
       // For now, use a placeholder that will be replaced server-side
       const newItem: ChecklistItem = {
         id: `temp-${Date.now()}`, // Temporary ID for client state
+        itemId: `temp-${Date.now()}`, // Add missing itemId field
         text: newItemText.trim(),
         completed: false,
         category: newItemCategory as ChecklistItem["category"],

@@ -258,13 +258,6 @@ export default function EnhancedDailyLayout({
             onCompleteItem={handleCompleteItem}
             onUpdateItems={handleMasterChecklistUpdate}
           />
-
-          {/* Habit Break Checklist - Starts Collapsed */}
-          <HabitBreakChecklist
-            items={dayData.habitBreakChecklist || []}
-            onCompleteItem={handleCompleteItem}
-            onUpdateItems={handleHabitBreakUpdate}
-          />
         </div>
 
         {/* Time Blocks Section - Starts Expanded */}
@@ -277,6 +270,15 @@ export default function EnhancedDailyLayout({
           isAdmin={isAdmin}
           date={dayData.date}
         />
+
+        {/* Habit Break Checklist - Below Time Blocks */}
+        <div className="mt-8">
+          <HabitBreakChecklist
+            items={dayData.habitBreakChecklist || []}
+            onCompleteItem={handleCompleteItem}
+            onUpdateItems={handleHabitBreakUpdate}
+          />
+        </div>
 
         {/* Floating Todo List */}
         <TodoList

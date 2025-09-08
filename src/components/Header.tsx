@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import DateNavigation from "./DateNavigation";
-import WakeTimeInput from "./WakeTimeInput";
 
 interface HeaderProps {
   date: string;
@@ -25,6 +24,7 @@ export default function Header({
 }: HeaderProps) {
   const { data: session } = useSession();
   const [isWakeTimeEditing, setIsWakeTimeEditing] = useState(false);
+  const [tempWakeTime, setTempWakeTime] = useState(wakeTime);
 
   const formatDisplayDate = (dateStr: string) => {
     const date = new Date(dateStr + "T00:00:00");
@@ -39,6 +39,21 @@ export default function Header({
   const getUserDisplayName = () => {
     if (!session?.user) return "Guest";
     return session.user.name || session.user.email?.split("@")[0] || "User";
+  };
+
+  const handleWakeTimeEdit = () => {
+    setTempWakeTime(wakeTime);
+    setIsWakeTimeEditing(true);
+  };
+
+  const handleWakeTimeSave = () => {
+    onWakeTimeChange(tempWakeTime);
+    setIsWakeTimeEditing(false);
+  };
+
+  const handleWakeTimeCancel = () => {
+    setTempWakeTime(wakeTime);
+    setIsWakeTimeEditing(false);
   };
 
   return (
@@ -66,23 +81,12 @@ export default function Header({
               <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
                 ⏰ Wake:
               </span>
-              {isWakeTimeEditing ? (
-                <WakeTimeInput
-                  currentWakeTime={wakeTime}
-                  onWakeTimeChange={(newTime) => {
-                    onWakeTimeChange(newTime);
-                    setIsWakeTimeEditing(false);
-                  }}
-                  date={date}
-                />
-              ) : (
-                <button
-                  onClick={() => setIsWakeTimeEditing(true)}
-                  className="text-sm font-mono text-blue-800 dark:text-blue-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                >
-                  {wakeTime}
-                </button>
-              )}
+              <button
+                onClick={handleWakeTimeEdit}
+                className="text-sm font-mono text-blue-800 dark:text-blue-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                {wakeTime}
+              </button>
             </div>
           </div>
 
@@ -154,6 +158,54 @@ export default function Header({
             </div>
           </div>
         </div>
+
+        {/* Wake Time Edit Modal */}
+        {isWakeTimeEditing && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 pt-20">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                Change Wake Time
+              </h3>
+              <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                Date: {formatDisplayDate(date)}
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Wake Time (24-hour format)
+                  </label>
+                  <input
+                    type="time"
+                    value={tempWakeTime}
+                    onChange={(e) => setTempWakeTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    autoFocus
+                  />
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  <p>
+                    <strong>Note:</strong> Early-morning completions (12:01 AM -
+                    4:59 AM) will be assigned to the 4:00 AM block.
+                  </p>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleWakeTimeSave}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={handleWakeTimeCancel}
+                    className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );

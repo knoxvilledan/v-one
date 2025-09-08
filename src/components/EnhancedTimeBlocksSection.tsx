@@ -71,12 +71,45 @@ export default function TimeBlocksSection({
     return null;
   };
 
-  // Determine grid columns based on screen size
+  // Determine grid columns based on screen size and arrange blocks in column order
   const getGridClass = () => {
     if (isMobile) return "grid-cols-1";
-    if (blocks.length <= 6) return "md:grid-cols-2 xl:grid-cols-3";
-    return "md:grid-cols-2 xl:grid-cols-3";
+    return "grid-cols-3 auto-rows-max"; // Remove grid-flow-col to allow proper column filling
   };
+
+  // Sort blocks by time and arrange them to fill columns vertically
+  const sortedBlocks = [...blocks].sort((a, b) => {
+    const timeA = a.time.split(":").map(Number);
+    const timeB = b.time.split(":").map(Number);
+    return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]);
+  });
+
+  // Arrange blocks in column order (down column 1, then column 2, then column 3)
+  const arrangeBlocksInColumns = () => {
+    if (isMobile) return sortedBlocks;
+
+    const blocksPerColumn = Math.ceil(sortedBlocks.length / 3);
+    const arrangedBlocks = [];
+
+    // Fill columns vertically: first 6 in column 1, next 6 in column 2, last 6 in column 3
+    for (let col = 0; col < 3; col++) {
+      const startIndex = col * blocksPerColumn;
+      const endIndex = Math.min(
+        startIndex + blocksPerColumn,
+        sortedBlocks.length
+      );
+      for (let i = startIndex; i < endIndex; i++) {
+        arrangedBlocks.push({
+          ...sortedBlocks[i],
+          columnOrder: i - startIndex,
+        });
+      }
+    }
+
+    return arrangedBlocks;
+  };
+
+  const displayBlocks = arrangeBlocksInColumns();
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
@@ -105,7 +138,7 @@ export default function TimeBlocksSection({
 
           {/* Time Blocks Grid */}
           <div className={`grid gap-4 ${getGridClass()}`}>
-            {blocks.map((block, index) => (
+            {displayBlocks.map((block, index) => (
               <div
                 key={block.id}
                 className={`p-4 rounded-lg border transition-all duration-200 ${

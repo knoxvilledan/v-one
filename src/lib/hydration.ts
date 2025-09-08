@@ -255,9 +255,9 @@ export class HydrationService {
       return {
         version: templateSet.version,
         timeBlocks: templateSet.timeBlocks,
-        timeBlocksOrder: templateSet.timeBlocksOrder,
+        timeBlocksOrder: templateSet.timeBlocksOrder || [],
         checklists: templateSet.checklists,
-        checklistsOrder: templateSet.checklistsOrder,
+        checklistsOrder: templateSet.checklistsOrder || [],
       };
     }
 
@@ -322,7 +322,7 @@ export class HydrationService {
           ...checklist,
           title: checklistOverride?.title || checklist.title,
           items,
-          itemsOrder: checklist.itemsOrder.filter((id) =>
+          itemsOrder: (checklist.itemsOrder || []).filter((id) =>
             items.some((item) => item.itemId === id)
           ),
           isCustom: !!checklistOverride?.title,
@@ -345,13 +345,269 @@ export class HydrationService {
     return {
       version: templateSet.version,
       timeBlocks,
-      timeBlocksOrder: templateSet.timeBlocksOrder.filter((id) =>
+      timeBlocksOrder: (templateSet.timeBlocksOrder || []).filter((id) =>
         timeBlocks.some((block) => block.blockId === id)
       ),
       checklists,
-      checklistsOrder: templateSet.checklistsOrder.filter((id) =>
+      checklistsOrder: (templateSet.checklistsOrder || []).filter((id) =>
         checklists.some((checklist) => checklist.checklistId === id)
       ),
     };
+  }
+
+  /**
+   * Update day data
+   */
+  static async updateDayData(
+    email: string,
+    date: string,
+    data: any
+  ): Promise<void> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email }).lean();
+      if (!user) throw new Error("User not found");
+
+      // Update or create day entry
+      await DayEntry.findOneAndUpdate(
+        { userId: user._id.toString(), date },
+        {
+          $set: {
+            ...data,
+            updatedAt: new Date(),
+          },
+        },
+        { upsert: true, new: true }
+      );
+    } catch (error) {
+      console.error("Error updating day data:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Complete a checklist item
+   */
+  static async completeItem(
+    email: string,
+    date: string,
+    itemId: string,
+    category: string
+  ): Promise<void> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email }).lean();
+      if (!user) throw new Error("User not found");
+
+      const checklistIdMap: Record<string, string> = {
+        master: "master-checklist",
+        habit: "habit-break-checklist",
+        workout: "workout-checklist",
+        todo: "todo-list",
+      };
+
+      const checklistId = checklistIdMap[category] || category;
+
+      await DayEntry.findOneAndUpdate(
+        { userId: user._id.toString(), date },
+        {
+          $addToSet: {
+            [`checklistCompletions.${checklistId}`]: {
+              itemId,
+              completedAt: new Date(),
+            },
+          },
+          $set: { updatedAt: new Date() },
+        },
+        { upsert: true, new: true }
+      );
+    } catch (error) {
+      console.error("Error completing item:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Toggle time block completion
+   */
+  static async toggleTimeBlock(
+    email: string,
+    date: string,
+    blockId: string
+  ): Promise<void> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email }).lean();
+      if (!user) throw new Error("User not found");
+
+      const dayEntry = await DayEntry.findOne({
+        userId: user._id.toString(),
+        date,
+      });
+
+      if (!dayEntry) {
+        // Create new entry with completed block
+        await DayEntry.create({
+          userId: user._id.toString(),
+          date,
+          timeBlockCompletions: [
+            {
+              blockId,
+              completedAt: new Date(),
+              notes: [],
+            },
+          ],
+        });
+      } else {
+        // Toggle existing block
+        const existingIndex = dayEntry.timeBlockCompletions.findIndex(
+          (comp: any) => comp.blockId === blockId
+        );
+
+        if (existingIndex >= 0) {
+          // Remove completion
+          dayEntry.timeBlockCompletions.splice(existingIndex, 1);
+        } else {
+          // Add completion
+          dayEntry.timeBlockCompletions.push({
+            blockId,
+            completedAt: new Date(),
+            notes: [],
+          });
+        }
+
+        await dayEntry.save();
+      }
+    } catch (error) {
+      console.error("Error toggling time block:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add note to time block
+   */
+  static async addBlockNote(
+    email: string,
+    date: string,
+    blockId: string,
+    note: string
+  ): Promise<void> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email }).lean();
+      if (!user) throw new Error("User not found");
+
+      await DayEntry.findOneAndUpdate(
+        {
+          userId: user._id.toString(),
+          date,
+          "timeBlockCompletions.blockId": blockId,
+        },
+        {
+          $push: { "timeBlockCompletions.$.notes": note },
+          $set: { updatedAt: new Date() },
+        },
+        { upsert: false }
+      );
+
+      // If block doesn't exist, create it
+      const result = await DayEntry.findOne({
+        userId: user._id.toString(),
+        date,
+        "timeBlockCompletions.blockId": blockId,
+      });
+
+      if (!result) {
+        await DayEntry.findOneAndUpdate(
+          { userId: user._id.toString(), date },
+          {
+            $push: {
+              timeBlockCompletions: {
+                blockId,
+                notes: [note],
+                completedAt: new Date(),
+              },
+            },
+            $set: { updatedAt: new Date() },
+          },
+          { upsert: true }
+        );
+      }
+    } catch (error) {
+      console.error("Error adding block note:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete note from time block
+   */
+  static async deleteBlockNote(
+    email: string,
+    date: string,
+    blockId: string,
+    noteIndex: number
+  ): Promise<void> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email }).lean();
+      if (!user) throw new Error("User not found");
+
+      const dayEntry = await DayEntry.findOne({
+        userId: user._id.toString(),
+        date,
+        "timeBlockCompletions.blockId": blockId,
+      });
+
+      if (dayEntry) {
+        const blockCompletion = dayEntry.timeBlockCompletions.find(
+          (comp: any) => comp.blockId === blockId
+        );
+
+        if (
+          blockCompletion &&
+          blockCompletion.notes &&
+          blockCompletion.notes.length > noteIndex
+        ) {
+          blockCompletion.notes.splice(noteIndex, 1);
+          await dayEntry.save();
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting block note:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update time block label
+   */
+  static async updateBlockLabel(
+    email: string,
+    date: string,
+    blockId: string,
+    newLabel: string
+  ): Promise<void> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email }).lean();
+      if (!user) throw new Error("User not found");
+
+      // Update in user space overrides for persistence
+      await UserSpace.findOneAndUpdate(
+        { userId: user._id.toString() },
+        {
+          $set: {
+            [`timeBlockOverrides.${blockId}.label`]: newLabel,
+            updatedAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+    } catch (error) {
+      console.error("Error updating block label:", error);
+      throw error;
+    }
   }
 }
