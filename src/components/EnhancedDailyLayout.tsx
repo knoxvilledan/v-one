@@ -19,6 +19,18 @@ interface EnhancedDailyLayoutProps {
   onAddBlockNote: (blockId: string, note: string) => void;
   onDeleteBlockNote: (blockId: string, noteIndex: number) => void;
   onUpdateBlockLabel: (blockId: string, newLabel: string) => void;
+  onAddChecklistItem: (
+    checklistType: string,
+    text: string,
+    category: string
+  ) => Promise<string>;
+  onAddTimeBlock: (time: string, label: string) => Promise<string>;
+  onUpdateChecklistItem: (
+    itemId: string,
+    text?: string,
+    category?: string
+  ) => Promise<void>;
+  onDeleteChecklistItem: (itemId: string) => Promise<void>;
   isAdmin?: boolean;
 }
 
@@ -30,6 +42,10 @@ export default function EnhancedDailyLayout({
   onAddBlockNote,
   onDeleteBlockNote,
   onUpdateBlockLabel,
+  onAddChecklistItem,
+  onAddTimeBlock,
+  onUpdateChecklistItem,
+  onDeleteChecklistItem,
   isAdmin = false,
 }: EnhancedDailyLayoutProps) {
   const [isTodoVisible, setIsTodoVisible] = useState(false);
@@ -257,6 +273,11 @@ export default function EnhancedDailyLayout({
             items={dayData.masterChecklist || []}
             onCompleteItem={handleCompleteItem}
             onUpdateItems={handleMasterChecklistUpdate}
+            onAddItem={(text, category) =>
+              onAddChecklistItem("master", text, category)
+            }
+            onUpdateItem={onUpdateChecklistItem}
+            onDeleteItem={onDeleteChecklistItem}
           />
         </div>
 

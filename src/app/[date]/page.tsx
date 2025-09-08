@@ -343,6 +343,98 @@ export default async function DailyPage({ params }: PageProps) {
     }
   };
 
+  const handleAddChecklistItem = async (
+    checklistType: string,
+    text: string,
+    category: string
+  ) => {
+    "use server";
+    console.log("Adding checklist item:", { checklistType, text, category });
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      const itemId = await HydrationService.addChecklistItem(
+        session.user.email,
+        checklistType,
+        { text, category }
+      );
+      console.log("✅ Checklist item added successfully:", itemId);
+      return itemId;
+    } catch (error) {
+      console.error("❌ Failed to add checklist item:", error);
+      throw error;
+    }
+  };
+
+  const handleAddTimeBlock = async (time: string, label: string) => {
+    "use server";
+    console.log("Adding time block:", { time, label });
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      const blockId = await HydrationService.addTimeBlock(session.user.email, {
+        time,
+        label,
+      });
+      console.log("✅ Time block added successfully:", blockId);
+      return blockId;
+    } catch (error) {
+      console.error("❌ Failed to add time block:", error);
+      throw error;
+    }
+  };
+
+  const handleUpdateChecklistItem = async (
+    itemId: string,
+    text?: string,
+    category?: string
+  ) => {
+    "use server";
+    console.log("Updating checklist item:", { itemId, text, category });
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      await HydrationService.updateChecklistItem(session.user.email, itemId, {
+        text,
+        category,
+      });
+      console.log("✅ Checklist item updated successfully");
+    } catch (error) {
+      console.error("❌ Failed to update checklist item:", error);
+      throw error;
+    }
+  };
+
+  const handleDeleteChecklistItem = async (itemId: string) => {
+    "use server";
+    console.log("Deleting checklist item:", itemId);
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      await HydrationService.deleteChecklistItem(session.user.email, itemId);
+      console.log("✅ Checklist item deleted successfully");
+    } catch (error) {
+      console.error("❌ Failed to delete checklist item:", error);
+      throw error;
+    }
+  };
+
   return (
     <EnhancedDailyLayout
       dayData={dayData}
@@ -352,6 +444,10 @@ export default async function DailyPage({ params }: PageProps) {
       onAddBlockNote={handleAddBlockNote}
       onDeleteBlockNote={handleDeleteBlockNote}
       onUpdateBlockLabel={handleUpdateBlockLabel}
+      onAddChecklistItem={handleAddChecklistItem}
+      onAddTimeBlock={handleAddTimeBlock}
+      onUpdateChecklistItem={handleUpdateChecklistItem}
+      onDeleteChecklistItem={handleDeleteChecklistItem}
     />
   );
 }

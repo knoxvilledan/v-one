@@ -7,6 +7,13 @@ interface MasterChecklistProps {
   items: ChecklistItem[];
   onCompleteItem: (itemId: string) => void;
   onUpdateItems: (items: ChecklistItem[]) => void;
+  onAddItem?: (text: string, category: string) => Promise<string>;
+  onUpdateItem?: (
+    itemId: string,
+    text?: string,
+    category?: string
+  ) => Promise<void>;
+  onDeleteItem?: (itemId: string) => Promise<void>;
 }
 
 interface ChecklistSection {
@@ -19,6 +26,9 @@ export default function MasterChecklist({
   items,
   onCompleteItem,
   onUpdateItems,
+  onAddItem,
+  onUpdateItem,
+  onDeleteItem,
 }: MasterChecklistProps) {
   const [isExpanded, setIsExpanded] = useState(false); // Start collapsed like HabitBreakChecklist
   const [expandedSections, setExpandedSections] = useState<
@@ -191,19 +201,39 @@ export default function MasterChecklist({
     }
   };
 
-  const addNewItem = () => {
+  const addNewItem = async () => {
     if (newItemText.trim() && newItemCategory !== "completed") {
-      // Don't generate IDs on client - this should be a server action
-      // For now, use a placeholder that will be replaced server-side
-      const newItem: ChecklistItem = {
-        id: `temp-${Date.now()}`, // Temporary ID for client state
-        itemId: `temp-${Date.now()}`, // Add missing itemId field
-        text: newItemText.trim(),
-        completed: false,
-        category: newItemCategory as ChecklistItem["category"],
-      };
-      onUpdateItems([...items, newItem]);
-      setNewItemText("");
+      try {
+        if (onAddItem) {
+          // Use server action to properly persist the item
+          const itemId = await onAddItem(newItemText.trim(), newItemCategory);
+
+          // Optimistically update local state
+          const newItem: ChecklistItem = {
+            id: itemId,
+            itemId: itemId,
+            text: newItemText.trim(),
+            completed: false,
+            category: newItemCategory as ChecklistItem["category"],
+          };
+          onUpdateItems([...items, newItem]);
+        } else {
+          // Fallback to old behavior if server action not available
+          const newItem: ChecklistItem = {
+            id: `temp-${Date.now()}`,
+            itemId: `temp-${Date.now()}`,
+            text: newItemText.trim(),
+            completed: false,
+            category: newItemCategory as ChecklistItem["category"],
+          };
+          onUpdateItems([...items, newItem]);
+        }
+        setNewItemText("");
+      } catch (error) {
+        console.error("Failed to add item:", error);
+        // Show user-friendly error message
+        alert("Failed to add item. Please try again.");
+      }
     }
   };
 

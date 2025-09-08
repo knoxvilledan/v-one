@@ -610,4 +610,246 @@ export class HydrationService {
       throw error;
     }
   }
+
+  /**
+   * Add new checklist item to user's custom items
+   */
+  static async addChecklistItem(
+    email: string,
+    checklistType: string,
+    item: {
+      text: string;
+      category: string;
+    }
+  ): Promise<string> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email });
+      if (!user) throw new Error("User not found");
+
+      // Generate a proper ID
+      const itemId = `custom-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+
+      // Map checklist types to database IDs
+      const checklistIdMap: Record<string, string> = {
+        master: "daily-master-checklist",
+        habit: "habit-break-tracker",
+        workout: "workout-checklist",
+        todo: "todo-list",
+      };
+
+      const checklistId = checklistIdMap[checklistType] || checklistType;
+
+      // Add to user's custom checklist items in UserSpace
+      await UserSpace.findOneAndUpdate(
+        { userId: user._id.toString() },
+        {
+          $push: {
+            [`checklistOverrides.${checklistId}.customItems`]: {
+              itemId,
+              text: item.text,
+              category: item.category,
+              order: Date.now(), // Use timestamp for ordering
+              isCustom: true,
+              createdAt: new Date(),
+            },
+          },
+          $set: { updatedAt: new Date() },
+        },
+        { upsert: true, new: true }
+      );
+
+      return itemId;
+    } catch (error) {
+      console.error("Error adding checklist item:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add new time block to user's custom blocks
+   */
+  static async addTimeBlock(
+    email: string,
+    block: {
+      time: string;
+      label: string;
+    }
+  ): Promise<string> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email });
+      if (!user) throw new Error("User not found");
+
+      // Generate a proper ID
+      const blockId = `custom-block-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+
+      // Add to user's custom time blocks in UserSpace
+      await UserSpace.findOneAndUpdate(
+        { userId: user._id.toString() },
+        {
+          $push: {
+            "timeBlockOverrides.customBlocks": {
+              blockId,
+              time: block.time,
+              label: block.label,
+              order: Date.now(), // Use timestamp for ordering
+              isCustom: true,
+              createdAt: new Date(),
+            },
+          },
+          $set: { updatedAt: new Date() },
+        },
+        { upsert: true, new: true }
+      );
+
+      return blockId;
+    } catch (error) {
+      console.error("Error adding time block:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update checklist item text
+   */
+  static async updateChecklistItem(
+    email: string,
+    itemId: string,
+    updates: {
+      text?: string;
+      category?: string;
+    }
+  ): Promise<void> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email });
+      if (!user) throw new Error("User not found");
+
+      // Update in UserSpace custom items
+      const updateFields: any = {};
+      if (updates.text) {
+        updateFields["checklistOverrides.$[elem].customItems.$[item].text"] =
+          updates.text;
+      }
+      if (updates.category) {
+        updateFields[
+          "checklistOverrides.$[elem].customItems.$[item].category"
+        ] = updates.category;
+      }
+      updateFields["updatedAt"] = new Date();
+
+      await UserSpace.findOneAndUpdate(
+        { userId: user._id.toString() },
+        { $set: updateFields },
+        {
+          arrayFilters: [
+            { "elem.customItems.itemId": itemId },
+            { "item.itemId": itemId },
+          ],
+        }
+      );
+    } catch (error) {
+      console.error("Error updating checklist item:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete checklist item
+   */
+  static async deleteChecklistItem(
+    email: string,
+    itemId: string
+  ): Promise<void> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email });
+      if (!user) throw new Error("User not found");
+
+      // Remove from UserSpace custom items
+      await UserSpace.findOneAndUpdate(
+        { userId: user._id.toString() },
+        {
+          $pull: {
+            "checklistOverrides.$[].customItems": { itemId },
+          },
+          $set: { updatedAt: new Date() },
+        }
+      );
+    } catch (error) {
+      console.error("Error deleting checklist item:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update time block
+   */
+  static async updateTimeBlock(
+    email: string,
+    blockId: string,
+    updates: {
+      time?: string;
+      label?: string;
+    }
+  ): Promise<void> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email });
+      if (!user) throw new Error("User not found");
+
+      // Update in UserSpace custom blocks
+      const updateFields: any = {};
+      if (updates.time) {
+        updateFields["timeBlockOverrides.customBlocks.$[block].time"] =
+          updates.time;
+      }
+      if (updates.label) {
+        updateFields["timeBlockOverrides.customBlocks.$[block].label"] =
+          updates.label;
+      }
+      updateFields["updatedAt"] = new Date();
+
+      await UserSpace.findOneAndUpdate(
+        { userId: user._id.toString() },
+        { $set: updateFields },
+        {
+          arrayFilters: [{ "block.blockId": blockId }],
+        }
+      );
+    } catch (error) {
+      console.error("Error updating time block:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete time block
+   */
+  static async deleteTimeBlock(email: string, blockId: string): Promise<void> {
+    try {
+      await connectDB();
+      const user = await User.findOne({ email });
+      if (!user) throw new Error("User not found");
+
+      // Remove from UserSpace custom blocks
+      await UserSpace.findOneAndUpdate(
+        { userId: user._id.toString() },
+        {
+          $pull: {
+            "timeBlockOverrides.customBlocks": { blockId },
+          },
+          $set: { updatedAt: new Date() },
+        }
+      );
+    } catch (error) {
+      console.error("Error deleting time block:", error);
+      throw error;
+    }
+  }
 }
