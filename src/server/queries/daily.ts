@@ -11,16 +11,23 @@ import {
 // Import template types
 import type { IChecklistTemplate } from "../../models/ContentTemplate";
 
-// Temporary type for Mongoose lean() result
-type LeanUserData = {
+// Temporary type for Mongoose lean() result - matches DayEntry structure
+type LeanDayEntry = {
   wakeTime?: string;
-  blocks?: Block[];
+  timeBlockCompletions?: Array<{
+    blockId: string;
+    completedAt: Date;
+    notes?: string;
+  }>;
+  checklistCompletions?: Record<
+    string,
+    Array<{
+      itemId: string;
+      completedAt: Date;
+    }>
+  >;
   dailyWakeTime?: string;
   userTimezone?: string;
-  masterChecklist?: ChecklistItem[];
-  habitBreakChecklist?: ChecklistItem[];
-  workoutChecklist?: ChecklistItem[];
-  todoList?: ChecklistItem[];
 };
 
 export interface DayData {
@@ -133,16 +140,17 @@ async function getDefaultContent() {
 /**
  * Get complete day data for a user and date
  * This is the main server-side data fetching function
+ * MODERN: Uses DayEntry collection instead of legacy UserData
  */
 export async function getDay(date: string, userId: string): Promise<DayData> {
   try {
     await connectDB();
 
-    // Import UserData model here to avoid circular dependencies
-    const { UserData } = await import("../../lib/database");
+    // MODERN: Use DayEntry instead of legacy UserData
+    const { DayEntry } = await import("../../lib/database");
 
     // Find user data for this specific date
-    const dayEntry = await UserData.findOne({
+    const dayEntry = await DayEntry.findOne({
       userId: userId,
       date: date,
     }).lean();
@@ -170,10 +178,22 @@ export async function getDay(date: string, userId: string): Promise<DayData> {
     let userTimezone = getUserTimezone();
 
     if (dayEntry) {
-      const entry = dayEntry as LeanUserData;
+      // MODERN: Extract data from DayEntry structure
+      const entry = dayEntry as LeanDayEntry;
       wakeTime = entry.wakeTime || "";
-      if (entry.blocks) {
-        finalBlocks = entry.blocks;
+
+      // Process time block completions into blocks format
+      if (entry.timeBlockCompletions) {
+        finalBlocks = defaultBlocks.map((defaultBlock) => {
+          const completion = entry.timeBlockCompletions?.find(
+            (comp) => comp.blockId === defaultBlock.id
+          );
+          return {
+            ...defaultBlock,
+            complete: !!completion,
+            notes: completion?.notes ? [completion.notes] : [],
+          };
+        });
       }
 
       // Load daily wake time and timezone settings
@@ -187,39 +207,53 @@ export async function getDay(date: string, userId: string): Promise<DayData> {
         userTimezone = entry.userTimezone;
       }
 
-      // Ensure dates are proper Date objects
-      finalMasterChecklist = ensureDateObjects(
-        entry.masterChecklist || defaultMasterChecklist
-      );
-      finalHabitBreakChecklist = ensureDateObjects(
-        entry.habitBreakChecklist || defaultHabitBreakChecklist
-      );
+      // Process checklist completions into checklist format
+      if (entry.checklistCompletions) {
+        // Master checklist
+        if (entry.checklistCompletions["master-checklist"]) {
+          finalMasterChecklist = defaultMasterChecklist.map((item) => {
+            const completion = entry.checklistCompletions?.[
+              "master-checklist"
+            ]?.find((comp) => comp.itemId === item.itemId);
+            return {
+              ...item,
+              completed: !!completion,
+              completedAt: completion?.completedAt,
+            };
+          });
+        }
 
-      // For workout checklist, reset completion status for daily reset
-      let workoutChecklist = entry.workoutChecklist || [];
-      if (workoutChecklist.length === 0) {
-        // No workout data for today, load from defaults
-        workoutChecklist = defaultWorkoutChecklist;
-      } else {
-        // Reset completion status for existing workout items (daily reset)
-        workoutChecklist = workoutChecklist.map((workout: ChecklistItem) => ({
-          ...workout,
-          completed: false,
-          completedAt: undefined,
-          targetBlock: undefined,
-          completionTimezone: undefined,
-          timezoneOffset: undefined,
-        }));
+        // Habit break checklist
+        if (entry.checklistCompletions["habit-break-checklist"]) {
+          finalHabitBreakChecklist = defaultHabitBreakChecklist.map((item) => {
+            const completion = entry.checklistCompletions?.[
+              "habit-break-checklist"
+            ]?.find((comp) => comp.itemId === item.itemId);
+            return {
+              ...item,
+              completed: !!completion,
+              completedAt: completion?.completedAt,
+            };
+          });
+        }
+
+        // Workout checklist (daily reset)
+        if (entry.checklistCompletions["workout-checklist"]) {
+          finalWorkoutChecklist = defaultWorkoutChecklist.map((item) => {
+            const completion = entry.checklistCompletions?.[
+              "workout-checklist"
+            ]?.find((comp) => comp.itemId === item.itemId);
+            return {
+              ...item,
+              completed: !!completion,
+              completedAt: completion?.completedAt,
+            };
+          });
+        }
       }
-      finalWorkoutChecklist = ensureDateObjects(workoutChecklist);
 
-      // For todo list, include items from this day
-      const todoList = entry.todoList || [];
-
-      // TODO: Load uncompleted todos from previous days
-      // This would require querying multiple UserData documents
-      // For now, just use today's todos
-      finalTodoList = ensureDateObjects(todoList);
+      // For todo list, use empty array for now (todos are managed separately)
+      finalTodoList = ensureDateObjects([]);
     } else {
       // If no data for this day, use defaults
       finalTodoList = ensureDateObjects([]);

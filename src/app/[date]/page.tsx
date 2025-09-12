@@ -44,6 +44,50 @@ export default async function DailyPage({ params }: PageProps) {
     userData = await HydrationService.hydrateUserData(session.user.email, date);
     console.log("✅ Using optimized HydrationService successfully");
 
+    // Debug: Log the key data structures
+    console.log(
+      "🔍 Template blocks count:",
+      userData?.templateSet?.timeBlocks?.length || 0
+    );
+    console.log(
+      "🔍 Today entry blocks count:",
+      userData?.todayEntry?.timeBlockCompletions?.length || 0
+    );
+    if (userData?.todayEntry?.timeBlockCompletions) {
+      console.log(
+        "🔍 Database block IDs:",
+        userData.todayEntry.timeBlockCompletions.map((b) => b.blockId)
+      );
+    }
+
+    // Debug: Checklist data structures
+    console.log(
+      "🔍 Template checklists count:",
+      userData?.templateSet?.checklists?.length || 0
+    );
+    console.log(
+      "🔍 Database checklist completions:",
+      userData?.todayEntry?.checklistCompletions?.length || 0
+    );
+    if (userData?.todayEntry?.checklistCompletions) {
+      console.log(
+        "🔍 Database checklist IDs:",
+        userData.todayEntry.checklistCompletions.map((c) => c.checklistId)
+      );
+    }
+    if (userData?.templateSet?.checklists) {
+      console.log(
+        "🔍 Template checklist IDs:",
+        userData.templateSet.checklists.map((c) => c.checklistId)
+      );
+    }
+    if (userData?.templateSet?.timeBlocks) {
+      console.log(
+        "🔍 Template block IDs:",
+        userData.templateSet.timeBlocks.map((b) => b.blockId)
+      );
+    }
+
     if (!userData) {
       throw new Error("HydrationService returned null");
     }
@@ -127,8 +171,16 @@ export default async function DailyPage({ params }: PageProps) {
     // Transform time blocks
     blocks: userData.templateSet.timeBlocks.map((block) => {
       const dayEntryBlock = userData.todayEntry?.timeBlockCompletions?.find(
-        (b: any) => b.blockId === block.blockId
+        (b: any) => String(b.blockId) === String(block.blockId)
       );
+
+      // Debug logging to see what's happening
+      console.log(`🔍 Template Block: ${block.blockId} (${block.label})`);
+      console.log(
+        `🔍 Found dayEntryBlock:`,
+        dayEntryBlock ? `YES - notes: "${dayEntryBlock.notes}"` : "NO"
+      );
+
       return {
         id: block.blockId,
         blockId: block.blockId,
@@ -143,60 +195,60 @@ export default async function DailyPage({ params }: PageProps) {
     // Transform checklists
     masterChecklist:
       userData.templateSet.checklists
-        .find((c) => c.checklistId === "daily-master-checklist")
+        .find((c) => String(c.checklistId) === "master-checklist")
         ?.items.map((item): ChecklistItem => {
           const dayEntryChecklist =
             userData.todayEntry?.checklistCompletions?.find(
-              (c: any) => c.checklistId === "daily-master-checklist"
+              (c: any) => String(c.checklistId) === "master-checklist"
             );
-          const completedItem = dayEntryChecklist?.completedItemIds?.find(
-            (ci: any) => ci.itemId === item.itemId
+          const isCompleted = dayEntryChecklist?.completedItemIds?.includes(
+            item.itemId
           );
           return {
             id: item.itemId,
             itemId: item.itemId,
             text: item.text,
-            completed: !!completedItem,
+            completed: !!isCompleted,
             category: "general",
           };
         }) || [],
 
     habitBreakChecklist:
       userData.templateSet.checklists
-        .find((c) => c.checklistId === "habit-break-tracker")
+        .find((c) => String(c.checklistId) === "habit-break-checklist")
         ?.items.map((item): ChecklistItem => {
           const dayEntryChecklist =
             userData.todayEntry?.checklistCompletions?.find(
-              (c: any) => c.checklistId === "habit-break-tracker"
+              (c: any) => String(c.checklistId) === "habit-break-checklist"
             );
-          const completedItem = dayEntryChecklist?.completedItemIds?.find(
-            (ci: any) => ci.itemId === item.itemId
+          const isCompleted = dayEntryChecklist?.completedItemIds?.includes(
+            item.itemId
           );
           return {
             id: item.itemId,
             itemId: item.itemId,
             text: item.text,
-            completed: !!completedItem,
+            completed: !!isCompleted,
             category: "general",
           };
         }) || [],
 
     workoutChecklist:
       userData.templateSet.checklists
-        .find((c) => c.checklistId === "workout-checklist")
+        .find((c) => String(c.checklistId) === "workout-checklist")
         ?.items.map((item): ChecklistItem => {
           const dayEntryChecklist =
             userData.todayEntry?.checklistCompletions?.find(
-              (c: any) => c.checklistId === "workout-checklist"
+              (c: any) => String(c.checklistId) === "workout-checklist"
             );
-          const completedItem = dayEntryChecklist?.completedItemIds?.find(
-            (ci: any) => ci.itemId === item.itemId
+          const isCompleted = dayEntryChecklist?.completedItemIds?.includes(
+            item.itemId
           );
           return {
             id: item.itemId,
             itemId: item.itemId,
             text: item.text,
-            completed: !!completedItem,
+            completed: !!isCompleted,
             category: "workout",
           };
         }) || [],

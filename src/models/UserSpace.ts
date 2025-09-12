@@ -24,6 +24,13 @@ export interface IUserSpace extends Document {
       text?: string; // custom text override
       isHidden?: boolean; // hide this item for this user
     }>;
+    customItems?: Array<{
+      itemId: string; // unique ID for custom item
+      text: string; // custom item text
+      category?: string; // item category
+      order: number; // sorting order
+      createdAt: Date; // when item was added
+    }>;
   }>;
 
   // User preferences
@@ -48,14 +55,14 @@ const UserSpaceSchema = new Schema<IUserSpace>({
     type: String,
     required: true,
     unique: true,
-    index: true,
+    // Removed index: true - handled by explicit index below
   },
   email: {
     type: String,
     required: true,
     lowercase: true,
     trim: true,
-    index: true,
+    // Removed index: true - handled by explicit index below
   },
 
   templateSetVersion: {
@@ -89,6 +96,15 @@ const UserSpaceSchema = new Schema<IUserSpace>({
           itemId: { type: String, required: true },
           text: { type: String, trim: true },
           isHidden: { type: Boolean, default: false },
+        },
+      ],
+      customItems: [
+        {
+          itemId: { type: String, required: true },
+          text: { type: String, required: true, trim: true },
+          category: { type: String, trim: true },
+          order: { type: Number, required: true },
+          createdAt: { type: Date, default: Date.now },
         },
       ],
     },

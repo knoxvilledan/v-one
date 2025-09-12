@@ -1,5 +1,5 @@
 import { IContentTemplate } from "../models/ContentTemplate";
-import { IUserData } from "../models/UserData";
+// LEGACY DISABLED: import { IUserData } from "../models/UserData";
 
 /**
  * Generate a stable unique ID for entities
@@ -111,92 +111,14 @@ export function migrateContentTemplate(template: IContentTemplate): {
 }
 
 /**
- * Migrate UserData to add missing IDs and order arrays
+ * LEGACY DISABLED: Migrate UserData to add missing IDs and order arrays
+ * Modern system uses DayEntry + UserSpace architecture
  */
-export function migrateUserData(userData: IUserData): {
-  modified: boolean;
-  userData: Partial<IUserData>;
-} {
-  let modified = false;
-  const updatedUserData = { ...userData };
-
-  // Migrate blocks to add blockId and create order array
-  if (updatedUserData.blocks) {
-    const blockIds: string[] = [];
-
-    updatedUserData.blocks = updatedUserData.blocks.map((block) => {
-      const updatedBlock = { ...block };
-
-      // Add blockId if missing
-      if (!updatedBlock.blockId) {
-        updatedBlock.blockId = generateStableId("block_");
-        modified = true;
-      }
-
-      blockIds.push(updatedBlock.blockId);
-      return updatedBlock;
-    });
-
-    // Create or update timeBlocksOrder
-    if (
-      !updatedUserData.timeBlocksOrder ||
-      JSON.stringify(updatedUserData.timeBlocksOrder) !==
-        JSON.stringify(blockIds)
-    ) {
-      updatedUserData.timeBlocksOrder = blockIds;
-      modified = true;
-    }
-  }
-
-  // Migrate checklists to add itemId and create order arrays
-  const checklistFields = [
-    "masterChecklist",
-    "habitBreakChecklist",
-    "workoutChecklist",
-    "todoList",
-  ] as const;
-
-  checklistFields.forEach((fieldName) => {
-    if (updatedUserData[fieldName]) {
-      const itemIds: string[] = [];
-
-      updatedUserData[fieldName] = updatedUserData[fieldName]!.map((item) => {
-        const updatedItem = { ...item };
-
-        // Add itemId if missing
-        if (!updatedItem.itemId) {
-          updatedItem.itemId = generateStableId("item_");
-          modified = true;
-        }
-
-        itemIds.push(updatedItem.itemId);
-        return updatedItem;
-      });
-
-      // Create or update order array
-      const orderFieldName =
-        `${fieldName}Order` as keyof typeof updatedUserData;
-      if (
-        !updatedUserData[orderFieldName] ||
-        JSON.stringify(updatedUserData[orderFieldName]) !==
-          JSON.stringify(itemIds)
-      ) {
-        (updatedUserData as Record<string, unknown>)[orderFieldName] = itemIds;
-        modified = true;
-      }
-    }
-  });
-
-  // Initialize checklistSectionOrder if it doesn't exist
-  if (!updatedUserData.checklistSectionOrder) {
-    updatedUserData.checklistSectionOrder = [
-      "masterChecklist",
-      "habitBreakChecklist",
-      "workoutChecklist",
-      "todoList",
-    ];
-    modified = true;
-  }
-
-  return { modified, userData: updatedUserData };
-}
+// export function migrateUserData(userData: IUserData): {
+//   modified: boolean;
+//   userData: Partial<IUserData>;
+// } {
+//   // Function disabled - legacy UserData migration not needed
+//   console.log("Legacy UserData migration disabled");
+//   return { modified: false, userData: {} };
+// }

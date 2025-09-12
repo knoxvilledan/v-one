@@ -6,7 +6,7 @@ import {
   type ITimeBlockTemplate,
   type IChecklistTemplate,
 } from "../models/ContentTemplate";
-import { UserData } from "../models/UserData";
+// LEGACY DISABLED: import { UserData } from "../models/UserData";
 import { generateId } from "./id-generation";
 
 // Type definitions for template synchronization
@@ -227,118 +227,22 @@ export class TemplateSyncService {
   }
 
   /**
-   * Sync public template to all user documents
-   * Preserves user-specific data while updating template structure
+   * LEGACY DISABLED: Sync public template to all user documents
+   * Modern system uses TemplateSet + UserSpace architecture instead
    */
   private static async syncPublicToAllUsers(
     publicTemplate: IContentTemplate,
     options: TemplateSyncOptions
   ): Promise<SyncResult> {
-    try {
-      // Get all users (excluding admin if they have custom data)
-      const users = await UserData.find({}).lean();
-
-      if (!users || users.length === 0) {
-        return {
-          success: true,
-          message: "No user documents to sync",
-          affectedUsers: 0,
-        };
-      }
-
-      let affectedUsers = 0;
-      const errors: string[] = [];
-
-      for (const user of users) {
-        try {
-          const updatedData = { ...user };
-
-          // Sync time blocks structure while preserving user data
-          if (options.syncTimeBlocks && publicTemplate.content.timeBlocks) {
-            const syncedTimeBlocks = this.syncUserTimeBlocks(
-              user.blocks || [],
-              publicTemplate.content.timeBlocks,
-              options.preserveUserIds || false
-            );
-            updatedData.blocks = syncedTimeBlocks;
-            updatedData.timeBlocksOrder = this.generateUserOrder(
-              syncedTimeBlocks.map(
-                (b) => b.blockId || b.id || generateId.block()
-              )
-            );
-          }
-
-          // Sync checklist structures while preserving user data
-          if (options.syncChecklists) {
-            if (publicTemplate.content.masterChecklist) {
-              updatedData.masterChecklist = this.syncUserChecklist(
-                user.masterChecklist || [],
-                publicTemplate.content.masterChecklist,
-                options.preserveUserIds || false
-              );
-              updatedData.masterChecklistOrder = this.generateUserOrder(
-                updatedData.masterChecklist.map(
-                  (item: UserChecklistItem) =>
-                    item.itemId || item.id || generateId.block()
-                )
-              );
-            }
-
-            if (publicTemplate.content.habitBreakChecklist) {
-              updatedData.habitBreakChecklist = this.syncUserChecklist(
-                user.habitBreakChecklist || [],
-                publicTemplate.content.habitBreakChecklist,
-                options.preserveUserIds || false
-              );
-              updatedData.habitBreakChecklistOrder = this.generateUserOrder(
-                updatedData.habitBreakChecklist.map(
-                  (item: UserChecklistItem) =>
-                    item.itemId || item.id || generateId.block()
-                )
-              );
-            }
-          }
-
-          // Update user document
-          const result = await UserData.updateOne(
-            { _id: user._id },
-            {
-              $set: {
-                ...updatedData,
-                updatedAt: new Date(),
-              },
-            }
-          );
-
-          if (result.modifiedCount > 0) {
-            affectedUsers++;
-          }
-        } catch (userError) {
-          console.error(`Error syncing user ${user.userId}:`, userError);
-          errors.push(
-            `User ${user.userId}: ${
-              userError instanceof Error ? userError.message : "Unknown error"
-            }`
-          );
-        }
-      }
-
-      return {
-        success: errors.length === 0,
-        message: `Synced ${affectedUsers} user documents`,
-        affectedUsers,
-        errors: errors.length > 0 ? errors : undefined,
-      };
-    } catch (error) {
-      console.error("Public to users sync error:", error);
-      return {
-        success: false,
-        message: `Failed to sync public to users: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-        affectedUsers: 0,
-      };
-    }
+    console.log(
+      "Template sync: Legacy UserData sync disabled - using modern TemplateSet + UserSpace architecture"
+    );
+    return {
+      success: true,
+      message:
+        "Template sync disabled for legacy UserData - modern system active",
+      affectedUsers: 0,
+    };
   }
 
   /**

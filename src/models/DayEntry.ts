@@ -48,14 +48,14 @@ const DayEntrySchema = new Schema<IDayEntry>({
   userId: {
     type: String,
     required: true,
-    index: true,
+    // Removed index: true - handled by explicit indexes below
   },
   email: {
     type: String,
     required: true,
     lowercase: true,
     trim: true,
-    index: true,
+    // Removed index: true - handled by explicit indexes below
   },
   date: {
     type: String,

@@ -53,17 +53,17 @@ export async function toggleChecklistItem(
 
   try {
     await connectDB();
-    const { UserData } = await import("../../lib/database");
+    const { DayEntry } = await import("../../lib/database");
 
     // Find the user's day entry
-    const dayEntry = await UserData.findOne({
+    const dayEntry = await DayEntry.findOne({
       userId: session.user.email,
       date: date,
     });
 
     if (!dayEntry) {
       // Create new day entry if it doesn't exist
-      const newEntry = new UserData({
+      const newEntry = new DayEntry({
         userId: session.user.email,
         date: date,
         [listType]: [],
@@ -92,8 +92,8 @@ export async function toggleChecklistItem(
       };
     }
 
-    // Update in database
-    await UserData.updateOne(
+    // Update in database using modern DayEntry
+    await DayEntry.updateOne(
       { userId: session.user.email, date: date },
       { [listType]: currentList }
     );
@@ -126,10 +126,10 @@ export async function toggleTimeBlock(date: string, blockId: string) {
 
   try {
     await connectDB();
-    const { UserData } = await import("../../lib/database");
+    const { DayEntry } = await import("../../lib/database");
 
     // Find the user's day entry
-    const dayEntry = await UserData.findOne({
+    const dayEntry = await DayEntry.findOne({
       userId: session.user.email,
       date: date,
     });
@@ -150,7 +150,7 @@ export async function toggleTimeBlock(date: string, blockId: string) {
         index: config.index,
       }));
 
-      const newEntry = new UserData({
+      const newEntry = new DayEntry({
         userId: session.user.email,
         date: date,
         blocks: defaultBlocks,
@@ -176,7 +176,7 @@ export async function toggleTimeBlock(date: string, blockId: string) {
     }
 
     // Update in database
-    await UserData.updateOne(
+    await DayEntry.updateOne(
       { userId: session.user.email, date: date },
       { blocks: currentBlocks }
     );
@@ -217,10 +217,10 @@ export async function updateWakeTimeAction(formData: FormData) {
   }
   try {
     await connectDB();
-    const { UserData } = await import("../../lib/database");
+    const { DayEntry } = await import("../../lib/database");
 
     // Upsert the wake time for this date
-    await UserData.updateOne(
+    await DayEntry.updateOne(
       { userId: session.user.email, date: date },
       {
         wakeTime: wakeTime,
@@ -265,10 +265,10 @@ export async function addBlockNote(
 
   try {
     await connectDB();
-    const { UserData } = await import("../../lib/database");
+    const { DayEntry } = await import("../../lib/database");
 
     // Find the user's day entry
-    const dayEntry = await UserData.findOne({
+    const dayEntry = await DayEntry.findOne({
       userId: session.user.email,
       date: date,
     });
@@ -294,7 +294,7 @@ export async function addBlockNote(
     }
 
     // Update in database
-    await UserData.updateOne(
+    await DayEntry.updateOne(
       { userId: session.user.email, date: date },
       { blocks: currentBlocks }
     );
@@ -328,9 +328,9 @@ export async function addTodoItem(date: string, text: string) {
 
   try {
     await connectDB();
-    const { UserData } = await import("../../lib/database");
+    const { DayEntry } = await import("../../lib/database");
 
-    const existingTodos = (await UserData.findOne({
+    const existingTodos = (await DayEntry.findOne({
       userId: session.user.email,
       date,
     }).select("todoList")) || { todoList: [] };
@@ -347,7 +347,7 @@ export async function addTodoItem(date: string, text: string) {
     };
 
     // Upsert the todo for this date
-    await UserData.updateOne(
+    await DayEntry.updateOne(
       { userId: session.user.email, date: date },
       {
         $push: { todoList: newTodo },

@@ -171,12 +171,58 @@ export class HydrationService {
     email: string,
     date: string
   ): Promise<IDayEntry | null> {
-    // MODERNIZED: Read from user_data collection to ensure customization persistence
-    const { UserData } = await import("./database");
-    return (await UserData.findOne({
-      userId: email,
+    // MODERN: Read from dayEntries collection (new system)
+    const { DayEntry } = await import("./database");
+    const dayEntry = (await DayEntry.findOne({
+      userId,
       date,
-    }).lean()) as IDayEntry | null;
+    }).lean()) as {
+      checklistCompletions?:
+        | Record<
+            string,
+            Array<{ itemId: string; completedAt: Date; text?: string }>
+          >
+        | Array<any>;
+      [key: string]: any;
+    } | null;
+
+    if (!dayEntry) return null;
+
+    // Transform checklistCompletions from object format to array format for frontend compatibility
+    if (
+      dayEntry.checklistCompletions &&
+      typeof dayEntry.checklistCompletions === "object" &&
+      !Array.isArray(dayEntry.checklistCompletions)
+    ) {
+      // Convert object format { "master-checklist": [{itemId, completedAt}] }
+      // to array format [{ checklistId: "master-checklist", completedItemIds: ["itemId"] }]
+      const transformedCompletions = Object.entries(
+        dayEntry.checklistCompletions
+      ).map(([checklistId, completions]) => ({
+        checklistId,
+        title: checklistId
+          .replace(/-/g, " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase()),
+        completedItemIds: Array.isArray(completions)
+          ? completions.map((c) => c.itemId)
+          : [],
+        completedAt:
+          Array.isArray(completions) && completions.length > 0
+            ? completions[0].completedAt
+            : new Date(),
+        completedItems: Array.isArray(completions)
+          ? completions.map((c) => ({
+              itemId: c.itemId,
+              text: c.text || "Item",
+              completedAt: c.completedAt,
+            }))
+          : [],
+      }));
+
+      dayEntry.checklistCompletions = transformedCompletions;
+    }
+
+    return dayEntry as IDayEntry;
   }
 
   /**
@@ -319,6 +365,25 @@ export class HydrationService {
           order: number;
           isCustom?: boolean;
         }>;
+
+        // Add custom items from userSpace
+        if (checklistOverride?.customItems) {
+          const customItems = checklistOverride.customItems.map(
+            (customItem: {
+              itemId: string;
+              text: string;
+              category?: string;
+              order: number;
+              createdAt: Date;
+            }) => ({
+              itemId: customItem.itemId,
+              text: customItem.text,
+              order: customItem.order || Date.now(),
+              isCustom: true,
+            })
+          );
+          items.push(...customItems);
+        }
 
         return {
           ...checklist,
@@ -707,23 +772,52 @@ export class HydrationService {
       const checklistId = checklistIdMap[checklistType] || checklistType;
 
       // Add to user's custom checklist items in UserSpace
-      await UserSpace.findOneAndUpdate(
-        { userId: user._id.toString() },
+      // First, try to add to existing checklist override
+      const result = await UserSpace.findOneAndUpdate(
+        {
+          userId: user._id.toString(),
+          "checklistOverrides.checklistId": checklistId,
+        },
         {
           $push: {
-            [`checklistOverrides.${checklistId}.customItems`]: {
+            "checklistOverrides.$.customItems": {
               itemId,
               text: item.text,
               category: item.category,
-              order: Date.now(), // Use timestamp for ordering
-              isCustom: true,
+              order: Date.now(),
               createdAt: new Date(),
             },
           },
           $set: { updatedAt: new Date() },
         },
-        { upsert: true, new: true }
+        { new: true }
       );
+
+      // If no existing override found, create new checklist override with custom item
+      if (!result) {
+        await UserSpace.findOneAndUpdate(
+          { userId: user._id.toString() },
+          {
+            $push: {
+              checklistOverrides: {
+                checklistId,
+                itemOverrides: [],
+                customItems: [
+                  {
+                    itemId,
+                    text: item.text,
+                    category: item.category,
+                    order: Date.now(),
+                    createdAt: new Date(),
+                  },
+                ],
+              },
+            },
+            $set: { updatedAt: new Date() },
+          },
+          { upsert: true, new: true }
+        );
+      }
 
       return itemId;
     } catch (error) {
