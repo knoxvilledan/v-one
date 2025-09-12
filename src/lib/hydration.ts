@@ -171,8 +171,10 @@ export class HydrationService {
     email: string,
     date: string
   ): Promise<IDayEntry | null> {
-    return (await DayEntry.findOne({
-      userId,
+    // MODERNIZED: Read from user_data collection to ensure customization persistence
+    const { UserData } = await import("./database");
+    return (await UserData.findOne({
+      userId: email,
       date,
     }).lean()) as IDayEntry | null;
   }
