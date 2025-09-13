@@ -13,6 +13,12 @@ interface ChecklistSection {
   title: string;
   category: ChecklistItem["category"] | "completed";
   items: ChecklistItem[];
+  categoryData?: {
+    value: string;
+    label: string;
+    emoji: string;
+    color: string;
+  };
 }
 
 export default function MasterChecklist({
@@ -31,9 +37,8 @@ export default function MasterChecklist({
     wrapup: true,
     completed: false,
   });
-  const [isEditing, setIsEditing] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
+  const [editingText, setEditingText] = useState("");
   const [editTargetBlock, setEditTargetBlock] = useState<number | undefined>(
     undefined
   );
@@ -83,6 +88,40 @@ export default function MasterChecklist({
     }));
   };
 
+  // Daily productivity categories with emojis and blue theme
+  const dailyCategories = [
+    {
+      value: "morning",
+      label: "🌅 Morning Routine",
+      emoji: "🌅",
+      color: "blue",
+    },
+    {
+      value: "work",
+      label: "💼 Work Tasks",
+      emoji: "💼",
+      color: "indigo",
+    },
+    {
+      value: "tech",
+      label: "💻 Tech & Development",
+      emoji: "💻",
+      color: "cyan",
+    },
+    {
+      value: "house",
+      label: "🏠 House & Family",
+      emoji: "🏠",
+      color: "teal",
+    },
+    {
+      value: "wrapup",
+      label: "🌙 Evening Wrap-up",
+      emoji: "🌙",
+      color: "purple",
+    },
+  ];
+
   const handleCompleteItem = (item: ChecklistItem) => {
     const updatedItem = {
       ...item,
@@ -117,28 +156,36 @@ export default function MasterChecklist({
 
   const startEditing = (item: ChecklistItem) => {
     setEditingItemId(item.id);
-    setEditText(item.text);
+    setEditingText(item.text);
     setEditTargetBlock(item.targetBlock);
   };
 
   const saveEdit = () => {
-    if (editText.trim()) {
+    if (editingText.trim()) {
       const updatedItems = items.map((item) =>
         item.id === editingItemId
-          ? { ...item, text: editText.trim(), targetBlock: editTargetBlock }
+          ? { ...item, text: editingText.trim(), targetBlock: editTargetBlock }
           : item
       );
       onUpdateItems(updatedItems);
     }
     setEditingItemId(null);
-    setEditText("");
+    setEditingText("");
     setEditTargetBlock(undefined);
   };
 
   const cancelEdit = () => {
     setEditingItemId(null);
-    setEditText("");
+    setEditingText("");
     setEditTargetBlock(undefined);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      saveEdit();
+    } else if (e.key === "Escape") {
+      cancelEdit();
+    }
   };
 
   const undoCompletion = (item: ChecklistItem) => {
@@ -204,49 +251,48 @@ export default function MasterChecklist({
     }
   };
 
-  const deleteItem = (id: string) => {
-    const updatedItems = items.filter((item) => item.id !== id);
+  const handleAddItem = (category: string) => {
+    const newItem: ChecklistItem = {
+      id: Date.now().toString(),
+      text: "New task",
+      completed: false,
+      category: category as ChecklistItem["category"],
+    };
+    onUpdateItems([...items, newItem]);
+  };
+
+  const handleCategoryChange = (itemId: string, newCategory: string) => {
+    const updatedItems = items.map((item) =>
+      item.id === itemId
+        ? { ...item, category: newCategory as ChecklistItem["category"] }
+        : item
+    );
     onUpdateItems(updatedItems);
   };
 
-  // Group items by category
-  const sections: ChecklistSection[] = [
-    {
-      title: "Morning Checklist",
-      category: "morning",
-      items: items.filter(
-        (item) => item.category === "morning" && !item.completed
-      ),
-    },
-    {
-      title: "Work Checklist",
-      category: "work",
-      items: items.filter(
-        (item) => item.category === "work" && !item.completed
-      ),
-    },
-    {
-      title: "Tech Checklist",
-      category: "tech",
-      items: items.filter(
-        (item) => item.category === "tech" && !item.completed
-      ),
-    },
-    {
-      title: "House & Family",
-      category: "house",
-      items: items.filter(
-        (item) => item.category === "house" && !item.completed
-      ),
-    },
-    {
-      title: "Wrap up Checklist",
-      category: "wrapup",
-      items: items.filter(
-        (item) => item.category === "wrapup" && !item.completed
-      ),
-    },
-  ];
+  const handleDeleteItem = (itemId: string) => {
+    const updatedItems = items.filter((item) => item.id !== itemId);
+    onUpdateItems(updatedItems);
+  };
+
+  const handleBlockAssignment = (itemId: string, blockIndex: number) => {
+    const updatedItems = items.map((item) =>
+      item.id === itemId
+        ? { ...item, targetBlock: blockIndex === -1 ? undefined : blockIndex }
+        : item
+    );
+    onUpdateItems(updatedItems);
+  };
+
+  // Group items by category using the new dailyCategories structure
+  const sections: ChecklistSection[] = dailyCategories.map((category) => ({
+    title: category.label,
+    category: category.value as ChecklistItem["category"],
+    items: items.filter(
+      (item) => item.category === category.value && !item.completed
+    ),
+    categoryData: category, // Add category data for styling and emojis
+  }));
 
   // Add completed items section if there are any
   if (items.some((item) => item.completed)) {
@@ -281,15 +327,6 @@ export default function MasterChecklist({
             {completedToday} completed • {remainingCount} remaining
           </span>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsEditing(!isEditing);
-          }}
-          className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          {isEditing ? "Done" : "Edit"}
-        </button>
       </div>
 
       {/* Expanded Content */}
@@ -302,20 +339,31 @@ export default function MasterChecklist({
             >
               {/* Section Header */}
               <div
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-white dark:hover:bg-gray-750"
+                className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-800/30"
                 onClick={() => toggleSection(section.category)}
               >
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm">
+                  <span className="text-sm text-blue-600 dark:text-blue-400">
                     {expandedSections[section.category] ? "▼" : "▶"}
                   </span>
-                  <h3 className="font-medium text-gray-700 dark:text-gray-300">
+                  <h3 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-1">
                     {section.title}
+                    <span className="text-xs text-blue-500 dark:text-blue-400">
+                      ({section.items.length})
+                    </span>
                   </h3>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    ({section.items.length})
-                  </span>
                 </div>
+                {section.categoryData && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddItem(section.categoryData!.value);
+                    }}
+                    className="text-xs px-2 py-1 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                  >
+                    + Add {section.categoryData!.label.split(" ")[1]}
+                  </button>
+                )}
               </div>
 
               {/* Section Items */}
@@ -334,14 +382,19 @@ export default function MasterChecklist({
                         <div className="flex-1 flex items-center space-x-2">
                           <input
                             type="text"
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            className="flex-1 px-2 py-1 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveEdit();
-                              if (e.key === "Escape") cancelEdit();
-                            }}
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            className="flex-1 px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:border-blue-500 dark:text-white resize-none overflow-hidden"
+                            onKeyDown={(e) => handleKeyPress(e)}
+                            onBlur={() => saveEdit()}
                             autoFocus
+                            style={{
+                              minHeight: "28px",
+                              maxHeight: "28px",
+                              lineHeight: "1.2",
+                              whiteSpace: "nowrap",
+                              textOverflow: "ellipsis",
+                            }}
                           />
                           <select
                             value={editTargetBlock || ""}
@@ -367,28 +420,18 @@ export default function MasterChecklist({
                               </option>
                             ))}
                           </select>
-                          <button
-                            onClick={saveEdit}
-                            className="text-green-600 hover:text-green-800 text-sm px-2 py-1"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={cancelEdit}
-                            className="text-gray-600 hover:text-gray-800 text-sm px-2 py-1"
-                          >
-                            Cancel
-                          </button>
                         </div>
                       ) : (
                         <div className="flex-1 flex items-center justify-between">
                           <div className="flex-1">
                             <span
-                              className={`text-sm ${
+                              onClick={() => startEditing(item)}
+                              className={`text-sm cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 ${
                                 item.completed
                                   ? "line-through text-gray-500"
                                   : "text-gray-800 dark:text-gray-200"
                               }`}
+                              title="Click to edit"
                             >
                               {item.text}
                             </span>
@@ -405,6 +448,62 @@ export default function MasterChecklist({
                                 ).toLocaleTimeString()}
                               </div>
                             )}
+                          </div>
+
+                          {/* Category dropdown - always visible for easy reassignment */}
+                          <div className="flex items-center space-x-2 mr-2">
+                            <select
+                              value={item.category || ""}
+                              onChange={(e) =>
+                                handleCategoryChange(item.id, e.target.value)
+                              }
+                              className="px-2 py-1 border rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white border-blue-300 dark:border-gray-600 hover:border-blue-500"
+                              title="Change category"
+                            >
+                              <option value="" className="text-gray-500">
+                                Select category...
+                              </option>
+                              {dailyCategories.map((cat) => (
+                                <option
+                                  key={cat.value}
+                                  value={cat.value}
+                                  className="dark:bg-gray-800 dark:text-white"
+                                >
+                                  {cat.emoji} {cat.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Time Block Assignment dropdown - always visible */}
+                          <div className="flex items-center space-x-2 mr-2">
+                            <select
+                              value={item.targetBlock ?? ""}
+                              onChange={(e) =>
+                                handleBlockAssignment(
+                                  item.id,
+                                  e.target.value ? parseInt(e.target.value) : -1
+                                )
+                              }
+                              className="px-2 py-1 border rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-white border-blue-300 dark:border-gray-600 hover:border-blue-500"
+                              title="Assign to time block"
+                            >
+                              <option value="" className="text-gray-500">
+                                Auto-assign
+                              </option>
+                              {Array.from(
+                                { length: timeBlockCount },
+                                (_, i) => (
+                                  <option
+                                    key={i}
+                                    value={i}
+                                    className="dark:bg-gray-800 dark:text-white"
+                                  >
+                                    Block {i}
+                                  </option>
+                                )
+                              )}
+                            </select>
                           </div>
 
                           {/* Reassignment dropdown for completed items */}
@@ -444,40 +543,53 @@ export default function MasterChecklist({
                             </div>
                           )}
 
-                          {isEditing && (
-                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {item.completed && (
-                                <button
-                                  onClick={() => undoCompletion(item)}
-                                  className="text-orange-600 hover:text-orange-800 p-1"
-                                  title="Undo completion"
-                                >
-                                  ↶
-                                </button>
-                              )}
-                              <button
-                                onClick={() => startEditing(item)}
-                                className="text-blue-600 hover:text-blue-800 p-1"
-                                title="Edit"
+                          {/* Delete Button - Always visible like WorkoutChecklist/TodoList */}
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                              title="Delete item"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
                               >
-                                ✎
-                              </button>
+                                <path
+                                  fillRule="evenodd"
+                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+
+                          {/* Edit buttons - Always visible like WorkoutChecklist/TodoList */}
+                          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {item.completed && (
                               <button
-                                onClick={() => deleteItem(item.id)}
-                                className="text-red-600 hover:text-red-800 p-1"
-                                title="Delete"
+                                onClick={() => undoCompletion(item)}
+                                className="text-orange-600 hover:text-orange-800 p-1"
+                                title="Undo completion"
                               >
-                                ×
+                                ↶
                               </button>
-                            </div>
-                          )}
+                            )}
+                            <button
+                              onClick={() => startEditing(item)}
+                              className="text-blue-600 hover:text-blue-800 p-1"
+                              title="Edit"
+                            >
+                              ✎
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
                   ))}
 
                   {/* Add new item for this section */}
-                  {isEditing && section.category !== "completed" && (
+                  {section.category !== "completed" && (
                     <div className="flex items-center space-x-2 mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
                       <input
                         type="text"
