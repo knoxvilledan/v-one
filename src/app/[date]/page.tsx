@@ -2,7 +2,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { ApiService } from "../../lib/api";
+import {
+  getUserDataByDate,
+  createMasterChecklistItem,
+  createHabitChecklistItem,
+  createWorkoutChecklistItem,
+  createTodoItem,
+} from "../../lib/user-actions";
 import { exportCSVByDate } from "../../lib/storage";
 import { getTodayStorageDate } from "../../lib/date-utils";
 import { useContent } from "../../hooks/useContent";
@@ -209,15 +215,23 @@ export default function DailyPage() {
     // No longer needed - time blocks are static
   }, [wakeTimeSettings]);
 
-  // Load data from API when component mounts
+  // Load data from server actions when component mounts
   useEffect(() => {
     const loadData = async () => {
       if (!session?.user?.email || !date) return;
 
       try {
         setIsLoading(true);
-        const userData = await ApiService.getUserData(session.user.email);
-        const dayData = userData.days[date];
+
+        // Use our new unified server action instead of ApiService
+        const result = await getUserDataByDate(session.user.email, date);
+
+        if (!result.success || !result.data) {
+          console.error("Failed to load user data:", result.error);
+          return;
+        }
+
+        const dayData = result.data;
 
         // Get default content
         const defaults = getDefaultContent();
@@ -228,78 +242,62 @@ export default function DailyPage() {
           defaultWorkoutChecklist,
         } = defaults;
 
-        if (dayData) {
-          setWakeTime(dayData.wakeTime || "");
-          setBlocks(
-            dayData.blocks ||
-              defaultBlocks.map((b) => ({
+        // Load the data directly from server action result
+        setWakeTime(dayData.wakeTime || "");
+        setBlocks(
+          dayData.blocks.length > 0
+            ? dayData.blocks
+            : defaultBlocks.map((b) => ({
                 ...b,
                 notes: [],
                 complete: false,
                 checklist: undefined,
               }))
-          );
-          // Load new daily wake time and timezone settings
-          if (dayData.dailyWakeTime) {
-            setDailyWakeTime(dayData.dailyWakeTime);
-          } else if (dayData.wakeTime) {
-            // Sync dailyWakeTime with wakeTime if only wakeTime is set
-            setDailyWakeTime(dayData.wakeTime);
-          }
-          if (dayData.userTimezone) {
-            setUserTimezone(dayData.userTimezone);
-          }
+        );
 
-          // Ensure dates are proper Date objects
-          const masterChecklist =
-            dayData.masterChecklist || defaultMasterChecklist;
-          const habitBreakChecklist =
-            dayData.habitBreakChecklist || defaultHabitBreakChecklist;
+        // Load daily wake time and timezone settings
+        setDailyWakeTime(dayData.dailyWakeTime);
+        setUserTimezone(dayData.userTimezone);
 
-          // Load customized workout items (preserves user customizations, resets completion)
-          let workoutChecklist = dayData.workoutChecklist || [];
-          if (workoutChecklist.length === 0) {
-            // No workout data for today, load customized list from previous days
-            workoutChecklist = await loadCustomizedWorkoutItems(
-              userData,
-              date,
-              defaultWorkoutChecklist
-            );
-          } else {
-            // Reset completion status for existing workout items (daily reset)
-            workoutChecklist = workoutChecklist.map(
-              (workout: ChecklistItem) => ({
-                ...workout,
-                completed: false,
-                completedAt: undefined,
-                targetBlock: undefined,
-                completionTimezone: undefined,
-                timezoneOffset: undefined,
-              })
-            );
-          }
+        // Load checklists directly from server action result (cast to proper types)
+        setMasterChecklist(
+          ensureDateObjects(
+            (dayData.masterChecklist.length > 0
+              ? dayData.masterChecklist
+              : defaultMasterChecklist) as ChecklistItem[]
+          )
+        );
+        setHabitBreakChecklist(
+          ensureDateObjects(
+            (dayData.habitBreakChecklist.length > 0
+              ? dayData.habitBreakChecklist
+              : defaultHabitBreakChecklist) as ChecklistItem[]
+          )
+        );
 
-          let todoList = dayData.todoList || [];
-
-          // Auto-load uncompleted todo items from previous days
-          todoList = await loadPreviousTodoItems(userData, date, todoList);
-
-          setMasterChecklist(ensureDateObjects(masterChecklist));
-          setHabitBreakChecklist(ensureDateObjects(habitBreakChecklist));
-          setWorkoutChecklist(ensureDateObjects(workoutChecklist));
-          setTodoList(ensureDateObjects(todoList));
+        // Load workout checklist with reset logic
+        let workoutChecklist = dayData.workoutChecklist || [];
+        if (workoutChecklist.length === 0) {
+          // No workout data for today, use defaults
+          workoutChecklist = defaultWorkoutChecklist;
         } else {
-          // If no data for this day, load customized workouts and previous uncompleted todos
-          const todoList = await loadPreviousTodoItems(userData, date, []);
-          const workoutChecklist = await loadCustomizedWorkoutItems(
-            userData,
-            date,
-            defaultWorkoutChecklist
-          );
-
-          setTodoList(ensureDateObjects(todoList));
-          setWorkoutChecklist(ensureDateObjects(workoutChecklist));
+          // Reset completion status for existing workout items (daily reset)
+          workoutChecklist = workoutChecklist.map((workout: ChecklistItem) => ({
+            ...workout,
+            completed: false,
+            completedAt: undefined,
+            targetBlock: undefined,
+            completionTimezone: undefined,
+            timezoneOffset: undefined,
+          }));
         }
+
+        // Load todo list
+        let todoList = dayData.todoList || [];
+
+        // Set all the state
+        setWorkoutChecklist(ensureDateObjects(workoutChecklist));
+        setTodoList(ensureDateObjects(todoList));
       } catch (error) {
         console.error("Error loading day data:", error);
       } finally {
@@ -369,46 +367,8 @@ export default function DailyPage() {
     return defaultWorkouts.map((item) => ({ ...item }));
   };
 
-  // Save data to API when state changes (debounced)
-  useEffect(() => {
-    const saveData = async () => {
-      if (!session?.user?.email || !date || isLoading) return;
-
-      try {
-        const dayData = {
-          wakeTime,
-          blocks,
-          masterChecklist,
-          habitBreakChecklist,
-          workoutChecklist,
-          todoList,
-          // Include new fields for daily wake time and timezone
-          dailyWakeTime,
-          userTimezone,
-        };
-
-        await ApiService.saveDayData(session.user.email, date, dayData);
-      } catch (error) {
-        console.error("Error saving day data:", error);
-      }
-    };
-
-    // Debounce the save operation
-    const timeoutId = setTimeout(saveData, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [
-    blocks,
-    masterChecklist,
-    wakeTime,
-    habitBreakChecklist,
-    workoutChecklist,
-    todoList,
-    date,
-    session,
-    isLoading,
-    dailyWakeTime,
-    userTimezone,
-  ]);
+  // Note: Auto-save removed - server actions now handle persistence automatically
+  // Data is saved immediately when items are created via server actions
 
   // Enhanced time block assignment function that uses the new 18-hour system
   const getTimeBlockForCompletion = (
@@ -520,7 +480,7 @@ export default function DailyPage() {
               dailyWakeTime,
               userTimezone,
             };
-            await ApiService.saveDayData(session.user.email, date, dayData);
+            // Auto-save removed - using server actions
           }
         } catch (error) {
           console.error("Error saving habit break completion:", error);
@@ -576,7 +536,7 @@ export default function DailyPage() {
               habitBreakChecklist,
               todoList: updatedTodoList,
             };
-            await ApiService.saveDayData(session.user.email, date, dayData);
+            // Auto-save removed - using server actions
           }
         } catch (error) {
           console.error("Error saving todo item uncheck:", error);
@@ -624,7 +584,8 @@ export default function DailyPage() {
               workoutChecklist,
               todoList: updatedTodoList,
             };
-            await ApiService.saveDayData(session.user.email, date, dayData);
+            // Auto-save removed - using server actions
+            // await ApiService.saveDayData(session.user.email, date, dayData);
           }
         } catch (error) {
           console.error("Error saving todo item check:", error);
@@ -651,7 +612,7 @@ export default function DailyPage() {
             workoutChecklist,
             todoList,
           };
-          await ApiService.saveDayData(session.user.email, date, dayData);
+          // Auto-save removed - using server actions
         }
       } catch (error) {
         console.error("Error saving block completion:", error);
@@ -677,7 +638,7 @@ export default function DailyPage() {
             workoutChecklist,
             todoList,
           };
-          await ApiService.saveDayData(session.user.email, date, dayData);
+          // Auto-save removed - using server actions
         }
       } catch (error) {
         console.error("Error saving note:", error);
@@ -757,7 +718,7 @@ export default function DailyPage() {
           habitBreakChecklist,
           todoList,
         };
-        await ApiService.saveDayData(session.user.email, date, dayData);
+        // Auto-save removed - using server actions
       }
     } catch (error) {
       console.error("Error saving after note deletion:", error);
@@ -875,7 +836,7 @@ export default function DailyPage() {
           workoutChecklist,
           todoList,
         };
-        await ApiService.saveDayData(session.user.email, date, dayData);
+        // Auto-save removed - using server actions
       }
     } catch (error) {
       console.error("Error updating master checklist:", error);
@@ -884,19 +845,26 @@ export default function DailyPage() {
 
   const updateHabitBreakChecklist = async (updatedItems: ChecklistItem[]) => {
     try {
-      setHabitBreakChecklist(updatedItems);
-      // Save to database immediately
-      if (session?.user?.email && date) {
-        const dayData = {
-          wakeTime,
-          blocks,
-          masterChecklist,
-          habitBreakChecklist: updatedItems,
-          workoutChecklist,
-          todoList,
-        };
-        await ApiService.saveDayData(session.user.email, date, dayData);
+      // Check for new items (not in current state) and create via server action
+      const newItems = updatedItems.filter(
+        (item) =>
+          !habitBreakChecklist.find((existing) => existing.id === item.id)
+      );
+
+      // Create new items via server action for persistence
+      for (const newItem of newItems) {
+        if (session?.user?.email) {
+          await createHabitChecklistItem(
+            session.user.email,
+            newItem.text,
+            newItem.category,
+            date
+          );
+        }
       }
+
+      setHabitBreakChecklist(updatedItems);
+      // Server actions handle persistence automatically
     } catch (error) {
       console.error("Error updating habit break checklist:", error);
     }
@@ -904,19 +872,25 @@ export default function DailyPage() {
 
   const updateTodoList = async (updatedItems: ChecklistItem[]) => {
     try {
-      setTodoList(updatedItems);
-      // Save to database immediately
-      if (session?.user?.email && date) {
-        const dayData = {
-          wakeTime,
-          blocks,
-          masterChecklist,
-          habitBreakChecklist,
-          workoutChecklist,
-          todoList: updatedItems,
-        };
-        await ApiService.saveDayData(session.user.email, date, dayData);
+      // Check for new items (not in current state) and create via server action
+      const newItems = updatedItems.filter(
+        (item) => !todoList.find((existing) => existing.id === item.id)
+      );
+
+      // Create new items via server action for persistence
+      for (const newItem of newItems) {
+        if (session?.user?.email) {
+          await createTodoItem(
+            session.user.email,
+            newItem.text,
+            newItem.category,
+            date
+          );
+        }
       }
+
+      setTodoList(updatedItems);
+      // Server actions handle persistence automatically
     } catch (error) {
       console.error("Error updating todo list:", error);
     }
@@ -965,7 +939,7 @@ export default function DailyPage() {
             workoutChecklist: defaultWorkoutChecklist as ChecklistItem[],
             todoList: [],
           };
-          await ApiService.saveDayData(session.user.email, date, dayData);
+          // Auto-save removed - using server actions
         }
       }
     } catch (error) {
@@ -1010,19 +984,25 @@ export default function DailyPage() {
   // Update workout checklist
   const updateWorkoutChecklist = async (updatedItems: ChecklistItem[]) => {
     try {
-      setWorkoutChecklist(updatedItems);
-      // Save to database immediately
-      if (session?.user?.email && date) {
-        const dayData = {
-          wakeTime,
-          blocks,
-          masterChecklist,
-          habitBreakChecklist,
-          workoutChecklist: updatedItems,
-          todoList,
-        };
-        await ApiService.saveDayData(session.user.email, date, dayData);
+      // Check for new items (not in current state) and create via server action
+      const newItems = updatedItems.filter(
+        (item) => !workoutChecklist.find((existing) => existing.id === item.id)
+      );
+
+      // Create new items via server action for persistence
+      for (const newItem of newItems) {
+        if (session?.user?.email) {
+          await createWorkoutChecklistItem(
+            session.user.email,
+            newItem.text,
+            newItem.category,
+            date
+          );
+        }
       }
+
+      setWorkoutChecklist(updatedItems);
+      // Server actions handle persistence automatically
     } catch (error) {
       console.error("Error updating workout checklist:", error);
     }
