@@ -25,7 +25,7 @@ export default function TodoList({
   resetPosition = false,
   onPositionReset,
 }: TodoListProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [position, setPosition] = useState({ x: 0, y: 0 });

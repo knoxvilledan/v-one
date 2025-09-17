@@ -5,7 +5,6 @@ import EditableTimeBlockLabel from "./EditableTimeBlockLabel";
 type Props = {
   block: Block;
   index: number;
-  date: string;
   toggleComplete: (blockId: string) => void;
   addNote: (blockId: string, note: string) => void;
   deleteNote: (blockId: string, noteIndex: number) => void;
@@ -17,7 +16,6 @@ type Props = {
 export default function TimeBlock({
   block,
   index,
-  date,
   toggleComplete,
   addNote,
   deleteNote,
@@ -59,7 +57,6 @@ export default function TimeBlock({
           <EditableTimeBlockLabel
             blockIndex={index}
             currentLabel={block.label}
-            date={date}
             onLabelUpdate={(blockIndex, newLabel) =>
               onLabelUpdate?.(block.id, newLabel)
             }

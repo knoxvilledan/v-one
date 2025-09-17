@@ -47,6 +47,104 @@ async function checkDatabase() {
         // Show a sample document
         const sample = await db.collection(collection.name).findOne();
         console.log(`    Sample keys: ${Object.keys(sample).join(", ")}`);
+
+        // Special handling for user_data collection
+        if (collection.name === "user_data") {
+          console.log("\n🔍 Detailed user_data analysis:");
+
+          // Get recent user data documents
+          const recentDocs = await db
+            .collection(collection.name)
+            .find({})
+            .sort({ date: -1 })
+            .limit(10)
+            .toArray();
+
+          console.log(`📊 Found ${recentDocs.length} recent documents:`);
+          recentDocs.forEach((doc, index) => {
+            console.log(`  ${index + 1}. User: ${doc.userId || "unknown"}`);
+            console.log(
+              `     Date: "${doc.date}" | DisplayDate: "${doc.displayDate}"`
+            );
+            console.log(
+              `     Master: ${doc.masterChecklist?.length || 0} | Habit: ${
+                doc.habitBreakChecklist?.length || 0
+              } | Workout: ${doc.workoutChecklist?.length || 0} | Todo: ${
+                doc.todoList?.length || 0
+              }`
+            );
+
+            if (doc.masterChecklist?.length > 0) {
+              console.log(
+                `     Master items: ${doc.masterChecklist
+                  .map((item) => item.text)
+                  .join(", ")}`
+              );
+            }
+            if (doc.habitBreakChecklist?.length > 0) {
+              console.log(
+                `     Habit items: ${doc.habitBreakChecklist
+                  .map((item) => item.text)
+                  .join(", ")}`
+              );
+            }
+            if (doc.workoutChecklist?.length > 0) {
+              console.log(
+                `     Workout items: ${doc.workoutChecklist
+                  .map((item) => item.text)
+                  .join(", ")}`
+              );
+            }
+          });
+
+          // Test inheritance query specifically for dates around today
+          console.log("\n🔄 Testing inheritance logic:");
+          const testUserId = recentDocs[0]?.userId;
+          if (testUserId) {
+            console.log(`   Testing inheritance for user: ${testUserId}`);
+
+            // Test for 2025-09-18 (tomorrow from logs)
+            const previousData = await db
+              .collection(collection.name)
+              .findOne(
+                { userId: testUserId, date: { $lt: "2025-09-18" } },
+                { sort: { date: -1 } }
+              );
+
+            if (previousData) {
+              console.log(`   ✅ Previous data found: ${previousData.date}`);
+              console.log(
+                `      Previous had: Master=${
+                  previousData.masterChecklist?.length || 0
+                }, Habit=${
+                  previousData.habitBreakChecklist?.length || 0
+                }, Workout=${previousData.workoutChecklist?.length || 0}`
+              );
+            } else {
+              console.log(`   ❌ No previous data found for inheritance`);
+            }
+
+            // Check if 2025-09-18 data exists
+            const todayData = await db
+              .collection(collection.name)
+              .findOne({ userId: testUserId, date: "2025-09-18" });
+
+            if (todayData) {
+              console.log(`   📅 Data for 2025-09-18 exists:`);
+              console.log(
+                `      Has: Master=${
+                  todayData.masterChecklist?.length || 0
+                }, Habit=${
+                  todayData.habitBreakChecklist?.length || 0
+                }, Workout=${todayData.workoutChecklist?.length || 0}`
+              );
+            } else {
+              console.log(
+                `   📅 No data for 2025-09-18 found - inheritance should create it`
+              );
+            }
+          }
+        }
       }
     }
   } catch (error) {

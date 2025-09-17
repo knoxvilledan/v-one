@@ -20,6 +20,7 @@ function getCurrentDate(): string {
 /**
  * Get user data for a specific date
  * This replaces ApiService.getUserData to unify data loading
+ * Enhanced to inherit checklist items from previous days
  */
 export async function getUserDataByDate(
   email: string,
@@ -37,12 +38,36 @@ export async function getUserDataByDate(
   }>
 > {
   try {
+    console.log(`\n🔍 getUserDataByDate called for ${email} on ${date}`);
     await connectMongoose();
 
     // Find user data for the specific date
     let userData = await UserData.findOne({ userId: email, date });
+    console.log(`📊 Found existing data for ${date}:`, userData ? "YES" : "NO");
 
     if (!userData) {
+      console.log(
+        `🔄 No data for ${date}, looking for previous data to inherit...`
+      );
+      // No data for this date - look for the most recent previous data to inherit checklist items
+      const previousUserData = await UserData.findOne(
+        { userId: email, date: { $lt: date } },
+        {},
+        { sort: { date: -1 } }
+      );
+      console.log(
+        `📅 Previous data found:`,
+        previousUserData
+          ? `${previousUserData.date} with ${
+              previousUserData.masterChecklist?.length || 0
+            } master items, ${
+              previousUserData.habitBreakChecklist?.length || 0
+            } habit items, ${
+              previousUserData.workoutChecklist?.length || 0
+            } workout items`
+          : "NONE"
+      );
+
       // Create default user data for this date
       userData = new UserData({
         userId: email,
@@ -51,14 +76,47 @@ export async function getUserDataByDate(
         wakeTime: "04:00",
         userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         blocks: [],
-        masterChecklist: [],
-        habitBreakChecklist: [],
-        workoutChecklist: [],
+        // Inherit checklist items from previous day but reset completion status
+        masterChecklist:
+          previousUserData?.masterChecklist?.map((item: ChecklistItem) => ({
+            ...item,
+            completed: false,
+            completedAt: undefined,
+            targetBlock: undefined,
+            completionTimezone: undefined,
+            timezoneOffset: undefined,
+          })) || [],
+        habitBreakChecklist:
+          previousUserData?.habitBreakChecklist?.map((item: ChecklistItem) => ({
+            ...item,
+            completed: false,
+            completedAt: undefined,
+            targetBlock: undefined,
+            completionTimezone: undefined,
+            timezoneOffset: undefined,
+          })) || [],
+        workoutChecklist:
+          previousUserData?.workoutChecklist?.map((item: ChecklistItem) => ({
+            ...item,
+            completed: false,
+            completedAt: undefined,
+            targetBlock: undefined,
+            completionTimezone: undefined,
+            timezoneOffset: undefined,
+          })) || [],
+        // Todo items should NOT inherit - they're date-specific
         todoList: [],
         score: 0,
         dailyWakeTime: "04:00",
       });
+      console.log(`✨ Created new userData for ${date} with inherited items:`, {
+        masterChecklist: userData.masterChecklist.length,
+        habitBreakChecklist: userData.habitBreakChecklist.length,
+        workoutChecklist: userData.workoutChecklist.length,
+        todoList: userData.todoList.length,
+      });
       await userData.save();
+      console.log(`💾 Saved new userData to database for ${date}`);
     }
 
     // Convert to plain objects to avoid serialization issues
@@ -124,6 +182,22 @@ export async function getUserDataByDate(
         userData.userTimezone ||
         Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
+
+    console.log(`🎯 Returning data for ${date}:`, {
+      masterChecklist: result.masterChecklist.length,
+      habitBreakChecklist: result.habitBreakChecklist.length,
+      workoutChecklist: result.workoutChecklist.length,
+      todoList: result.todoList.length,
+      masterItems: result.masterChecklist.map(
+        (item: ChecklistItem) => item.text
+      ),
+      habitItems: result.habitBreakChecklist.map(
+        (item: ChecklistItem) => item.text
+      ),
+      workoutItems: result.workoutChecklist.map(
+        (item: ChecklistItem) => item.text
+      ),
+    });
 
     return {
       success: true,
@@ -364,6 +438,96 @@ export async function createTodoItem(
     return {
       success: false,
       error: `Failed to create todo item: ${error}`,
+    };
+  }
+}
+
+/**
+ * Save complete day data - replaces old ApiService.saveDayData
+ * This saves all the user's data for a specific date including state changes
+ */
+export async function saveDayData(
+  email: string,
+  date: string,
+  dayData: {
+    wakeTime?: string;
+    blocks?: Block[];
+    masterChecklist?: ChecklistItem[];
+    habitBreakChecklist?: ChecklistItem[];
+    workoutChecklist?: ChecklistItem[];
+    todoList?: ChecklistItem[];
+    dailyWakeTime?: string;
+    userTimezone?: string;
+  }
+): Promise<ActionResult<void>> {
+  try {
+    console.log(`\n💾 saveDayData called for ${email} on ${date}`);
+    console.log(`📝 Data to save:`, {
+      masterChecklist: dayData.masterChecklist?.length || 0,
+      habitBreakChecklist: dayData.habitBreakChecklist?.length || 0,
+      workoutChecklist: dayData.workoutChecklist?.length || 0,
+      todoList: dayData.todoList?.length || 0,
+      masterItems:
+        dayData.masterChecklist?.map((item: ChecklistItem) => item.text) || [],
+      habitItems:
+        dayData.habitBreakChecklist?.map((item: ChecklistItem) => item.text) ||
+        [],
+      workoutItems:
+        dayData.workoutChecklist?.map((item: ChecklistItem) => item.text) || [],
+    });
+    await connectMongoose();
+
+    let userData = await UserData.findOne({ userId: email, date });
+
+    if (!userData) {
+      // Create new user data if it doesn't exist
+      userData = new UserData({
+        userId: email,
+        date,
+        displayDate: new Date(date).toLocaleDateString(),
+        wakeTime: dayData.wakeTime || "04:00",
+        userTimezone:
+          dayData.userTimezone ||
+          Intl.DateTimeFormat().resolvedOptions().timeZone,
+        blocks: dayData.blocks || [],
+        masterChecklist: dayData.masterChecklist || [],
+        habitBreakChecklist: dayData.habitBreakChecklist || [],
+        workoutChecklist: dayData.workoutChecklist || [],
+        todoList: dayData.todoList || [],
+        score: 0,
+        dailyWakeTime: dayData.dailyWakeTime || dayData.wakeTime || "04:00",
+      });
+    } else {
+      // Update existing data with provided fields
+      if (dayData.wakeTime !== undefined) userData.wakeTime = dayData.wakeTime;
+      if (dayData.blocks !== undefined) userData.blocks = dayData.blocks;
+      if (dayData.masterChecklist !== undefined)
+        userData.masterChecklist = dayData.masterChecklist;
+      if (dayData.habitBreakChecklist !== undefined)
+        userData.habitBreakChecklist = dayData.habitBreakChecklist;
+      if (dayData.workoutChecklist !== undefined)
+        userData.workoutChecklist = dayData.workoutChecklist;
+      if (dayData.todoList !== undefined) userData.todoList = dayData.todoList;
+      if (dayData.dailyWakeTime !== undefined)
+        userData.dailyWakeTime = dayData.dailyWakeTime;
+      if (dayData.userTimezone !== undefined)
+        userData.userTimezone = dayData.userTimezone;
+    }
+
+    await userData.save();
+    console.log(`✅ Successfully saved data for ${date}`);
+
+    // Revalidate the specific date page
+    revalidatePath(`/${date}`, "page");
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("saveDayData error:", error);
+    return {
+      success: false,
+      error: `Failed to save day data: ${error}`,
     };
   }
 }

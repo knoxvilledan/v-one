@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { ApiService } from "../lib/api";
 
 interface EditableTimeBlockLabelProps {
   blockIndex: number;
   currentLabel: string;
-  date: string;
   onLabelUpdate?: (blockIndex: number, newLabel: string) => void;
   onError?: (error: string) => void;
   isAdmin?: boolean;
@@ -13,7 +11,6 @@ interface EditableTimeBlockLabelProps {
 export default function EditableTimeBlockLabel({
   blockIndex,
   currentLabel,
-  date,
   onLabelUpdate,
   onError,
   isAdmin = false,
@@ -41,11 +38,8 @@ export default function EditableTimeBlockLabel({
     setIsSaving(true);
 
     try {
-      await ApiService.updateTimeBlockLabel(
-        blockIndex.toString(),
-        trimmedText,
-        date
-      );
+      // Use the parent's onLabelUpdate callback instead of API call
+      // The parent component will handle saving via server actions
       onLabelUpdate?.(blockIndex, trimmedText);
       setIsEditing(false);
     } catch (error) {
@@ -72,19 +66,16 @@ export default function EditableTimeBlockLabel({
     }
   };
 
-  const updateTemplate = async (targetRole: "public" | "admin") => {
+  const updateTemplate = async () => {
     if (!isAdmin) return;
 
     setIsSaving(true);
     try {
-      await ApiService.updateTimeBlockTemplate(
-        blockIndex.toString(),
-        editText.trim(),
-        targetRole
-      );
+      // TODO: Implement template update with server actions
+      // For now, just update the label since user editing should work
+      onLabelUpdate?.(blockIndex, editText.trim());
       setShowTemplateOptions(false);
       setIsEditing(false);
-      onLabelUpdate?.(blockIndex, editText.trim());
     } catch (error) {
       onError?.(
         error instanceof Error ? error.message : "Failed to update template"
@@ -138,14 +129,14 @@ export default function EditableTimeBlockLabel({
               <div className="flex gap-2 items-center text-xs">
                 <span className="text-gray-600">Update:</span>
                 <button
-                  onClick={() => updateTemplate("public")}
+                  onClick={() => updateTemplate()}
                   disabled={isSaving}
                   className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300"
                 >
                   Public Template
                 </button>
                 <button
-                  onClick={() => updateTemplate("admin")}
+                  onClick={() => updateTemplate()}
                   disabled={isSaving}
                   className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-300"
                 >

@@ -8,6 +8,7 @@ import {
   createHabitChecklistItem,
   createWorkoutChecklistItem,
   createTodoItem,
+  saveDayData,
 } from "../../lib/user-actions";
 import { exportCSVByDate } from "../../lib/storage";
 import { getTodayStorageDate } from "../../lib/date-utils";
@@ -233,14 +234,9 @@ export default function DailyPage() {
 
         const dayData = result.data;
 
-        // Get default content
+        // Get default content for blocks only
         const defaults = getDefaultContent();
-        const {
-          defaultBlocks,
-          defaultMasterChecklist,
-          defaultHabitBreakChecklist,
-          defaultWorkoutChecklist,
-        } = defaults;
+        const { defaultBlocks } = defaults;
 
         // Load the data directly from server action result
         setWakeTime(dayData.wakeTime || "");
@@ -259,45 +255,19 @@ export default function DailyPage() {
         setDailyWakeTime(dayData.dailyWakeTime);
         setUserTimezone(dayData.userTimezone);
 
-        // Load checklists directly from server action result (cast to proper types)
+        // Load checklists directly from server action result (inheritance handled in server action)
         setMasterChecklist(
-          ensureDateObjects(
-            (dayData.masterChecklist.length > 0
-              ? dayData.masterChecklist
-              : defaultMasterChecklist) as ChecklistItem[]
-          )
+          ensureDateObjects(dayData.masterChecklist as ChecklistItem[])
         );
         setHabitBreakChecklist(
-          ensureDateObjects(
-            (dayData.habitBreakChecklist.length > 0
-              ? dayData.habitBreakChecklist
-              : defaultHabitBreakChecklist) as ChecklistItem[]
-          )
+          ensureDateObjects(dayData.habitBreakChecklist as ChecklistItem[])
         );
 
-        // Load workout checklist with reset logic
-        let workoutChecklist = dayData.workoutChecklist || [];
-        if (workoutChecklist.length === 0) {
-          // No workout data for today, use defaults
-          workoutChecklist = defaultWorkoutChecklist;
-        } else {
-          // Reset completion status for existing workout items (daily reset)
-          workoutChecklist = workoutChecklist.map((workout: ChecklistItem) => ({
-            ...workout,
-            completed: false,
-            completedAt: undefined,
-            targetBlock: undefined,
-            completionTimezone: undefined,
-            timezoneOffset: undefined,
-          }));
-        }
+        // Load workout checklist directly from server action (inheritance handled in server action)
+        setWorkoutChecklist(ensureDateObjects(dayData.workoutChecklist));
 
         // Load todo list
-        let todoList = dayData.todoList || [];
-
-        // Set all the state
-        setWorkoutChecklist(ensureDateObjects(workoutChecklist));
-        setTodoList(ensureDateObjects(todoList));
+        setTodoList(ensureDateObjects(dayData.todoList));
       } catch (error) {
         console.error("Error loading day data:", error);
       } finally {
@@ -307,65 +277,6 @@ export default function DailyPage() {
 
     loadData();
   }, [session, date, getDefaultContent]);
-
-  // Helper function to load uncompleted todo items from previous days
-  const loadPreviousTodoItems = async (
-    userData: { days: Record<string, { todoList?: ChecklistItem[] }> },
-    currentDate: string,
-    existingTodos: ChecklistItem[]
-  ): Promise<ChecklistItem[]> => {
-    const currentDateObj = new Date(currentDate);
-    const allTodos = [...existingTodos];
-
-    // Check all previous days for uncompleted todos
-    Object.keys(userData.days).forEach((dateKey) => {
-      const dayData = userData.days[dateKey];
-      if (dayData.todoList) {
-        dayData.todoList.forEach((todo: ChecklistItem) => {
-          const todoDueDate = new Date(todo.dueDate || dateKey);
-
-          // Include uncompleted todos that are due today or overdue
-          if (
-            !todo.completed &&
-            todoDueDate <= currentDateObj &&
-            !allTodos.some((existing) => existing.id === todo.id)
-          ) {
-            allTodos.push(todo);
-          }
-        });
-      }
-    });
-
-    return allTodos;
-  };
-
-  // Helper function to load customized workout items from most recent day (with completion reset)
-  const loadCustomizedWorkoutItems = async (
-    userData: { days: Record<string, { workoutChecklist?: ChecklistItem[] }> },
-    currentDate: string,
-    defaultWorkouts: ChecklistItem[]
-  ): Promise<ChecklistItem[]> => {
-    // Get all dates and find the most recent one with workout customizations
-    const dates = Object.keys(userData.days).sort().reverse();
-
-    for (const dateKey of dates) {
-      const dayData = userData.days[dateKey];
-      if (dayData.workoutChecklist && dayData.workoutChecklist.length > 0) {
-        // Found customized workout list - reset completion status for new day
-        return dayData.workoutChecklist.map((workout: ChecklistItem) => ({
-          ...workout,
-          completed: false,
-          completedAt: undefined,
-          targetBlock: undefined,
-          completionTimezone: undefined,
-          timezoneOffset: undefined,
-        }));
-      }
-    }
-
-    // No customizations found, use default (ensure proper typing)
-    return defaultWorkouts.map((item) => ({ ...item }));
-  };
 
   // Note: Auto-save removed - server actions now handle persistence automatically
   // Data is saved immediately when items are created via server actions
@@ -469,18 +380,10 @@ export default function DailyPage() {
       const saveData = async () => {
         try {
           if (session?.user?.email && date) {
-            const dayData = {
-              wakeTime,
+            await saveDayData(session.user.email, date, {
               blocks: updatedBlocks,
-              masterChecklist,
               habitBreakChecklist: updatedItems,
-              workoutChecklist,
-              todoList,
-              // Include new fields for daily wake time and timezone
-              dailyWakeTime,
-              userTimezone,
-            };
-            // Auto-save removed - using server actions
+            });
           }
         } catch (error) {
           console.error("Error saving habit break completion:", error);
@@ -529,14 +432,10 @@ export default function DailyPage() {
         // Save to database immediately
         try {
           if (session?.user?.email && date) {
-            const dayData = {
-              wakeTime,
+            await saveDayData(session.user.email, date, {
               blocks: updatedBlocks,
-              masterChecklist,
-              habitBreakChecklist,
               todoList: updatedTodoList,
-            };
-            // Auto-save removed - using server actions
+            });
           }
         } catch (error) {
           console.error("Error saving todo item uncheck:", error);
@@ -576,16 +475,10 @@ export default function DailyPage() {
         // Save to database immediately
         try {
           if (session?.user?.email && date) {
-            const dayData = {
-              wakeTime,
+            await saveDayData(session.user.email, date, {
               blocks: updatedBlocks,
-              masterChecklist,
-              habitBreakChecklist,
-              workoutChecklist,
               todoList: updatedTodoList,
-            };
-            // Auto-save removed - using server actions
-            // await ApiService.saveDayData(session.user.email, date, dayData);
+            });
           }
         } catch (error) {
           console.error("Error saving todo item check:", error);
@@ -604,15 +497,9 @@ export default function DailyPage() {
       // Save to database immediately
       try {
         if (session?.user?.email && date) {
-          const dayData = {
-            wakeTime,
+          await saveDayData(session.user.email, date, {
             blocks: copy,
-            masterChecklist,
-            habitBreakChecklist,
-            workoutChecklist,
-            todoList,
-          };
-          // Auto-save removed - using server actions
+          });
         }
       } catch (error) {
         console.error("Error saving block completion:", error);
@@ -630,15 +517,9 @@ export default function DailyPage() {
       // Save to database immediately
       try {
         if (session?.user?.email && date) {
-          const dayData = {
-            wakeTime,
+          await saveDayData(session.user.email, date, {
             blocks: copy,
-            masterChecklist,
-            habitBreakChecklist,
-            workoutChecklist,
-            todoList,
-          };
-          // Auto-save removed - using server actions
+          });
         }
       } catch (error) {
         console.error("Error saving note:", error);
@@ -653,6 +534,7 @@ export default function DailyPage() {
     if (blockIndex === -1) return;
 
     const deletedNote = copy[blockIndex].notes[noteIndex];
+    let updatedMasterChecklist = masterChecklist;
 
     // Check if this is a completed checklist item note (starts with ✓)
     if (deletedNote.startsWith("✓ ")) {
@@ -701,6 +583,7 @@ export default function DailyPage() {
 
         if (foundItem) {
           setMasterChecklist(updatedChecklist);
+          updatedMasterChecklist = updatedChecklist;
         }
       }
     }
@@ -711,14 +594,10 @@ export default function DailyPage() {
     // Save to database immediately
     try {
       if (session?.user?.email && date) {
-        const dayData = {
-          wakeTime,
+        await saveDayData(session.user.email, date, {
           blocks: copy,
-          masterChecklist,
-          habitBreakChecklist,
-          todoList,
-        };
-        // Auto-save removed - using server actions
+          masterChecklist: updatedMasterChecklist,
+        });
       }
     } catch (error) {
       console.error("Error saving after note deletion:", error);
@@ -728,6 +607,23 @@ export default function DailyPage() {
   // Update master checklist
   const updateMasterChecklist = async (updatedItems: ChecklistItem[]) => {
     try {
+      // Check for new items (not in current state) and create via server action
+      const newItems = updatedItems.filter(
+        (item) => !masterChecklist.find((existing) => existing.id === item.id)
+      );
+
+      // Create new items via server action for persistence
+      for (const newItem of newItems) {
+        if (session?.user?.email) {
+          await createMasterChecklistItem(
+            session.user.email,
+            newItem.text,
+            newItem.category,
+            date
+          );
+        }
+      }
+
       // Check for changes in completed items
       const blocksCopy = [...blocks];
       let blocksChanged = false;
@@ -828,15 +724,10 @@ export default function DailyPage() {
 
       // Save to database immediately
       if (session?.user?.email && date) {
-        const dayData = {
-          wakeTime,
-          blocks: blocksChanged ? blocksCopy : blocks,
+        await saveDayData(session.user.email, date, {
           masterChecklist: updatedItems,
-          habitBreakChecklist,
-          workoutChecklist,
-          todoList,
-        };
-        // Auto-save removed - using server actions
+          blocks: blocksChanged ? blocksCopy : undefined,
+        });
       }
     } catch (error) {
       console.error("Error updating master checklist:", error);
@@ -864,7 +755,13 @@ export default function DailyPage() {
       }
 
       setHabitBreakChecklist(updatedItems);
-      // Server actions handle persistence automatically
+
+      // Save to database immediately
+      if (session?.user?.email && date) {
+        await saveDayData(session.user.email, date, {
+          habitBreakChecklist: updatedItems,
+        });
+      }
     } catch (error) {
       console.error("Error updating habit break checklist:", error);
     }
@@ -890,7 +787,13 @@ export default function DailyPage() {
       }
 
       setTodoList(updatedItems);
-      // Server actions handle persistence automatically
+
+      // Save to database immediately
+      if (session?.user?.email && date) {
+        await saveDayData(session.user.email, date, {
+          todoList: updatedItems,
+        });
+      }
     } catch (error) {
       console.error("Error updating todo list:", error);
     }
@@ -926,7 +829,7 @@ export default function DailyPage() {
 
         // Save the reset data to database
         if (session?.user?.email && date) {
-          const dayData = {
+          await saveDayData(session.user.email, date, {
             wakeTime: "",
             blocks: defaultBlocks.map((b) => ({
               ...b,
@@ -938,8 +841,7 @@ export default function DailyPage() {
             habitBreakChecklist: defaultHabitBreakChecklist as ChecklistItem[],
             workoutChecklist: defaultWorkoutChecklist as ChecklistItem[],
             todoList: [],
-          };
-          // Auto-save removed - using server actions
+          });
         }
       }
     } catch (error) {
@@ -1002,7 +904,13 @@ export default function DailyPage() {
       }
 
       setWorkoutChecklist(updatedItems);
-      // Server actions handle persistence automatically
+
+      // Save to database immediately
+      if (session?.user?.email && date) {
+        await saveDayData(session.user.email, date, {
+          workoutChecklist: updatedItems,
+        });
+      }
     } catch (error) {
       console.error("Error updating workout checklist:", error);
     }
@@ -1098,12 +1006,24 @@ export default function DailyPage() {
               id="wake-time"
               type="time"
               value={wakeTime}
-              onChange={(e) => {
+              onChange={async (e) => {
                 const newWakeTime = e.target.value;
                 setWakeTime(newWakeTime);
                 // Sync with dailyWakeTime for time block calculations
                 if (newWakeTime) {
                   setDailyWakeTime(newWakeTime);
+                }
+
+                // Save to database immediately
+                try {
+                  if (session?.user?.email && date) {
+                    await saveDayData(session.user.email, date, {
+                      wakeTime: newWakeTime,
+                      dailyWakeTime: newWakeTime,
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error saving wake time:", error);
                 }
               }}
               className="border rounded-md px-4 py-2 text-sm"
@@ -1239,11 +1159,10 @@ export default function DailyPage() {
                 <TimeBlock
                   block={block}
                   index={i}
-                  date={date}
                   toggleComplete={toggleComplete}
                   addNote={addNote}
                   deleteNote={deleteNote}
-                  onLabelUpdate={(blockId, newLabel) => {
+                  onLabelUpdate={async (blockId, newLabel) => {
                     const updatedBlocks = [...blocks];
                     const realBlockIndex = updatedBlocks.findIndex(
                       (b) => b.id === blockId
@@ -1251,6 +1170,20 @@ export default function DailyPage() {
                     if (realBlockIndex !== -1) {
                       updatedBlocks[realBlockIndex].label = newLabel;
                       setBlocks(updatedBlocks);
+
+                      // Save to database immediately
+                      try {
+                        if (session?.user?.email && date) {
+                          await saveDayData(session.user.email, date, {
+                            blocks: updatedBlocks,
+                          });
+                        }
+                      } catch (error) {
+                        console.error(
+                          "Error saving block label update:",
+                          error
+                        );
+                      }
                     }
                   }}
                   onError={(error) => {
