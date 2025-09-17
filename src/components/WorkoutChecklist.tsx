@@ -25,7 +25,7 @@ export default function WorkoutChecklist({
   resetPosition = false,
   onPositionReset,
 }: WorkoutChecklistProps) {
-  const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
+  const [isCollapsed, setIsCollapsed] = useState(false); // Start expanded
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [position, setPosition] = useState({ x: 0, y: 0 });
