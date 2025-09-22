@@ -72,41 +72,88 @@ export async function getUserDataByDate(
       // Create default user data for this date with inheritance
       userData = await createInheritedUserData(email, date, previousUserData);
     } else {
-      // Data exists - check if we need to re-inherit from more recent source data
+      // Data exists - check if we need to re-inherit from TODAY as the source of truth
       console.log(`🔍 Checking if re-inheritance needed for ${date}...`);
 
-      // Find the most recent previous data for comparison
-      const latestPreviousData = await UserData.findOne(
-        { userId: email, date: { $lt: date } },
-        {},
-        { sort: { date: -1 } }
-      );
+      const today = getCurrentDate();
 
-      if (latestPreviousData && shouldReInherit(userData, latestPreviousData)) {
+      // If this is a future date, always use TODAY as the source of truth
+      if (date > today) {
         console.log(
-          `🔄 Re-inheritance needed! Latest source: ${latestPreviousData.date}`
-        );
-        console.log(
-          `   Current data has: Master=${
-            userData.masterChecklist?.length || 0
-          }, Habit=${userData.habitBreakChecklist?.length || 0}, Workout=${
-            userData.workoutChecklist?.length || 0
-          }`
-        );
-        console.log(
-          `   Source data has: Master=${
-            latestPreviousData.masterChecklist?.length || 0
-          }, Habit=${
-            latestPreviousData.habitBreakChecklist?.length || 0
-          }, Workout=${latestPreviousData.workoutChecklist?.length || 0}`
+          `� Future date detected (${date} > ${today}). Using TODAY as source of truth.`
         );
 
-        // Re-inherit while preserving completion status and time blocks
-        await updateInheritance(userData, latestPreviousData);
-        await userData.save();
-        console.log(`✨ Re-inheritance completed for ${date}`);
+        // Find TODAY's data as the source of truth
+        const todayData = await UserData.findOne({
+          userId: email,
+          date: today,
+        });
+
+        if (todayData && shouldReInheritFromToday(userData, todayData)) {
+          console.log(`🔄 Re-inheritance from TODAY needed! Source: ${today}`);
+          console.log(
+            `   Current data has: Master=${
+              userData.masterChecklist?.length || 0
+            }, Habit=${userData.habitBreakChecklist?.length || 0}, Workout=${
+              userData.workoutChecklist?.length || 0
+            }`
+          );
+          console.log(
+            `   TODAY's data has: Master=${
+              todayData.masterChecklist?.length || 0
+            }, Habit=${todayData.habitBreakChecklist?.length || 0}, Workout=${
+              todayData.workoutChecklist?.length || 0
+            }`
+          );
+
+          // Re-inherit while preserving completion status and time blocks
+          await updateInheritance(userData, todayData);
+          await userData.save();
+          console.log(`✨ Re-inheritance from TODAY completed for ${date}`);
+        } else {
+          console.log(`✅ No re-inheritance needed from TODAY for ${date}`);
+        }
       } else {
-        console.log(`✅ No re-inheritance needed for ${date}`);
+        // For today or past dates, use the original logic (most recent previous)
+        console.log(
+          `📅 Current/past date (${date} <= ${today}). Using previous date logic.`
+        );
+
+        const latestPreviousData = await UserData.findOne(
+          { userId: email, date: { $lt: date } },
+          {},
+          { sort: { date: -1 } }
+        );
+
+        if (
+          latestPreviousData &&
+          shouldReInherit(userData, latestPreviousData)
+        ) {
+          console.log(
+            `🔄 Re-inheritance needed! Latest source: ${latestPreviousData.date}`
+          );
+          console.log(
+            `   Current data has: Master=${
+              userData.masterChecklist?.length || 0
+            }, Habit=${userData.habitBreakChecklist?.length || 0}, Workout=${
+              userData.workoutChecklist?.length || 0
+            }`
+          );
+          console.log(
+            `   Source data has: Master=${
+              latestPreviousData.masterChecklist?.length || 0
+            }, Habit=${
+              latestPreviousData.habitBreakChecklist?.length || 0
+            }, Workout=${latestPreviousData.workoutChecklist?.length || 0}`
+          );
+
+          // Re-inherit while preserving completion status and time blocks
+          await updateInheritance(userData, latestPreviousData);
+          await userData.save();
+          console.log(`✨ Re-inheritance completed for ${date}`);
+        } else {
+          console.log(`✅ No re-inheritance needed for ${date}`);
+        }
       }
     }
 
@@ -607,9 +654,6 @@ function shouldReInherit(
   const habitNeedsUpdate = sourceHabit > currentHabit + 1;
   const workoutNeedsUpdate = sourceWorkout > currentWorkout + 1;
 
-  // Also re-inherit if source date is more recent than the last source used
-  // (This handles the case where user added items to a recent day)
-
   // Check if current data looks like it came from an older source
   // by comparing basic template items vs custom items
   const hasBasicTemplateOnly =
@@ -645,6 +689,139 @@ function shouldReInherit(
   }
 
   return shouldUpdate;
+}
+
+/**
+ * Determine if re-inheritance from TODAY is needed for future dates
+ * Uses "Today is source of truth" logic
+ */
+function shouldReInheritFromToday(
+  currentData: IUserData,
+  todayData: IUserData
+): boolean {
+  console.log("🔍 Checking if re-inheritance from TODAY is needed...");
+
+  // Always re-inherit if current data has no content
+  if (
+    (!currentData.masterChecklist ||
+      currentData.masterChecklist.length === 0) &&
+    (!currentData.habitBreakChecklist ||
+      currentData.habitBreakChecklist.length === 0) &&
+    (!currentData.workoutChecklist ||
+      currentData.workoutChecklist.length === 0) &&
+    (!currentData.todoList || currentData.todoList.length === 0) &&
+    (!currentData.blocks || currentData.blocks.length === 0)
+  ) {
+    console.log("📝 Current data is empty - re-inheritance from TODAY needed");
+    return true;
+  }
+
+  // Check if TODAY has different content that should be inherited
+  const todayHasChanges = hasContentChanged(currentData, todayData);
+  if (todayHasChanges) {
+    console.log("🆕 TODAY has different content - re-inheritance needed");
+    return true;
+  }
+
+  console.log("✅ Current data matches TODAY - no re-inheritance needed");
+  return false;
+}
+
+/**
+ * Compare content between current and source data to detect edits/changes
+ */
+function hasContentChanged(
+  currentData: IUserData,
+  sourceData: IUserData
+): boolean {
+  // Helper function to compare checklist items (ignoring completion status)
+  const compareItems = (
+    current: ChecklistItem[],
+    source: ChecklistItem[]
+  ): boolean => {
+    if (current.length !== source.length) {
+      return true; // Different lengths = changed
+    }
+
+    // Create sets of item texts for comparison
+    const currentTexts = new Set(
+      current.map((item) => item.text.trim().toLowerCase())
+    );
+    const sourceTexts = new Set(
+      source.map((item) => item.text.trim().toLowerCase())
+    );
+
+    // Check if all items match
+    if (currentTexts.size !== sourceTexts.size) {
+      return true;
+    }
+
+    for (const text of currentTexts) {
+      if (!sourceTexts.has(text)) {
+        return true; // Found an item that doesn't match
+      }
+    }
+
+    return false; // All items match
+  };
+
+  // Compare master checklist
+  const masterChanged = compareItems(
+    currentData.masterChecklist || [],
+    sourceData.masterChecklist || []
+  );
+
+  // Compare habit checklist
+  const habitChanged = compareItems(
+    currentData.habitBreakChecklist || [],
+    sourceData.habitBreakChecklist || []
+  );
+
+  // Compare workout checklist
+  const workoutChanged = compareItems(
+    currentData.workoutChecklist || [],
+    sourceData.workoutChecklist || []
+  );
+
+  // Compare todo list
+  const todoChanged = compareItems(
+    currentData.todoList || [],
+    sourceData.todoList || []
+  );
+
+  // Compare time blocks (labels only, not completion status)
+  const timeBlocksChanged = compareItems(
+    (currentData.blocks || []).map((block) => ({
+      id: block.id || "temp",
+      text: block.label,
+      completed: false,
+      category: "time",
+    })),
+    (sourceData.blocks || []).map((block) => ({
+      id: block.id || "temp",
+      text: block.label,
+      completed: false,
+      category: "time",
+    }))
+  );
+
+  const hasChanges =
+    masterChanged ||
+    habitChanged ||
+    workoutChanged ||
+    todoChanged ||
+    timeBlocksChanged;
+
+  if (hasChanges) {
+    console.log(`📝 Content changes detected:`);
+    console.log(`   Master checklist changed: ${masterChanged}`);
+    console.log(`   Habit checklist changed: ${habitChanged}`);
+    console.log(`   Workout checklist changed: ${workoutChanged}`);
+    console.log(`   Todo list changed: ${todoChanged}`);
+    console.log(`   Time blocks changed: ${timeBlocksChanged}`);
+  }
+
+  return hasChanges;
 }
 
 /**
@@ -739,10 +916,61 @@ async function updateInheritance(targetData: IUserData, sourceData: IUserData) {
       };
     }) || [];
 
-  // Todo items are date-specific and should not be re-inherited
-  // Keep existing todo items unchanged
+  // Todo items should inherit to future dates until completed/deleted
+  // This allows todo items to persist until they are actually completed
+  if (sourceData.todoList && sourceData.todoList.length > 0) {
+    // Preserve existing completion states for todos
+    const currentTodoCompletions = new Map();
+    targetData.todoList?.forEach((item: ChecklistItem) => {
+      if (item.completed) {
+        currentTodoCompletions.set(`todo_${item.text}`, {
+          completed: item.completed,
+          completedAt: item.completedAt,
+        });
+      }
+    });
+
+    targetData.todoList = sourceData.todoList.map((item: ChecklistItem) => {
+      const completionKey = `todo_${item.text}`;
+      const savedCompletion = currentTodoCompletions.get(completionKey);
+
+      return {
+        ...item,
+        completed: savedCompletion?.completed || false,
+        completedAt: savedCompletion?.completedAt || undefined,
+      };
+    });
+
+    console.log(
+      `📝 Inherited ${targetData.todoList.length} todo items from source`
+    );
+  }
+
+  // Time blocks should inherit labels from TODAY but reset completion for future dates
+  // This allows time block customizations to persist but completion to be fresh each day
+  if (sourceData.blocks && sourceData.blocks.length > 0) {
+    targetData.blocks = sourceData.blocks.map((block: Block) => {
+      return {
+        ...block,
+        // Reset completion for inherited blocks (they should start fresh each day)
+        complete: false,
+        // Keep notes from source but don't carry over completion-related notes
+        notes: block.notes || [],
+      };
+    });
+
+    console.log(
+      `⏰ Inherited ${targetData.blocks.length} time blocks from source with reset completion`
+    );
+  }
 
   console.log(
-    `🔄 Updated inheritance completed. New counts: Master=${targetData.masterChecklist.length}, Habit=${targetData.habitBreakChecklist.length}, Workout=${targetData.workoutChecklist.length}`
+    `🔄 Updated inheritance completed. New counts: Master=${
+      targetData.masterChecklist.length
+    }, Habit=${targetData.habitBreakChecklist.length}, Workout=${
+      targetData.workoutChecklist.length
+    }, Todos=${targetData.todoList?.length || 0}, TimeBlocks=${
+      targetData.blocks?.length || 0
+    }`
   );
 }
