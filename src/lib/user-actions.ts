@@ -19,6 +19,59 @@ function getCurrentDate(): string {
 }
 
 /**
+ * Copy checklist items for a new day, resetting completion state
+ */
+function copyChecklistForNewDay(
+  list: ChecklistItem[] | undefined
+): ChecklistItem[] {
+  if (!list || list.length === 0) return [];
+
+  return list.map((item) => ({
+    ...item,
+    completed: false,
+    completedAt: undefined,
+    timezoneOffset: undefined,
+    // Preserve: id, text, category, targetBlock
+  }));
+}
+
+/**
+ * Copy todo list items for a new day, resetting completion state
+ */
+function copyTodoListForNewDay(
+  list: ChecklistItem[] | undefined
+): ChecklistItem[] {
+  if (!list || list.length === 0) return [];
+
+  return list.map((item) => ({
+    ...item,
+    completed: false,
+    completedAt: undefined,
+    timezoneOffset: undefined,
+    // Preserve: id, text, category, targetBlock, order
+  }));
+}
+
+/**
+ * Copy time blocks for a new day, keeping only labels and order
+ */
+function copyBlocksForNewDay(blocks: Block[] | undefined): Block[] {
+  if (!blocks || blocks.length === 0) return [];
+
+  return blocks.map((block) => ({
+    id: block.id,
+    blockId: block.blockId,
+    time: block.time,
+    label: block.label, // Keep custom names
+    notes: [], // Reset notes
+    complete: false, // Reset completion
+    duration: block.duration,
+    index: block.index,
+    // Drop any timestamps or transient fields
+  }));
+}
+
+/**
  * Get user data for a specific date
  * This replaces ApiService.getUserData to unify data loading
  * Enhanced to inherit checklist items from previous days
@@ -584,37 +637,18 @@ async function createInheritedUserData(
     displayDate: new Date(date).toLocaleDateString(),
     wakeTime: "04:00",
     userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    blocks: [],
-    // Inherit checklist items from previous day but reset completion status
-    masterChecklist:
-      previousUserData?.masterChecklist?.map((item: ChecklistItem) => ({
-        ...item,
-        completed: false,
-        completedAt: undefined,
-        targetBlock: undefined,
-        completionTimezone: undefined,
-        timezoneOffset: undefined,
-      })) || [],
-    habitBreakChecklist:
-      previousUserData?.habitBreakChecklist?.map((item: ChecklistItem) => ({
-        ...item,
-        completed: false,
-        completedAt: undefined,
-        targetBlock: undefined,
-        completionTimezone: undefined,
-        timezoneOffset: undefined,
-      })) || [],
-    workoutChecklist:
-      previousUserData?.workoutChecklist?.map((item: ChecklistItem) => ({
-        ...item,
-        completed: false,
-        completedAt: undefined,
-        targetBlock: undefined,
-        completionTimezone: undefined,
-        timezoneOffset: undefined,
-      })) || [],
-    // Todo items should NOT inherit - they're date-specific
-    todoList: [],
+    // Use copy helpers for proper inheritance
+    blocks: previousUserData
+      ? copyBlocksForNewDay(previousUserData.blocks)
+      : [],
+    masterChecklist: copyChecklistForNewDay(previousUserData?.masterChecklist),
+    habitBreakChecklist: copyChecklistForNewDay(
+      previousUserData?.habitBreakChecklist
+    ),
+    workoutChecklist: copyChecklistForNewDay(
+      previousUserData?.workoutChecklist
+    ),
+    todoList: copyTodoListForNewDay(previousUserData?.todoList),
     score: 0,
     dailyWakeTime: "04:00",
   });
@@ -624,6 +658,7 @@ async function createInheritedUserData(
     habitBreakChecklist: userData.habitBreakChecklist.length,
     workoutChecklist: userData.workoutChecklist.length,
     todoList: userData.todoList.length,
+    blocks: userData.blocks.length,
   });
 
   await userData.save();
@@ -634,66 +669,43 @@ async function createInheritedUserData(
 
 /**
  * Determine if re-inheritance is needed
- * Re-inherit if the source data has significantly more items or different content
+ * Use structural diff across all lists + block labels (ignore notes & completion)
  */
 function shouldReInherit(
   currentData: IUserData,
   sourceData: IUserData
 ): boolean {
-  const currentMaster = currentData.masterChecklist?.length || 0;
-  const sourceMaster = sourceData.masterChecklist?.length || 0;
+  console.log("🔍 Checking if re-inheritance is needed...");
 
-  const currentHabit = currentData.habitBreakChecklist?.length || 0;
-  const sourceHabit = sourceData.habitBreakChecklist?.length || 0;
-
-  const currentWorkout = currentData.workoutChecklist?.length || 0;
-  const sourceWorkout = sourceData.workoutChecklist?.length || 0;
-
-  // Re-inherit if source has significantly more items (threshold: 2+ more items in any category)
-  const masterNeedsUpdate = sourceMaster > currentMaster + 1;
-  const habitNeedsUpdate = sourceHabit > currentHabit + 1;
-  const workoutNeedsUpdate = sourceWorkout > currentWorkout + 1;
-
-  // Check if current data looks like it came from an older source
-  // by comparing basic template items vs custom items
-  const hasBasicTemplateOnly =
-    currentMaster <= 4 && // Basic template usually has ~4 items
-    currentHabit <= 3 && // Basic template usually has ~3 items
-    currentWorkout <= 3; // Basic template usually has ~3 items
-
-  const sourceHasCustomItems =
-    sourceMaster > 4 || sourceHabit > 3 || sourceWorkout > 3;
-
-  const shouldUpdate =
-    masterNeedsUpdate ||
-    habitNeedsUpdate ||
-    workoutNeedsUpdate ||
-    (hasBasicTemplateOnly && sourceHasCustomItems);
-
-  if (shouldUpdate) {
-    console.log(`🔍 Re-inheritance criteria met:`);
-    console.log(
-      `   Master: ${currentMaster} → ${sourceMaster} (needs update: ${masterNeedsUpdate})`
-    );
-    console.log(
-      `   Habit: ${currentHabit} → ${sourceHabit} (needs update: ${habitNeedsUpdate})`
-    );
-    console.log(
-      `   Workout: ${currentWorkout} → ${sourceWorkout} (needs update: ${workoutNeedsUpdate})`
-    );
-    console.log(
-      `   Template-only target with custom source: ${
-        hasBasicTemplateOnly && sourceHasCustomItems
-      }`
-    );
+  // Always re-inherit if current data has no content
+  if (
+    (!currentData.masterChecklist ||
+      currentData.masterChecklist.length === 0) &&
+    (!currentData.habitBreakChecklist ||
+      currentData.habitBreakChecklist.length === 0) &&
+    (!currentData.workoutChecklist ||
+      currentData.workoutChecklist.length === 0) &&
+    (!currentData.todoList || currentData.todoList.length === 0) &&
+    (!currentData.blocks || currentData.blocks.length === 0)
+  ) {
+    console.log("📝 Current data is empty - re-inheritance needed");
+    return true;
   }
 
-  return shouldUpdate;
+  // Use structural diff - if anything differs, re-inherit
+  const sourceHasChanges = hasContentChanged(currentData, sourceData);
+  if (sourceHasChanges) {
+    console.log("🆕 Source has different content - re-inheritance needed");
+    return true;
+  }
+
+  console.log("✅ Current data is up-to-date - no re-inheritance needed");
+  return false;
 }
 
 /**
  * Determine if re-inheritance from TODAY is needed for future dates
- * Uses "Today is source of truth" logic
+ * Uses "Today is source of truth" logic with structural diff
  */
 function shouldReInheritFromToday(
   currentData: IUserData,
@@ -716,7 +728,7 @@ function shouldReInheritFromToday(
     return true;
   }
 
-  // Check if TODAY has different content that should be inherited
+  // Use structural diff - if anything differs from TODAY, re-inherit
   const todayHasChanges = hasContentChanged(currentData, todayData);
   if (todayHasChanges) {
     console.log("🆕 TODAY has different content - re-inheritance needed");
@@ -916,53 +928,17 @@ async function updateInheritance(targetData: IUserData, sourceData: IUserData) {
       };
     }) || [];
 
-  // Todo items should inherit to future dates until completed/deleted
-  // This allows todo items to persist until they are actually completed
-  if (sourceData.todoList && sourceData.todoList.length > 0) {
-    // Preserve existing completion states for todos
-    const currentTodoCompletions = new Map();
-    targetData.todoList?.forEach((item: ChecklistItem) => {
-      if (item.completed) {
-        currentTodoCompletions.set(`todo_${item.text}`, {
-          completed: item.completed,
-          completedAt: item.completedAt,
-        });
-      }
-    });
+  // Todo items should mirror other checklists - copy items and reset completion
+  targetData.todoList = copyTodoListForNewDay(sourceData.todoList);
+  console.log(
+    `📝 Inherited ${targetData.todoList.length} todo items from source`
+  );
 
-    targetData.todoList = sourceData.todoList.map((item: ChecklistItem) => {
-      const completionKey = `todo_${item.text}`;
-      const savedCompletion = currentTodoCompletions.get(completionKey);
-
-      return {
-        ...item,
-        completed: savedCompletion?.completed || false,
-        completedAt: savedCompletion?.completedAt || undefined,
-      };
-    });
-
-    console.log(
-      `📝 Inherited ${targetData.todoList.length} todo items from source`
-    );
-  }
-
-  // Time blocks should inherit labels from TODAY but reset completion for future dates
-  // This allows time block customizations to persist but completion to be fresh each day
-  if (sourceData.blocks && sourceData.blocks.length > 0) {
-    targetData.blocks = sourceData.blocks.map((block: Block) => {
-      return {
-        ...block,
-        // Reset completion for inherited blocks (they should start fresh each day)
-        complete: false,
-        // Keep notes from source but don't carry over completion-related notes
-        notes: block.notes || [],
-      };
-    });
-
-    console.log(
-      `⏰ Inherited ${targetData.blocks.length} time blocks from source with reset completion`
-    );
-  }
+  // Time blocks should inherit labels + order only, always clear notes and reset completion
+  targetData.blocks = copyBlocksForNewDay(sourceData.blocks);
+  console.log(
+    `⏰ Inherited ${targetData.blocks.length} time blocks from source with reset completion`
+  );
 
   console.log(
     `🔄 Updated inheritance completed. New counts: Master=${
