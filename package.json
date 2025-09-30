@@ -23,7 +23,8 @@
     "hybrid:sync": "node scripts/sync-to-plan-system.mjs",
     "seed": "node scripts/seed.mjs",
     "test:smoke": "node scripts/smoke-test.mjs",
-    "reset:future": "node scripts/reset-future-dates.mjs"
+    "reset:future": "node scripts/reset-future-dates.mjs",
+    "restore:0924": "node scripts/oneoff-restore-from-2025-09-24.mjs"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.10.0",
