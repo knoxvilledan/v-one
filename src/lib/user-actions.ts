@@ -216,6 +216,7 @@ export async function getUserDataByDate(
       blocks:
         userData.blocks?.map((block: Block) => ({
           id: block.id || `block-${block.index || 0}`,
+          blockId: block.blockId, // Keep the stable blockId
           time: block.time || "",
           label: block.label || "",
           notes: block.notes || [],
