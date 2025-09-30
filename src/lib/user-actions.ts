@@ -943,7 +943,7 @@ async function updateInheritance(targetData: IUserData, sourceData: IUserData) {
         ...item,
         completed: savedCompletion?.completed || false,
         completedAt: savedCompletion?.completedAt || undefined,
-        targetBlock: savedCompletion?.targetBlock || undefined,
+        targetBlock: savedCompletion?.targetBlock || item.targetBlock, // Preserve original targetBlock if no saved completion
         completionTimezone: savedCompletion?.completionTimezone || undefined,
         timezoneOffset: savedCompletion?.timezoneOffset || undefined,
       };
@@ -958,7 +958,7 @@ async function updateInheritance(targetData: IUserData, sourceData: IUserData) {
         ...item,
         completed: savedCompletion?.completed || false,
         completedAt: savedCompletion?.completedAt || undefined,
-        targetBlock: savedCompletion?.targetBlock || undefined,
+        targetBlock: savedCompletion?.targetBlock || item.targetBlock, // Preserve original targetBlock if no saved completion
         completionTimezone: savedCompletion?.completionTimezone || undefined,
         timezoneOffset: savedCompletion?.timezoneOffset || undefined,
       };
@@ -973,7 +973,7 @@ async function updateInheritance(targetData: IUserData, sourceData: IUserData) {
         ...item,
         completed: savedCompletion?.completed || false,
         completedAt: savedCompletion?.completedAt || undefined,
-        targetBlock: savedCompletion?.targetBlock || undefined,
+        targetBlock: savedCompletion?.targetBlock || item.targetBlock, // Preserve original targetBlock if no saved completion
         completionTimezone: savedCompletion?.completionTimezone || undefined,
         timezoneOffset: savedCompletion?.timezoneOffset || undefined,
       };
