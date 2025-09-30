@@ -31,7 +31,8 @@ function copyChecklistForNewDay(
     completed: false,
     completedAt: undefined,
     timezoneOffset: undefined,
-    // Preserve: id, text, category, targetBlock
+    targetBlock: undefined, // Clear target block for fresh auto-assignment
+    // Preserve: id, text, category
   }));
 }
 
@@ -48,7 +49,8 @@ function copyTodoListForNewDay(
     completed: false,
     completedAt: undefined,
     timezoneOffset: undefined,
-    // Preserve: id, text, category, targetBlock, order
+    targetBlock: undefined, // Clear target block for fresh auto-assignment
+    // Preserve: id, text, category, order
   }));
 }
 
@@ -943,7 +945,7 @@ async function updateInheritance(targetData: IUserData, sourceData: IUserData) {
         ...item,
         completed: savedCompletion?.completed || false,
         completedAt: savedCompletion?.completedAt || undefined,
-        targetBlock: savedCompletion?.targetBlock || item.targetBlock, // Preserve original targetBlock if no saved completion
+        targetBlock: savedCompletion?.targetBlock || undefined, // Only preserve targetBlock for completed items
         completionTimezone: savedCompletion?.completionTimezone || undefined,
         timezoneOffset: savedCompletion?.timezoneOffset || undefined,
       };
@@ -958,7 +960,7 @@ async function updateInheritance(targetData: IUserData, sourceData: IUserData) {
         ...item,
         completed: savedCompletion?.completed || false,
         completedAt: savedCompletion?.completedAt || undefined,
-        targetBlock: savedCompletion?.targetBlock || item.targetBlock, // Preserve original targetBlock if no saved completion
+        targetBlock: savedCompletion?.targetBlock || undefined, // Only preserve targetBlock for completed items
         completionTimezone: savedCompletion?.completionTimezone || undefined,
         timezoneOffset: savedCompletion?.timezoneOffset || undefined,
       };
@@ -973,7 +975,7 @@ async function updateInheritance(targetData: IUserData, sourceData: IUserData) {
         ...item,
         completed: savedCompletion?.completed || false,
         completedAt: savedCompletion?.completedAt || undefined,
-        targetBlock: savedCompletion?.targetBlock || item.targetBlock, // Preserve original targetBlock if no saved completion
+        targetBlock: savedCompletion?.targetBlock || undefined, // Only preserve targetBlock for completed items
         completionTimezone: savedCompletion?.completionTimezone || undefined,
         timezoneOffset: savedCompletion?.timezoneOffset || undefined,
       };
