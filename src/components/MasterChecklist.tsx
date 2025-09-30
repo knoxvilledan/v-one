@@ -55,30 +55,27 @@ export default function MasterChecklist({
     setTimeBlockCount(count);
   }, [getTimeBlockCount]);
 
-  // Get current time block based on actual time (dynamic block system)
+  // Get current time block based on actual time (using the same logic as completion assignment)
   const getCurrentTimeBlock = (): number => {
     const now = new Date();
     const hour = now.getHours();
-    const minute = now.getMinutes();
 
-    // Convert time to minutes since midnight
-    const totalMinutes = hour * 60 + minute;
-
-    // Assuming dynamic blocks of 80 minutes each starting at 4:00 AM (240 minutes)
-    // Block 0: 4:00 AM (240 min)
-    // Last block depends on timeBlockCount
-    const startTime = 240; // 4:00 AM in minutes
-    let adjustedMinutes = totalMinutes;
-
-    // Handle time before 4:00 AM (next day's blocks)
-    if (totalMinutes < startTime) {
-      adjustedMinutes = totalMinutes + 1440; // Add 24 hours
+    // Use the same logic as getGeneralRuleBlock in time-block-calculator.ts
+    // Before 4:00 a.m.: put in the 4:00 a.m. block
+    if (hour < 4) {
+      return 0; // 4:00 a.m. block
     }
 
-    const blockIndex = Math.floor((adjustedMinutes - startTime) / 90);
+    // 4–4:59 → 4 a.m. block (index 0)
+    // 5–5:59 → 5 a.m. block (index 1)
+    // ...
+    // 20–20:59 → 8 p.m. block (index 16)
+    if (hour >= 4 && hour <= 20) {
+      return hour - 4;
+    }
 
-    // Ensure we stay within 0-(timeBlockCount-1) range
-    return Math.max(0, Math.min(timeBlockCount - 1, blockIndex));
+    // 21–23:59 and anything later → 9 p.m. block (index 17)
+    return 17; // 9:00 p.m. block
   };
 
   const toggleSection = (category: string) => {
