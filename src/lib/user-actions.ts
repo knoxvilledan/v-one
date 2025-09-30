@@ -172,40 +172,90 @@ export async function getUserDataByDate(
           `📅 Current/past date (${date} <= ${today}). Using previous date logic.`
         );
 
-        const latestPreviousData = await UserData.findOne(
-          { userId: email, date: { $lt: date } },
-          {},
-          { sort: { date: -1 } }
-        );
-
-        if (
-          latestPreviousData &&
-          shouldReInherit(userData, latestPreviousData)
-        ) {
+        // Special case: If this IS today, be more conservative about re-inheritance
+        // TODAY should generally be the source of truth, not inherit from past
+        if (date === today) {
           console.log(
-            `🔄 Re-inheritance needed! Latest source: ${latestPreviousData.date}`
-          );
-          console.log(
-            `   Current data has: Master=${
-              userData.masterChecklist?.length || 0
-            }, Habit=${userData.habitBreakChecklist?.length || 0}, Workout=${
-              userData.workoutChecklist?.length || 0
-            }`
-          );
-          console.log(
-            `   Source data has: Master=${
-              latestPreviousData.masterChecklist?.length || 0
-            }, Habit=${
-              latestPreviousData.habitBreakChecklist?.length || 0
-            }, Workout=${latestPreviousData.workoutChecklist?.length || 0}`
+            `📅 This IS today (${date}). Using conservative inheritance.`
           );
 
-          // Re-inherit while preserving completion status and time blocks
-          await updateInheritance(userData, latestPreviousData);
-          await userData.save();
-          console.log(`✨ Re-inheritance completed for ${date}`);
+          // Only inherit if TODAY has completely empty data (first time setup)
+          const isCompletelyEmpty =
+            (!userData.masterChecklist ||
+              userData.masterChecklist.length === 0) &&
+            (!userData.habitBreakChecklist ||
+              userData.habitBreakChecklist.length === 0) &&
+            (!userData.workoutChecklist ||
+              userData.workoutChecklist.length === 0) &&
+            (!userData.todoList || userData.todoList.length === 0) &&
+            (!userData.blocks || userData.blocks.length === 0);
+
+          if (isCompletelyEmpty) {
+            console.log(
+              `📝 TODAY is completely empty - allowing inheritance from previous day`
+            );
+
+            const latestPreviousData = await UserData.findOne(
+              { userId: email, date: { $lt: date } },
+              {},
+              { sort: { date: -1 } }
+            );
+
+            if (
+              latestPreviousData &&
+              shouldReInherit(userData, latestPreviousData)
+            ) {
+              console.log(
+                `🔄 Re-inheritance needed for empty TODAY! Latest source: ${latestPreviousData.date}`
+              );
+              await updateInheritance(userData, latestPreviousData);
+              await userData.save();
+              console.log(`✨ Re-inheritance completed for TODAY`);
+            } else {
+              console.log(`✅ No re-inheritance needed for TODAY`);
+            }
+          } else {
+            console.log(
+              `🔒 TODAY has content - treating as source of truth, no inheritance from past`
+            );
+          }
         } else {
-          console.log(`✅ No re-inheritance needed for ${date}`);
+          // For past dates, use normal previous-date inheritance logic
+          const latestPreviousData = await UserData.findOne(
+            { userId: email, date: { $lt: date } },
+            {},
+            { sort: { date: -1 } }
+          );
+
+          if (
+            latestPreviousData &&
+            shouldReInherit(userData, latestPreviousData)
+          ) {
+            console.log(
+              `🔄 Re-inheritance needed! Latest source: ${latestPreviousData.date}`
+            );
+            console.log(
+              `   Current data has: Master=${
+                userData.masterChecklist?.length || 0
+              }, Habit=${userData.habitBreakChecklist?.length || 0}, Workout=${
+                userData.workoutChecklist?.length || 0
+              }`
+            );
+            console.log(
+              `   Source data has: Master=${
+                latestPreviousData.masterChecklist?.length || 0
+              }, Habit=${
+                latestPreviousData.habitBreakChecklist?.length || 0
+              }, Workout=${latestPreviousData.workoutChecklist?.length || 0}`
+            );
+
+            // Re-inherit while preserving completion status and time blocks
+            await updateInheritance(userData, latestPreviousData);
+            await userData.save();
+            console.log(`✨ Re-inheritance completed for ${date}`);
+          } else {
+            console.log(`✅ No re-inheritance needed for ${date}`);
+          }
         }
       }
     }
