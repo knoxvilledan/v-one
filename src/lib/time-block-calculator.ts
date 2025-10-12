@@ -1,17 +1,17 @@
 /**
- * Enhanced Time Block Calculator for 18-hour system (4:00 a.m. → 9:00 p.m.)
- * Implements wake-up time rules and timezone-aware completion tracking
+ * Enhanced Time Block Calculator for 18-block system (00:00 → 23:59)
+ * Implements user's specification: Block 1 (00:00-04:59) through Block 18 (21:00-23:59)
  */
 
 export interface TimeBlockConfig {
   index: number;
-  timeLabel: string; // "4:00 a.m.", "5:00 a.m.", etc.
-  startHour: number; // 4, 5, 6, etc.
+  timeLabel: string; // "12:00 a.m.", "5:00 a.m.", etc.
+  startHour: number; // 0, 5, 6, etc.
 }
 
 export interface CompletionRecord {
   timestamp: Date; // Server-side captured completion time
-  blockIndex: number; // Computed block index (0-17)
+  blockIndex: number; // Computed block index (1-18)
   timezoneOffset: number; // Local timezone offset at completion time
   localTimeUsed: string; // Local time string for audit/debugging
 }
@@ -35,23 +35,39 @@ export function getDefaultWakeSettings(): {
 }
 
 /**
- * Generate the 18 time block configurations from 4:00 a.m. to 9:00 p.m.
+ * Generate the 18 time block configurations covering full 24-hour day
+ * Block 1: 00:00-04:59, Block 2: 05:00-05:59, ..., Block 18: 21:00-23:59
  */
 export function generateTimeBlocks(): TimeBlockConfig[] {
   const blocks: TimeBlockConfig[] = [];
 
-  for (let hour = 4; hour <= 21; hour++) {
-    const index = hour - 4; // 0-17
+  // Block 1: 00:00-04:59 (5 hours, midnight to 4:59 AM)
+  blocks.push({
+    index: 1,
+    timeLabel: "12:00 a.m.",
+    startHour: 0,
+  });
+
+  // Blocks 2-17: 05:00-20:59 (1 hour each)
+  for (let hour = 5; hour <= 20; hour++) {
+    const blockNumber = hour - 3; // hour 5 → block 2, hour 6 → block 3, etc.
     const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
     const amPm = hour >= 12 ? "p.m." : "a.m.";
     const timeLabel = `${displayHour}:00 ${amPm}`;
 
     blocks.push({
-      index,
+      index: blockNumber,
       timeLabel,
       startHour: hour,
     });
   }
+
+  // Block 18: 21:00-23:59 (3 hours, 9 PM to 11:59 PM)
+  blocks.push({
+    index: 18,
+    timeLabel: "9:00 p.m.",
+    startHour: 21,
+  });
 
   return blocks;
 }
@@ -133,7 +149,7 @@ export function calculateCompletionBlock(
 
     // Early-morning special rule: If completion is from wake-up through 4:59 a.m.
     if (completionMinutes >= wakeTimeMinutes && localHour < 5) {
-      blockIndex = 0; // Goes to 4:00 a.m. block
+      blockIndex = 1; // Goes to Block 1 (00:00-04:59)
     } else {
       // Use general rule
       blockIndex = getGeneralRuleBlock(localHour);
@@ -152,24 +168,26 @@ export function calculateCompletionBlock(
 }
 
 /**
- * General rule for time block assignment
+ * General rule for time block assignment (1-18 system)
  */
 function getGeneralRuleBlock(localHour: number): number {
-  // Before 4:00 a.m. when no wake time is set: put in the 4:00 a.m. block
-  if (localHour < 4) {
-    return 0; // 4:00 a.m. block
+  // Block 1: 00:00-04:59 (hours 0-4)
+  if (localHour >= 0 && localHour <= 4) {
+    return 1;
   }
 
-  // 4–4:59 → 4 a.m. block (index 0)
-  // 5–5:59 → 5 a.m. block (index 1)
-  // ...
-  // 20–20:59 → 8 p.m. block (index 16)
-  if (localHour >= 4 && localHour <= 20) {
-    return localHour - 4;
+  // Blocks 2-17: 05:00-20:59 (hours 5-20, each hour gets its own block)
+  if (localHour >= 5 && localHour <= 20) {
+    return localHour - 3; // hour 5 → block 2, hour 6 → block 3, ..., hour 20 → block 17
   }
 
-  // 21–23:59 and anything later → 9 p.m. block (index 17)
-  return 17; // 9:00 p.m. block
+  // Block 18: 21:00-23:59 (hours 21-23)
+  if (localHour >= 21 && localHour <= 23) {
+    return 18;
+  }
+
+  // Fallback - shouldn't happen with valid hours
+  return 1;
 }
 
 /**
