@@ -297,8 +297,8 @@ export default function DailyPage() {
       userTimezone
     );
 
-    // Ensure we don't exceed the 18 block limit (0-17)
-    return Math.min(completionRecord.blockIndex, 17);
+    // Ensure we don't exceed the 18 block limit (1-18)
+    return Math.min(completionRecord.blockIndex, 18);
   };
 
   // Handle completed items from master checklist
