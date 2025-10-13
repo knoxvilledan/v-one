@@ -36,11 +36,11 @@ export async function PATCH(request: NextRequest) {
     for (const update of updates) {
       if (
         update.blockIndex === undefined ||
-        update.blockIndex < 1 ||
-        update.blockIndex > 18
+        update.blockIndex < 0 ||
+        update.blockIndex > 17
       ) {
         return NextResponse.json(
-          { error: "All block indices must be between 1 and 18" },
+          { error: "All block indices must be between 0 and 17" },
           { status: 400 }
         );
       }

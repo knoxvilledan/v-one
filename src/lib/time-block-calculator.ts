@@ -11,7 +11,7 @@ export interface TimeBlockConfig {
 
 export interface CompletionRecord {
   timestamp: Date; // Server-side captured completion time
-  blockIndex: number; // Computed block index (1-18)
+  blockIndex: number; // Computed block index (0-17)
   timezoneOffset: number; // Local timezone offset at completion time
   localTimeUsed: string; // Local time string for audit/debugging
 }
@@ -149,7 +149,7 @@ export function calculateCompletionBlock(
 
     // Early-morning special rule: If completion is from wake-up through 4:59 a.m.
     if (completionMinutes >= wakeTimeMinutes && localHour < 5) {
-      blockIndex = 1; // Goes to Block 1 (00:00-04:59)
+      blockIndex = 0; // Goes to Block 1 (00:00-04:59) but indexed as 0
     } else {
       // Use general rule
       blockIndex = getGeneralRuleBlock(localHour);
@@ -168,26 +168,26 @@ export function calculateCompletionBlock(
 }
 
 /**
- * General rule for time block assignment (1-18 system)
+ * General rule for time block assignment (0-17 system for compatibility)
  */
 function getGeneralRuleBlock(localHour: number): number {
-  // Block 1: 00:00-04:59 (hours 0-4)
+  // Block 0: 00:00-04:59 (hours 0-4)
   if (localHour >= 0 && localHour <= 4) {
-    return 1;
+    return 0;
   }
 
-  // Blocks 2-17: 05:00-20:59 (hours 5-20, each hour gets its own block)
+  // Blocks 1-16: 05:00-20:59 (hours 5-20, each hour gets its own block)
   if (localHour >= 5 && localHour <= 20) {
-    return localHour - 3; // hour 5 → block 2, hour 6 → block 3, ..., hour 20 → block 17
+    return localHour - 4; // hour 5 → block 1, hour 6 → block 2, ..., hour 20 → block 16
   }
 
-  // Block 18: 21:00-23:59 (hours 21-23)
+  // Block 17: 21:00-23:59 (hours 21-23)
   if (localHour >= 21 && localHour <= 23) {
-    return 18;
+    return 17;
   }
 
   // Fallback - shouldn't happen with valid hours
-  return 1;
+  return 0;
 }
 
 /**
