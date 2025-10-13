@@ -24,12 +24,13 @@ export default function Footer({
   return (
     <footer className="mt-8 py-6 border-t border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 flex justify-end items-center gap-4">
-        <button
+        {/* TEMPORARILY DISABLED - Reset button too powerful, needs refinement */}
+        {/* <button
           onClick={handleResetDay}
           className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
         >
           Reset Day
-        </button>
+        </button> */}
         <button
           onClick={onSignOut}
           className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
