@@ -6,7 +6,6 @@
 import "server-only";
 import { ContentTemplate, IContentTemplate } from "../models/ContentTemplate";
 import { connectMongoose } from "./db";
-import { migrateContentTemplate } from "./migration";
 
 export interface AppConfig {
   timeBlocks: {
@@ -42,32 +41,32 @@ export interface AppConfig {
 // Default configuration values
 const DEFAULT_CONFIG: AppConfig = {
   timeBlocks: {
-    maxCount: 24, // Allow up to 24 time blocks
-    defaultCount: 18, // Updated to match migration
+    maxCount: 24, // Maximum allowed time blocks (24-hour system)
+    defaultCount: 24, // Always 24 blocks (one per hour)
     currentCount: {
-      public: 18,
-      admin: 18,
+      public: 24,
+      admin: 24,
     },
   },
   checklists: {
     masterChecklist: {
-      maxCount: 50, // Allow up to 50 checklist items
+      maxCount: 50, // Maximum allowed checklist items
       currentCount: {
-        public: 18, // Updated to match migration
-        admin: 18,
+        public: 6, // Default public template items
+        admin: 11, // Default admin template items
       },
     },
     habitBreakChecklist: {
-      maxCount: 20, // Allow up to 20 habit items
+      maxCount: 20, // Maximum allowed habit break items
       currentCount: {
-        public: 8, // Updated to match migration
-        admin: 8,
+        public: 4, // Default public template items
+        admin: 5, // Default admin template items
       },
     },
   },
   todoList: {
-    maxCount: 100, // Allow up to 100 todo items
-    defaultCount: 20, // Updated to match migration
+    maxCount: 100, // Maximum allowed todo items
+    defaultCount: 0, // Todos start empty
   },
 };
 
@@ -99,67 +98,28 @@ export async function getAppConfig(forceRefresh = false): Promise<AppConfig> {
       ContentTemplate.findOne({ userRole: "admin" }).lean<IContentTemplate>(),
     ]);
 
-    // Migrate templates if necessary
-    const migrationPromises: Promise<IContentTemplate | null>[] = [];
-
-    if (publicTemplate) {
-      const { modified, template } = migrateContentTemplate(publicTemplate);
-      if (modified) {
-        migrationPromises.push(
-          ContentTemplate.findOneAndUpdate(
-            { userRole: "public" },
-            { $set: template },
-            { new: true }
-          )
-        );
-      }
-    }
-
-    if (adminTemplate) {
-      const { modified, template } = migrateContentTemplate(adminTemplate);
-      if (modified) {
-        migrationPromises.push(
-          ContentTemplate.findOneAndUpdate(
-            { userRole: "admin" },
-            { $set: template },
-            { new: true }
-          )
-        );
-      }
-    }
-
-    // Wait for migrations to complete
-    if (migrationPromises.length > 0) {
-      await Promise.all(migrationPromises);
-      console.log("✅ ContentTemplate migration completed");
-    }
-
     const config: AppConfig = {
       ...DEFAULT_CONFIG,
       timeBlocks: {
         ...DEFAULT_CONFIG.timeBlocks,
         currentCount: {
-          public:
-            publicTemplate?.content?.timeBlocks?.length ||
-            DEFAULT_CONFIG.timeBlocks.defaultCount,
-          admin:
-            adminTemplate?.content?.timeBlocks?.length ||
-            DEFAULT_CONFIG.timeBlocks.defaultCount,
+          public: 24, // Always 24 blocks (code-generated)
+          admin: 24, // Always 24 blocks (code-generated)
         },
       },
       checklists: {
         masterChecklist: {
           ...DEFAULT_CONFIG.checklists.masterChecklist,
           currentCount: {
-            public: publicTemplate?.content?.masterChecklist?.length || 18,
-            admin: adminTemplate?.content?.masterChecklist?.length || 18,
+            public: publicTemplate?.content?.masterChecklist?.length || 6,
+            admin: adminTemplate?.content?.masterChecklist?.length || 11,
           },
         },
         habitBreakChecklist: {
           ...DEFAULT_CONFIG.checklists.habitBreakChecklist,
           currentCount: {
-            public: publicTemplate?.content?.habitBreakChecklist?.length || 8,
-            admin: adminTemplate?.content?.habitBreakChecklist?.length || 8,
+            public: publicTemplate?.content?.habitBreakChecklist?.length || 4,
+            admin: adminTemplate?.content?.habitBreakChecklist?.length || 5,
           },
         },
       },

@@ -8,21 +8,14 @@ export interface IUserData extends Document {
   wakeTime: string;
   weight?: string; // Weight in lbs
   blocks: Block[];
-  timeBlocksOrder?: string[]; // Array of blockIds in order (optional for backward compatibility)
   masterChecklist: ChecklistItem[];
   habitBreakChecklist: ChecklistItem[];
   todoList: ChecklistItem[];
-  workoutChecklist: ChecklistItem[]; // New workout checklist field
-  checklistSectionOrder?: string[]; // Array of section names in order (optional for backward compatibility)
-  masterChecklistOrder?: string[]; // Array of itemIds in order (optional for backward compatibility)
-  habitBreakChecklistOrder?: string[]; // Array of itemIds in order (optional for backward compatibility)
-  workoutChecklistOrder?: string[]; // Array of itemIds in order (optional for backward compatibility)
-  todoListOrder?: string[]; // Array of itemIds in order (optional for backward compatibility)
+  workoutChecklist: ChecklistItem[];
   score: number;
   userId: string;
   createdAt: Date;
   updatedAt: Date;
-  // New fields for daily wake settings and timezone
   dailyWakeTime?: string; // Format: "03:30"
   userTimezone?: string; // IANA timezone
 }
@@ -30,15 +23,11 @@ export interface IUserData extends Document {
 const ChecklistItemSchema = new Schema(
   {
     id: { type: String, required: true },
-    itemId: { type: String }, // Stable unique identifier (optional for backward compatibility)
     text: { type: String, required: true },
     completed: { type: Boolean, default: false },
     category: { type: String },
     completedAt: { type: Date },
-    targetBlock: { type: Number }, // Legacy field for backward compatibility
-    targetBlockId: { type: String }, // New ID-based field
     dueDate: { type: String },
-    // New fields for enhanced time tracking
     completionTimezone: { type: String },
     timezoneOffset: { type: Number },
   },
@@ -47,8 +36,7 @@ const ChecklistItemSchema = new Schema(
 
 const BlockSchema = new Schema(
   {
-    id: { type: String, required: true }, // For backward compatibility
-    blockId: { type: String }, // Stable unique identifier (optional for backward compatibility)
+    id: { type: String, required: true },
     time: { type: String, required: true },
     label: { type: String, required: true },
     notes: { type: [String], default: [] },
@@ -65,23 +53,16 @@ const UserDataSchema = new Schema<IUserData>(
     date: { type: String, required: true },
     displayDate: { type: String, required: true },
     wakeTime: { type: String, default: "" },
-    weight: { type: String, default: "" }, // Weight in lbs
+    weight: { type: String, default: "" },
     blocks: { type: [BlockSchema], default: [] },
-    timeBlocksOrder: { type: [String], default: [] },
     masterChecklist: { type: [ChecklistItemSchema], default: [] },
     habitBreakChecklist: { type: [ChecklistItemSchema], default: [] },
     todoList: { type: [ChecklistItemSchema], default: [] },
-    workoutChecklist: { type: [ChecklistItemSchema], default: [] }, // New workout checklist field
-    checklistSectionOrder: { type: [String], default: [] },
-    masterChecklistOrder: { type: [String], default: [] },
-    habitBreakChecklistOrder: { type: [String], default: [] },
-    workoutChecklistOrder: { type: [String], default: [] },
-    todoListOrder: { type: [String], default: [] },
+    workoutChecklist: { type: [ChecklistItemSchema], default: [] },
     score: { type: Number, default: 0 },
     userId: { type: String, required: true, index: true },
-    // New fields for daily wake settings and timezone
-    dailyWakeTime: { type: String }, // Format: "03:30"
-    userTimezone: { type: String }, // IANA timezone
+    dailyWakeTime: { type: String },
+    userTimezone: { type: String },
   },
   { timestamps: true, collection: "user_data" }
 );

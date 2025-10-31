@@ -191,50 +191,6 @@ export class ContentService {
               order: 4,
             },
           ],
-          timeBlocks: [
-            {
-              id: "tb-04h-001",
-              time: "6:00 AM",
-              label: "You can change this time block",
-              order: 1,
-            },
-            {
-              id: "tb-05h-001",
-              time: "7:00 AM",
-              label: "Edit this to plan your morning",
-              order: 2,
-            },
-            {
-              id: "tb-06h-001",
-              time: "8:00 AM",
-              label: "Customize your schedule here",
-              order: 3,
-            },
-            {
-              id: "tb-07h-001",
-              time: "9:00 AM",
-              label: "Add your work or focus time",
-              order: 4,
-            },
-            {
-              id: "tb-12h-001",
-              time: "12:00 PM",
-              label: "Plan your lunch and breaks",
-              order: 5,
-            },
-            {
-              id: "tb-17h-001",
-              time: "5:00 PM",
-              label: "Add your evening activities",
-              order: 6,
-            },
-            {
-              id: "tb-20h-001",
-              time: "8:00 PM",
-              label: "Plan your wind-down time",
-              order: 7,
-            },
-          ],
           placeholderText: {
             masterChecklistTitle: "Daily Checklist",
             masterChecklistDescription:
@@ -391,62 +347,6 @@ export class ContentService {
               text: "Evening Wind Down Yoga",
               category: "yoga",
               order: 5,
-            },
-          ],
-          timeBlocks: [
-            {
-              id: "tb-04h-101",
-              time: "4:00 AM",
-              label: "Wake & AMP Start",
-              order: 1,
-            },
-            {
-              id: "tb-05h-101",
-              time: "5:00 AM",
-              label: "Workout & Stretch",
-              order: 2,
-            },
-            {
-              id: "tb-06h-101",
-              time: "6:00 AM",
-              label: "Family Morning",
-              order: 3,
-            },
-            {
-              id: "tb-07h-101",
-              time: "7:00 AM",
-              label: "Open Hour (Focus)",
-              order: 4,
-            },
-            {
-              id: "tb-08h-101",
-              time: "8:00 AM",
-              label: "Education (Sales/Programming)",
-              order: 5,
-            },
-            {
-              id: "tb-09h-101",
-              time: "9:00 AM",
-              label: "Switch to Work (Sales/FUP)",
-              order: 6,
-            },
-            {
-              id: "tb-17h-101",
-              time: "5:00 PM",
-              label: "Tech Work",
-              order: 7,
-            },
-            {
-              id: "tb-20h-101",
-              time: "8:00 PM",
-              label: "Family / Chores",
-              order: 8,
-            },
-            {
-              id: "tb-21h-101",
-              time: "9:00 PM",
-              label: "EOD Wrap Up",
-              order: 9,
             },
           ],
           placeholderText: {
