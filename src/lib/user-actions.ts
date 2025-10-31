@@ -84,6 +84,7 @@ export async function getUserDataByDate(
 ): Promise<
   ActionResult<{
     wakeTime: string;
+    weight: string;
     blocks: Block[];
     masterChecklist: ChecklistItem[];
     habitBreakChecklist: ChecklistItem[];
@@ -265,6 +266,7 @@ export async function getUserDataByDate(
     // Convert to plain objects to avoid serialization issues
     const result = {
       wakeTime: userData.wakeTime || "04:00",
+      weight: userData.weight || "",
       blocks:
         userData.blocks?.map((block: Block) => ({
           id: block.id || `block-${block.index || 0}`,
@@ -595,6 +597,7 @@ export async function saveDayData(
   date: string,
   dayData: {
     wakeTime?: string;
+    weight?: string;
     blocks?: Block[];
     masterChecklist?: ChecklistItem[];
     habitBreakChecklist?: ChecklistItem[];
@@ -639,11 +642,13 @@ export async function saveDayData(
         workoutChecklist: dayData.workoutChecklist || [],
         todoList: dayData.todoList || [],
         score: 0,
+        weight: dayData.weight || "",
         dailyWakeTime: dayData.dailyWakeTime || dayData.wakeTime || "04:00",
       });
     } else {
       // Update existing data with provided fields
       if (dayData.wakeTime !== undefined) userData.wakeTime = dayData.wakeTime;
+      if (dayData.weight !== undefined) userData.weight = dayData.weight;
       if (dayData.blocks !== undefined) userData.blocks = dayData.blocks;
       if (dayData.masterChecklist !== undefined)
         userData.masterChecklist = dayData.masterChecklist;

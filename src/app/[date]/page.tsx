@@ -21,17 +21,13 @@ import HabitBreakChecklist from "../../components/HabitBreakChecklist";
 import TodoList from "../../components/TodoList";
 import WorkoutChecklist from "../../components/WorkoutChecklist";
 import Footer from "../../components/Footer";
-import WakeTimeInput from "../../components/WakeTimeInput";
 import AdminViewToggle from "../../components/AdminViewToggle";
 import { calculateScore } from "../../lib/scoring";
 import {
-  generateTimeBlocks,
-  calculateCompletionBlock,
-  getUserTimezone,
-  getDefaultWakeSettings,
-  DailyWakeSettings,
-} from "../../lib/time-block-calculator";
-import { Block, ChecklistItem, WakeTimeSettings } from "../../types";
+  generateSimpleTimeBlocks,
+  calculateSimpleCompletionBlock,
+} from "../../lib/simple-time-blocks";
+import { Block, ChecklistItem } from "../../types";
 
 export default function DailyPage() {
   const params = useParams();
@@ -40,10 +36,9 @@ export default function DailyPage() {
   const { data: session } = useSession();
   const { contentData } = useContent();
 
-  const [wakeTime, setWakeTime] = useState<string>("");
-  const [wakeTimeSettings, setWakeTimeSettings] =
-    useState<WakeTimeSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [wakeTime, setWakeTime] = useState<string>("");
+  const [weight, setWeight] = useState<string>("");
   const [todoListVisible, setTodoListVisible] = useState(false);
   const [todoList, setTodoList] = useState<ChecklistItem[]>([]);
   const [resetTodoPosition, setResetTodoPosition] = useState(false);
@@ -56,53 +51,32 @@ export default function DailyPage() {
   const [workoutListVisible, setWorkoutListVisible] = useState(false);
   const [resetWorkoutPosition, setResetWorkoutPosition] = useState(false);
   // New state for enhanced time tracking
-  const [dailyWakeTime, setDailyWakeTime] = useState<string>("");
   const [userTimezone, setUserTimezone] = useState<string>("");
   // Time blocks collapse state
   const [timeBlocksCollapsed, setTimeBlocksCollapsed] = useState(false);
 
   // Get default content from dynamic templates
   const getDefaultContent = useCallback(() => {
-    if (!contentData?.content) {
-      // Use the new 18-hour block system as fallback
-      const defaultTimeBlocks = generateTimeBlocks();
-      const defaultBlocks = defaultTimeBlocks.map((config) => ({
-        id: `block-${config.index}`,
-        time: config.timeLabel,
-        label: `Block ${config.index + 1}`,
-        notes: [],
-        complete: false,
-        duration: 60,
-        index: config.index,
-      }));
+    // Always use the new 24-hour block system
+    const defaultTimeBlocks = generateSimpleTimeBlocks();
+    const defaultBlocks = defaultTimeBlocks.map((config) => ({
+      id: config.id,
+      time: config.time,
+      label: config.label,
+      notes: config.notes,
+      complete: config.complete,
+      duration: 60,
+      index: config.index,
+    }));
 
+    if (!contentData?.content) {
       return {
         defaultBlocks,
         defaultMasterChecklist: [],
         defaultHabitBreakChecklist: [],
         defaultWorkoutChecklist: [],
-        defaultWakeTimeSettings: getDefaultWakeSettings(),
       };
     }
-
-    // Initialize wake time settings based on user role
-    const defaultWakeSettings = getDefaultWakeSettings();
-
-    // Use the new 18-hour block system instead of dynamic calculation
-    const defaultTimeBlocks = generateTimeBlocks();
-
-    const defaultBlocks = defaultTimeBlocks.map((config, index) => ({
-      id:
-        contentData.content.timeBlocks?.[index]?.id || `block-${config.index}`,
-      time: config.timeLabel,
-      label:
-        contentData.content.timeBlocks?.[index]?.label ||
-        `Time Block ${index + 1}`,
-      notes: [],
-      complete: false,
-      duration: 60,
-      index: config.index,
-    }));
 
     const defaultMasterChecklist =
       contentData.content.masterChecklist?.map((mc) => ({
@@ -133,14 +107,8 @@ export default function DailyPage() {
       defaultMasterChecklist,
       defaultHabitBreakChecklist,
       defaultWorkoutChecklist,
-      defaultWakeTimeSettings: defaultWakeSettings,
     };
   }, [contentData?.content]);
-  // Initialize user timezone on component mount
-  useEffect(() => {
-    const timezone = getUserTimezone();
-    setUserTimezone(timezone);
-  }, []);
 
   // Redirect to today's date if no date is provided or invalid
   useEffect(() => {
@@ -177,13 +145,7 @@ export default function DailyPage() {
           defaultMasterChecklist,
           defaultHabitBreakChecklist,
           defaultWorkoutChecklist,
-          defaultWakeTimeSettings,
         } = defaults;
-
-        // Initialize wake time settings if not already set
-        if (!wakeTimeSettings && defaultWakeTimeSettings) {
-          setWakeTimeSettings(defaultWakeTimeSettings);
-        }
 
         // Only set initial state if we haven't loaded user data yet
         if (blocks.length === 0) {
@@ -206,15 +168,11 @@ export default function DailyPage() {
     masterChecklist.length,
     habitBreakChecklist.length,
     workoutChecklist.length,
-    wakeTimeSettings,
     getDefaultContent,
   ]);
 
-  // Note: Time block structure is now fixed at 18 blocks (4:00 a.m. to 9:00 p.m.)
-  // This useEffect can be removed as we no longer dynamically calculate blocks
-  useEffect(() => {
-    // No longer needed - time blocks are static
-  }, [wakeTimeSettings]);
+  // Note: Time block structure is now fixed at 24 blocks (00:00 to 23:59)
+  // No longer need dynamic calculation based on wake times
 
   // Load data from server actions when component mounts
   useEffect(() => {
@@ -240,19 +198,22 @@ export default function DailyPage() {
 
         // Load the data directly from server action result
         setWakeTime(dayData.wakeTime || "");
-        setBlocks(
-          dayData.blocks.length > 0
-            ? dayData.blocks
-            : defaultBlocks.map((b) => ({
-                ...b,
-                notes: [],
-                complete: false,
-                checklist: undefined,
-              }))
-        );
+        setWeight(dayData.weight || "");
 
-        // Load daily wake time and timezone settings
-        setDailyWakeTime(dayData.dailyWakeTime);
+        // Generate 24-hour blocks and merge with any existing timeblock notes from database
+        const blocksWithNotes = defaultBlocks.map((block, index) => {
+          // Check if there's existing timeblock data with notes for this index
+          const existingBlock = dayData.blocks?.find((b) => b.index === index);
+          return {
+            ...block,
+            notes: existingBlock?.notes || [],
+            complete: existingBlock?.complete || false,
+            checklist: undefined,
+          };
+        });
+        setBlocks(blocksWithNotes);
+
+        // Load timezone settings
         setUserTimezone(dayData.userTimezone);
 
         // Load checklists directly from server action result (inheritance handled in server action)
@@ -282,23 +243,12 @@ export default function DailyPage() {
   // Data is saved immediately when items are created via server actions
 
   // Enhanced time block assignment function that uses the new 18-hour system
-  const getTimeBlockForCompletion = (
-    completionTime: Date,
-    currentPageDate: string
-  ): number => {
-    // Use the new 18-hour time block calculator with wake time settings
-    const wakeSettings: DailyWakeSettings | undefined = dailyWakeTime
-      ? { wakeTime: dailyWakeTime, date: currentPageDate }
-      : undefined;
+  const getTimeBlockForCompletion = (completionTime: Date): number => {
+    // Use the simple 24-hour time block calculator
+    const blockIndex = calculateSimpleCompletionBlock(completionTime);
 
-    const completionRecord = calculateCompletionBlock(
-      completionTime,
-      wakeSettings,
-      userTimezone
-    );
-
-    // Ensure we don't exceed the 18 block limit (0-17)
-    return Math.min(completionRecord.blockIndex, 17);
+    // Ensure we don't exceed the 24 block limit (0-23)
+    return Math.min(Math.max(blockIndex, 0), 23);
   };
 
   // Handle completed items from master checklist
@@ -310,7 +260,7 @@ export default function DailyPage() {
       const targetBlockIndex =
         completedItem.targetBlock !== undefined
           ? completedItem.targetBlock
-          : getTimeBlockForCompletion(completionTime, date);
+          : getTimeBlockForCompletion(completionTime);
 
       const timestamp = completionTime.toLocaleTimeString([], {
         hour: "2-digit",
@@ -336,6 +286,14 @@ export default function DailyPage() {
           : item
       );
       setMasterChecklist(updatedChecklist);
+
+      // Save blocks and checklist to database
+      if (session?.user?.email) {
+        saveDayData(session.user.email, date, {
+          blocks: updatedBlocks,
+          masterChecklist: updatedChecklist,
+        }).catch(console.error);
+      }
     }
   };
 
@@ -350,7 +308,7 @@ export default function DailyPage() {
       const targetBlock =
         completedItem.targetBlock !== undefined
           ? completedItem.targetBlock
-          : getTimeBlockForCompletion(now, date);
+          : getTimeBlockForCompletion(now);
 
       // Add the bad habit as a note to the target block
       const updatedBlocks = [...blocks];
@@ -445,7 +403,7 @@ export default function DailyPage() {
         const targetBlockIndex =
           completedItem.targetBlock !== undefined
             ? completedItem.targetBlock
-            : getTimeBlockForCompletion(completionTime, date);
+            : getTimeBlockForCompletion(completionTime);
 
         const timestamp = completionTime.toLocaleTimeString([], {
           hour: "2-digit",
@@ -925,7 +883,7 @@ export default function DailyPage() {
       const targetBlockIndex =
         completedItem.targetBlock !== undefined
           ? completedItem.targetBlock
-          : getTimeBlockForCompletion(completionTime, date);
+          : getTimeBlockForCompletion(completionTime);
 
       const timestamp = completionTime.toLocaleTimeString([], {
         hour: "2-digit",
@@ -951,15 +909,14 @@ export default function DailyPage() {
           : item
       );
       setWorkoutChecklist(updatedChecklist);
-    }
-  };
 
-  // Handler for daily wake time changes
-  const handleDailyWakeTimeChange = (newWakeTime: string) => {
-    setDailyWakeTime(newWakeTime);
-    // Also sync with the main wakeTime field to hide the banner
-    if (newWakeTime) {
-      setWakeTime(newWakeTime);
+      // Save blocks and checklist to database
+      if (session?.user?.email) {
+        saveDayData(session.user.email, date, {
+          blocks: updatedBlocks,
+          workoutChecklist: updatedChecklist,
+        }).catch(console.error);
+      }
     }
   };
 
@@ -1004,31 +961,119 @@ export default function DailyPage() {
             </label>
             <input
               id="wake-time"
-              type="time"
-              value={wakeTime}
+              type="text"
+              value={wakeTime ? wakeTime : ""}
               onChange={async (e) => {
-                const newWakeTime = e.target.value;
-                setWakeTime(newWakeTime);
-                // Sync with dailyWakeTime for time block calculations
-                if (newWakeTime) {
-                  setDailyWakeTime(newWakeTime);
+                let value = e.target.value.replace(/\D/g, ""); // Remove non-digits
+
+                // Format as --:-- (military time)
+                if (value.length >= 3) {
+                  value = value.slice(0, 2) + ":" + value.slice(2, 4);
                 }
 
-                // Save to database immediately
+                // Validate time (00:00 - 23:59)
+                if (value.length === 5) {
+                  const [hours, minutes] = value.split(":");
+                  const h = parseInt(hours);
+                  const m = parseInt(minutes);
+                  if (h > 23 || m > 59) return; // Invalid time
+                }
+
+                setWakeTime(value);
+
+                // Save to database only when complete (5 chars = HH:MM)
+                if (value.length === 5) {
+                  try {
+                    if (session?.user?.email && date) {
+                      await saveDayData(session.user.email, date, {
+                        wakeTime: value,
+                      });
+                    }
+                  } catch (error) {
+                    console.error("Error saving wake time:", error);
+                  }
+                }
+              }}
+              onBlur={async () => {
+                // Save on blur even if incomplete, or clear if empty
+                if (wakeTime.length === 0 || wakeTime.length === 5) {
+                  try {
+                    if (session?.user?.email && date) {
+                      await saveDayData(session.user.email, date, {
+                        wakeTime: wakeTime,
+                      });
+                    }
+                  } catch (error) {
+                    console.error("Error saving wake time:", error);
+                  }
+                }
+              }}
+              className="border rounded-md px-3 py-1 text-sm w-16 text-center font-mono"
+              placeholder="--:--"
+              maxLength={5}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="weight"
+              className="text-sm font-medium whitespace-nowrap"
+            >
+              Weight:
+            </label>
+            <input
+              id="weight"
+              type="text"
+              value={weight ? weight : ""}
+              onChange={async (e) => {
+                let value = e.target.value.replace(/[^\d.]/g, ""); // Only digits and decimal
+
+                // Ensure only one decimal point
+                const parts = value.split(".");
+                if (parts.length > 2) {
+                  value = parts[0] + "." + parts.slice(1).join("");
+                }
+
+                // Limit to 4 total digits (including decimal)
+                if (parts[1] && parts[1].length > 1) {
+                  value = parts[0] + "." + parts[1].slice(0, 1);
+                }
+                if (parts[0].length > 3) {
+                  value =
+                    parts[0].slice(0, 3) + (parts[1] ? "." + parts[1] : "");
+                }
+
+                setWeight(value);
+
+                // Save to database when user pauses typing
+                if (value.length > 0) {
+                  try {
+                    if (session?.user?.email && date) {
+                      await saveDayData(session.user.email, date, {
+                        weight: value,
+                      });
+                    }
+                  } catch (error) {
+                    console.error("Error saving weight:", error);
+                  }
+                }
+              }}
+              onBlur={async () => {
+                // Save on blur
                 try {
                   if (session?.user?.email && date) {
                     await saveDayData(session.user.email, date, {
-                      wakeTime: newWakeTime,
-                      dailyWakeTime: newWakeTime,
+                      weight: weight,
                     });
                   }
                 } catch (error) {
-                  console.error("Error saving wake time:", error);
+                  console.error("Error saving weight:", error);
                 }
               }}
-              className="border rounded-md px-4 py-2 text-sm"
-              placeholder="Enter wake time"
+              className="border rounded-md px-3 py-1 text-sm w-16 text-center font-mono"
+              placeholder="---.-"
+              maxLength={5}
             />
+            <span className="text-sm text-gray-600">lbs</span>
           </div>
           <div className="flex items-center">
             <button
@@ -1068,15 +1113,6 @@ export default function DailyPage() {
           </span>
         </div>
       </div>
-
-      {/* Daily Wake Time Input for Time Block Assignment - only show if no wake time is set */}
-      {!wakeTime && !dailyWakeTime && (
-        <WakeTimeInput
-          currentWakeTime={dailyWakeTime}
-          onWakeTimeChange={handleDailyWakeTimeChange}
-          date={date}
-        />
-      )}
 
       <ScoreBar score={score} />
       <MasterChecklist

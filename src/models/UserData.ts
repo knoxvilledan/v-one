@@ -6,6 +6,7 @@ export interface IUserData extends Document {
   date: string;
   displayDate: string;
   wakeTime: string;
+  weight?: string; // Weight in lbs
   blocks: Block[];
   timeBlocksOrder?: string[]; // Array of blockIds in order (optional for backward compatibility)
   masterChecklist: ChecklistItem[];
@@ -64,6 +65,7 @@ const UserDataSchema = new Schema<IUserData>(
     date: { type: String, required: true },
     displayDate: { type: String, required: true },
     wakeTime: { type: String, default: "" },
+    weight: { type: String, default: "" }, // Weight in lbs
     blocks: { type: [BlockSchema], default: [] },
     timeBlocksOrder: { type: [String], default: [] },
     masterChecklist: { type: [ChecklistItemSchema], default: [] },

@@ -164,7 +164,7 @@ export default function HabitBreakChecklist({
   // Group items by category for habit breaking
   const sections: HabitBreakSection[] = [
     {
-      title: "Change this Heading to bad habit that you want to break",
+      title: "Make this the Biggest Habit to Break",
       category: "lsd",
       items: items.filter((item) => item.category === "lsd" && !item.completed),
     },
