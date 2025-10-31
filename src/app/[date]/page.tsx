@@ -18,6 +18,7 @@ import TimeBlock from "../../components/TimeBlock";
 import ScoreBar from "../../components/ScoreBar";
 import MasterChecklist from "../../components/MasterChecklist";
 import HabitBreakChecklist from "../../components/HabitBreakChecklist";
+import IconTrackingBar from "../../components/IconTrackingBar";
 import TodoList from "../../components/TodoList";
 import WorkoutChecklist from "../../components/WorkoutChecklist";
 import Footer from "../../components/Footer";
@@ -27,7 +28,7 @@ import {
   generateSimpleTimeBlocks,
   calculateSimpleCompletionBlock,
 } from "../../lib/simple-time-blocks";
-import { Block, ChecklistItem } from "../../types";
+import { Block, ChecklistItem, IconTrackingData } from "../../types";
 
 export default function DailyPage() {
   const params = useParams();
@@ -50,6 +51,11 @@ export default function DailyPage() {
   const [workoutChecklist, setWorkoutChecklist] = useState<ChecklistItem[]>([]);
   const [workoutListVisible, setWorkoutListVisible] = useState(false);
   const [resetWorkoutPosition, setResetWorkoutPosition] = useState(false);
+  const [iconTracking, setIconTracking] = useState<IconTrackingData>({
+    water: 10,
+    cigarettes: 15,
+    trees: 10,
+  });
   // New state for enhanced time tracking
   const [userTimezone, setUserTimezone] = useState<string>("");
   // Time blocks collapse state
@@ -229,6 +235,14 @@ export default function DailyPage() {
 
         // Load todo list
         setTodoList(ensureDateObjects(dayData.todoList));
+
+        // Load icon tracking data with defaults (will be undefined for existing data)
+        // This will reset to defaults daily until we migrate existing data
+        setIconTracking({
+          water: 10,
+          cigarettes: 15,
+          trees: 10,
+        });
       } catch (error) {
         console.error("Error loading day data:", error);
       } finally {
@@ -920,6 +934,49 @@ export default function DailyPage() {
     }
   };
 
+  // Handle icon tracking injection into timeblocks
+  const handleIconInjection = async (
+    icon: string,
+    message: string,
+    targetBlock?: number
+  ) => {
+    const now = new Date();
+    const targetBlockIndex =
+      targetBlock !== undefined ? targetBlock : getTimeBlockForCompletion(now);
+
+    // Add the icon action as a note to the target block
+    const updatedBlocks = [...blocks];
+    updatedBlocks[targetBlockIndex].notes.push(message);
+    setBlocks(updatedBlocks);
+
+    // Save to database immediately
+    try {
+      if (session?.user?.email && date) {
+        await saveDayData(session.user.email, date, {
+          blocks: updatedBlocks,
+        });
+      }
+    } catch (error) {
+      console.error("Error saving icon injection:", error);
+    }
+  };
+
+  // Handle icon tracking updates
+  const updateIconTracking = async (updatedData: IconTrackingData) => {
+    try {
+      setIconTracking(updatedData);
+
+      // Save to database immediately
+      if (session?.user?.email && date) {
+        await saveDayData(session.user.email, date, {
+          iconTracking: updatedData,
+        });
+      }
+    } catch (error) {
+      console.error("Error updating icon tracking:", error);
+    }
+  };
+
   const score = calculateScore(blocks);
 
   if (isLoading) {
@@ -1293,6 +1350,13 @@ export default function DailyPage() {
             onPositionReset={handleWorkoutPositionReset}
           />
         </div>
+
+        {/* Icon Tracking Bar - appears above HabitBreakChecklist */}
+        <IconTrackingBar
+          iconData={iconTracking}
+          onInjectToTimeBlock={handleIconInjection}
+          onUpdateIconData={updateIconTracking}
+        />
 
         <HabitBreakChecklist
           items={habitBreakChecklist}

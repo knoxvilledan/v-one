@@ -3,7 +3,7 @@
 import { UserData } from "../models/UserData";
 import { connectMongoose } from "./db";
 import { revalidatePath } from "next/cache";
-import { Block, ChecklistItem } from "../types";
+import { Block, ChecklistItem, IconTrackingData } from "../types";
 import { IUserData } from "../models/UserData";
 
 // Types for server action responses
@@ -62,7 +62,6 @@ function copyBlocksForNewDay(blocks: Block[] | undefined): Block[] {
 
   return blocks.map((block) => ({
     id: block.id,
-    blockId: block.blockId,
     time: block.time,
     label: block.label, // Keep custom names
     notes: [], // Reset notes
@@ -270,7 +269,6 @@ export async function getUserDataByDate(
       blocks:
         userData.blocks?.map((block: Block) => ({
           id: block.id || `block-${block.index || 0}`,
-          blockId: block.blockId, // Keep the stable blockId
           time: block.time || "",
           label: block.label || "",
           notes: block.notes || [],
@@ -603,6 +601,7 @@ export async function saveDayData(
     habitBreakChecklist?: ChecklistItem[];
     workoutChecklist?: ChecklistItem[];
     todoList?: ChecklistItem[];
+    iconTracking?: IconTrackingData;
     dailyWakeTime?: string;
     userTimezone?: string;
   }

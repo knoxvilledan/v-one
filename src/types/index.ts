@@ -28,6 +28,12 @@ export interface ChecklistItem {
   targetBlock?: number; // Time block index for assignment (0-23 for 24-hour system)
 }
 
+export interface IconTrackingData {
+  water: number; // remaining count
+  cigarettes: number; // remaining count
+  trees: number; // remaining count
+}
+
 export interface ChecklistSection {
   id: string;
   name: string;
@@ -62,6 +68,7 @@ export interface DayData {
   habitBreakChecklist: ChecklistItem[];
   todoList: ChecklistItem[];
   workoutChecklist: ChecklistItem[];
+  iconTracking: IconTrackingData; // Daily icon tracking data
   score?: number;
   createdAt: Date;
   updatedAt: Date;

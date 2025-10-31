@@ -1,6 +1,6 @@
 import "server-only";
 import mongoose, { Schema, Document } from "mongoose";
-import { Block, ChecklistItem } from "../types";
+import { Block, ChecklistItem, IconTrackingData } from "../types";
 
 export interface IUserData extends Document {
   date: string;
@@ -12,6 +12,7 @@ export interface IUserData extends Document {
   habitBreakChecklist: ChecklistItem[];
   todoList: ChecklistItem[];
   workoutChecklist: ChecklistItem[];
+  iconTracking: IconTrackingData; // Daily icon tracking data
   score: number;
   userId: string;
   createdAt: Date;
@@ -48,6 +49,15 @@ const BlockSchema = new Schema(
   { _id: false }
 );
 
+const IconTrackingSchema = new Schema(
+  {
+    water: { type: Number, default: 10 },
+    cigarettes: { type: Number, default: 15 },
+    trees: { type: Number, default: 10 },
+  },
+  { _id: false }
+);
+
 const UserDataSchema = new Schema<IUserData>(
   {
     date: { type: String, required: true },
@@ -59,6 +69,10 @@ const UserDataSchema = new Schema<IUserData>(
     habitBreakChecklist: { type: [ChecklistItemSchema], default: [] },
     todoList: { type: [ChecklistItemSchema], default: [] },
     workoutChecklist: { type: [ChecklistItemSchema], default: [] },
+    iconTracking: {
+      type: IconTrackingSchema,
+      default: () => ({ water: 10, cigarettes: 15, trees: 10 }),
+    },
     score: { type: Number, default: 0 },
     userId: { type: String, required: true, index: true },
     dailyWakeTime: { type: String },
