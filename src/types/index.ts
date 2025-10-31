@@ -1,6 +1,5 @@
 export interface ChecklistItem {
   id: string;
-  itemId?: string; // Stable unique identifier for the item across templates/instances (optional for backward compatibility)
   text: string;
   completed: boolean;
   category:
@@ -23,25 +22,20 @@ export interface ChecklistItem {
     | "walking"
     | "workout";
   completedAt?: Date;
-  targetBlock?: number; // Legacy field for backward compatibility
-  targetBlockId?: string; // New ID-based field
   dueDate?: string; // Format: YYYY-MM-DD - for todo items with specific dates
-  // New fields for enhanced time tracking
   completionTimezone?: string; // IANA timezone used at completion
   timezoneOffset?: number; // Offset used at completion for DST audit
+  targetBlock?: number; // Time block index for assignment (0-23 for 24-hour system)
 }
 
 export interface ChecklistSection {
   id: string;
-  sectionId: string; // Stable unique identifier for the section across templates/instances
   name: string;
   items: ChecklistItem[];
-  itemOrder: string[]; // Array of itemIds in order
 }
 
 export interface Block {
-  id: string; // Stable unique identifier for the block
-  blockId?: string; // Stable unique identifier for the block across templates/instances (optional for backward compatibility)
+  id: string;
   time: string;
   label: string;
   notes: string[];
@@ -61,19 +55,17 @@ export interface DayData {
   date: string; // Format: YYYY-MM-DD
   displayDate: string; // Format: Wed 7-16-25
   wakeTime: string;
+  weight?: string; // Weight in lbs
   wakeTimeSettings?: WakeTimeSettings; // Enhanced wake time configuration
   blocks: Block[];
-  timeBlocksOrder?: string[]; // Array of blockIds in order (optional for backward compatibility)
   masterChecklist: ChecklistItem[];
   habitBreakChecklist: ChecklistItem[];
   todoList: ChecklistItem[];
-  workoutChecklist: ChecklistItem[]; // New workout checklist field
-  checklistSectionOrder?: string[]; // Array of sectionIds in order (optional for backward compatibility)
+  workoutChecklist: ChecklistItem[];
   score?: number;
   createdAt: Date;
   updatedAt: Date;
   userId: string; // Reference to user
-  // New fields for daily wake settings
   dailyWakeTime?: string; // Format: "03:30" - specific wake time for this day
   userTimezone?: string; // IANA timezone for this user
 }

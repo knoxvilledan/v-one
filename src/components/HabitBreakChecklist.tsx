@@ -1,6 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChecklistItem } from "../types";
+import { useAppConfig } from "../hooks/useAppConfig";
+import { calculateSimpleCompletionBlock } from "../lib/simple-time-blocks";
 
 interface HabitBreakChecklistProps {
   items: ChecklistItem[];
@@ -12,6 +14,12 @@ interface HabitBreakSection {
   title: string;
   category: ChecklistItem["category"] | "completed";
   items: ChecklistItem[];
+  categoryData?: {
+    value: string;
+    label: string;
+    emoji: string;
+    color: string;
+  };
 }
 
 export default function HabitBreakChecklist({
@@ -19,19 +27,19 @@ export default function HabitBreakChecklist({
   onCompleteItem,
   onUpdateItems,
 }: HabitBreakChecklistProps) {
-  const [isExpanded, setIsExpanded] = useState(false); // Start collapsed
+  const [isExpanded, setIsExpanded] = useState(false); // Start collapsed like MasterChecklist
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({
-    lsd: false,
-    financial: false,
-    youtube: false,
-    time: false,
-    entertainment: false,
+    lsd: true,
+    financial: true,
+    youtube: true,
+    time: true,
+    entertainment: true,
+    completed: false,
   });
-  const [isEditing, setIsEditing] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
+  const [editingText, setEditingText] = useState("");
   const [editTargetBlock, setEditTargetBlock] = useState<number | undefined>(
     undefined
   );
@@ -39,6 +47,20 @@ export default function HabitBreakChecklist({
   const [newItemCategory, setNewItemCategory] = useState<
     ChecklistItem["category"] | "completed"
   >("lsd");
+  const [timeBlockCount, setTimeBlockCount] = useState(24); // Dynamic from config (simple time blocks = 24 hours)
+  const { getTimeBlockCount } = useAppConfig();
+
+  useEffect(() => {
+    // Load dynamic time block count
+    const count = getTimeBlockCount();
+    setTimeBlockCount(count);
+  }, [getTimeBlockCount]);
+
+  // Get current time block based on actual time using simple time blocks (24-hour system)
+  const getCurrentTimeBlock = (): number => {
+    const now = new Date();
+    return calculateSimpleCompletionBlock(now);
+  };
 
   const toggleSection = (category: string) => {
     setExpandedSections((prev) => ({
@@ -48,9 +70,15 @@ export default function HabitBreakChecklist({
   };
 
   const handleCompleteItem = (item: ChecklistItem) => {
-    // Call the parent handler which will handle BOTH:
-    // 1. Injecting into TimeBlock as a note
-    // 2. Updating the habitBreakChecklist state
+    const updatedItem = {
+      ...item,
+      completed: true,
+      completedAt: new Date(),
+      targetBlock: getCurrentTimeBlock(),
+    };
+
+    const updatedItems = items.map((i) => (i.id === item.id ? updatedItem : i));
+    onUpdateItems(updatedItems);
     onCompleteItem(item.id);
   };
 
@@ -75,32 +103,103 @@ export default function HabitBreakChecklist({
 
   const startEditing = (item: ChecklistItem) => {
     setEditingItemId(item.id);
-    setEditText(item.text);
+    setEditingText(item.text);
     setEditTargetBlock(item.targetBlock);
   };
 
   const saveEdit = () => {
-    if (editText.trim()) {
+    if (editingText.trim()) {
       const updatedItems = items.map((item) =>
         item.id === editingItemId
-          ? { ...item, text: editText.trim(), targetBlock: editTargetBlock }
+          ? { ...item, text: editingText.trim(), targetBlock: editTargetBlock }
           : item
       );
       onUpdateItems(updatedItems);
     }
     setEditingItemId(null);
-    setEditText("");
+    setEditingText("");
     setEditTargetBlock(undefined);
   };
 
   const cancelEdit = () => {
     setEditingItemId(null);
-    setEditText("");
+    setEditingText("");
     setEditTargetBlock(undefined);
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      saveEdit();
+    } else if (e.key === "Escape") {
+      cancelEdit();
+    }
+  };
+
+  const handleAddItem = (category: string) => {
+    const newItem: ChecklistItem = {
+      id: Date.now().toString(),
+      text: `New ${category} habit to break`,
+      completed: false,
+      category: category as ChecklistItem["category"],
+    };
+    onUpdateItems([...items, newItem]);
+  };
+
+  const handleCategoryChange = (itemId: string, newCategory: string) => {
+    const updatedItems = items.map((item) =>
+      item.id === itemId
+        ? { ...item, category: newCategory as ChecklistItem["category"] }
+        : item
+    );
+    onUpdateItems(updatedItems);
+  };
+
+  const handleBlockAssignment = (itemId: string, blockIndex: number) => {
+    const updatedItems = items.map((item) =>
+      item.id === itemId
+        ? { ...item, targetBlock: blockIndex === -1 ? undefined : blockIndex }
+        : item
+    );
+    onUpdateItems(updatedItems);
+  };
+
+  const handleDeleteItem = (itemId: string) => {
+    const updatedItems = items.filter((item) => item.id !== itemId);
+    onUpdateItems(updatedItems);
+  };
+
+  // Define daily categories for HabitBreakChecklist
+  const dailyCategories = [
+    {
+      value: "lsd",
+      label: "🎯 Make this the Biggest Habit to Break",
+      emoji: "🎯",
+      color: "red",
+    },
+    {
+      value: "financial",
+      label: "💰 Financial Waste",
+      emoji: "💰",
+      color: "red",
+    },
+    { value: "youtube", label: "📱 Youtube Shorts", emoji: "📱", color: "red" },
+    { value: "time", label: "⏰ Time Wasted", emoji: "⏰", color: "red" },
+    {
+      value: "entertainment",
+      label: "🎮 Wasteful Entertainment",
+      emoji: "🎮",
+      color: "red",
+    },
+  ];
+
   const undoCompletion = (item: ChecklistItem) => {
     try {
+      console.log("Undoing completion for habit break item:", {
+        itemId: item.id,
+        itemText: item.text,
+        targetBlock: item.targetBlock,
+      });
+
       const updatedItems = items.map((i) =>
         i.id === item.id
           ? {
@@ -156,47 +255,15 @@ export default function HabitBreakChecklist({
     }
   };
 
-  const deleteItem = (id: string) => {
-    const updatedItems = items.filter((item) => item.id !== id);
-    onUpdateItems(updatedItems);
-  };
-
-  // Group items by category for habit breaking
-  const sections: HabitBreakSection[] = [
-    {
-      title: "Make this the Biggest Habit to Break",
-      category: "lsd",
-      items: items.filter((item) => item.category === "lsd" && !item.completed),
-    },
-    {
-      title: "Financial Waste",
-      category: "financial",
-      items: items.filter(
-        (item) => item.category === "financial" && !item.completed
-      ),
-    },
-    {
-      title: "Youtube Shorts",
-      category: "youtube",
-      items: items.filter(
-        (item) => item.category === "youtube" && !item.completed
-      ),
-    },
-    {
-      title: "Time Wasted",
-      category: "time",
-      items: items.filter(
-        (item) => item.category === "time" && !item.completed
-      ),
-    },
-    {
-      title: "Wasteful Entertainment",
-      category: "entertainment",
-      items: items.filter(
-        (item) => item.category === "entertainment" && !item.completed
-      ),
-    },
-  ];
+  // Group items by category using the new dailyCategories structure
+  const sections: HabitBreakSection[] = dailyCategories.map((category) => ({
+    title: category.label,
+    category: category.value as ChecklistItem["category"],
+    items: items.filter(
+      (item) => item.category === category.value && !item.completed
+    ),
+    categoryData: category, // Add category data for styling and emojis
+  }));
 
   // Add completed items section if there are any
   if (items.some((item) => item.completed)) {
@@ -233,15 +300,6 @@ export default function HabitBreakChecklist({
             {completedToday} broken today • {remainingCount} to avoid
           </span>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsEditing(!isEditing);
-          }}
-          className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-        >
-          {isEditing ? "Done" : "Edit"}
-        </button>
       </div>
 
       {/* Expanded Content */}
@@ -261,13 +319,24 @@ export default function HabitBreakChecklist({
                   <span className="text-sm text-red-600 dark:text-red-400">
                     {expandedSections[section.category] ? "▼" : "▶"}
                   </span>
-                  <h3 className="font-medium text-red-700 dark:text-red-300">
+                  <h3 className="font-medium text-red-700 dark:text-red-300 flex items-center gap-1">
                     {section.title}
+                    <span className="text-xs text-red-500 dark:text-red-400">
+                      ({section.items.length})
+                    </span>
                   </h3>
-                  <span className="text-xs text-red-600 dark:text-red-400">
-                    ({section.items.length})
-                  </span>
                 </div>
+                {section.categoryData && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddItem(section.categoryData!.value);
+                    }}
+                    className="text-xs px-2 py-1 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                  >
+                    + Add {section.categoryData!.label.split(" ")[1]}
+                  </button>
+                )}
               </div>
 
               {/* Section Items */}
@@ -286,14 +355,19 @@ export default function HabitBreakChecklist({
                         <div className="flex-1 flex items-center space-x-2">
                           <input
                             type="text"
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            className="flex-1 px-2 py-1 border border-red-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveEdit();
-                              if (e.key === "Escape") cancelEdit();
-                            }}
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            className="flex-1 px-2 py-1 border border-red-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-600 dark:border-red-500 dark:text-white resize-none overflow-hidden"
+                            onKeyDown={(e) => handleKeyPress(e)}
+                            onBlur={() => saveEdit()}
                             autoFocus
+                            style={{
+                              minHeight: "28px",
+                              maxHeight: "28px",
+                              lineHeight: "1.2",
+                              whiteSpace: "nowrap",
+                              textOverflow: "ellipsis",
+                            }}
                           />
                           <select
                             value={editTargetBlock || ""}
@@ -304,41 +378,37 @@ export default function HabitBreakChecklist({
                                   : undefined
                               )
                             }
-                            className="px-2 py-1 border border-red-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                            className="px-2 py-1 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-800 text-white border-gray-600"
                           >
-                            <option value="">Auto-assign</option>
-                            {Array.from({ length: 16 }, (_, index) => (
-                              <option key={index} value={index}>
-                                Block {index}
+                            <option value="" className="bg-gray-800 text-white">
+                              Auto-assign
+                            </option>
+                            {Array.from({ length: timeBlockCount }, (_, i) => (
+                              <option
+                                key={i}
+                                value={i}
+                                className="bg-gray-800 text-white"
+                              >
+                                Block {i}
                               </option>
                             ))}
                           </select>
-                          <button
-                            onClick={saveEdit}
-                            className="text-green-600 hover:text-green-800 text-sm px-2 py-1"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={cancelEdit}
-                            className="text-gray-600 hover:text-gray-800 text-sm px-2 py-1"
-                          >
-                            Cancel
-                          </button>
                         </div>
                       ) : (
                         <div className="flex-1 flex items-center justify-between">
                           <div className="flex-1">
                             <span
-                              className={`text-sm ${
+                              onClick={() => startEditing(item)}
+                              className={`text-sm cursor-pointer hover:text-red-600 dark:hover:text-red-400 ${
                                 item.completed
-                                  ? "line-through text-red-400"
+                                  ? "line-through text-red-500"
                                   : "text-red-800 dark:text-red-200"
                               }`}
+                              title="Click to edit"
                             >
                               {item.text}
                             </span>
-                            {item.targetBlock && (
+                            {item.targetBlock !== undefined && (
                               <div className="text-xs text-red-600 dark:text-red-400 mt-1">
                                 Assigned to Block {item.targetBlock}
                               </div>
@@ -351,6 +421,62 @@ export default function HabitBreakChecklist({
                                 ).toLocaleTimeString()}
                               </div>
                             )}
+                          </div>
+
+                          {/* Category dropdown - always visible for easy reassignment */}
+                          <div className="flex items-center space-x-2 mr-2">
+                            <select
+                              value={item.category || ""}
+                              onChange={(e) =>
+                                handleCategoryChange(item.id, e.target.value)
+                              }
+                              className="px-2 py-1 border rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-800 text-red-800 dark:text-white border-red-300 dark:border-gray-600 hover:border-red-500"
+                              title="Change category"
+                            >
+                              <option value="" className="text-red-500">
+                                Select category...
+                              </option>
+                              {dailyCategories.map((cat) => (
+                                <option
+                                  key={cat.value}
+                                  value={cat.value}
+                                  className="dark:bg-gray-800 dark:text-white"
+                                >
+                                  {cat.emoji} {cat.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Time Block Assignment dropdown - always visible */}
+                          <div className="flex items-center space-x-2 mr-2">
+                            <select
+                              value={item.targetBlock ?? ""}
+                              onChange={(e) =>
+                                handleBlockAssignment(
+                                  item.id,
+                                  e.target.value ? parseInt(e.target.value) : -1
+                                )
+                              }
+                              className="px-2 py-1 border rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-800 text-red-800 dark:text-white border-red-300 dark:border-gray-600 hover:border-red-500"
+                              title="Assign to time block"
+                            >
+                              <option value="" className="text-red-500">
+                                Auto-assign
+                              </option>
+                              {Array.from(
+                                { length: timeBlockCount },
+                                (_, i) => (
+                                  <option
+                                    key={i}
+                                    value={i}
+                                    className="dark:bg-gray-800 dark:text-white"
+                                  >
+                                    Block {i}
+                                  </option>
+                                )
+                              )}
+                            </select>
                           </div>
 
                           {/* Reassignment dropdown for completed items */}
@@ -374,53 +500,69 @@ export default function HabitBreakChecklist({
                                 >
                                   Auto-assign
                                 </option>
-                                {Array.from({ length: 16 }, (_, index) => (
-                                  <option
-                                    key={index}
-                                    value={index}
-                                    className="bg-gray-800 text-white"
-                                  >
-                                    Block {index}
-                                  </option>
-                                ))}
+                                {Array.from(
+                                  { length: timeBlockCount },
+                                  (_, i) => (
+                                    <option
+                                      key={i}
+                                      value={i}
+                                      className="bg-gray-800 text-white"
+                                    >
+                                      Block {i}
+                                    </option>
+                                  )
+                                )}
                               </select>
                             </div>
                           )}
 
-                          {isEditing && (
-                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {item.completed && (
-                                <button
-                                  onClick={() => undoCompletion(item)}
-                                  className="text-orange-600 hover:text-orange-800 p-1"
-                                  title="Undo completion"
-                                >
-                                  ↶
-                                </button>
-                              )}
-                              <button
-                                onClick={() => startEditing(item)}
-                                className="text-red-600 hover:text-red-800 p-1"
-                                title="Edit"
+                          {/* Delete Button - Always visible like WorkoutChecklist/TodoList */}
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                              title="Delete item"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
                               >
-                                ✎
-                              </button>
+                                <path
+                                  fillRule="evenodd"
+                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+
+                          {/* Edit buttons - Always visible like WorkoutChecklist/TodoList */}
+                          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {item.completed && (
                               <button
-                                onClick={() => deleteItem(item.id)}
-                                className="text-red-600 hover:text-red-800 p-1"
-                                title="Delete"
+                                onClick={() => undoCompletion(item)}
+                                className="text-orange-600 hover:text-orange-800 p-1"
+                                title="Undo completion"
                               >
-                                ×
+                                ↶
                               </button>
-                            </div>
-                          )}
+                            )}
+                            <button
+                              onClick={() => startEditing(item)}
+                              className="text-red-600 hover:text-red-800 p-1"
+                              title="Edit"
+                            >
+                              ✎
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
                   ))}
 
                   {/* Add new item for this section */}
-                  {isEditing && section.category !== "completed" && (
+                  {section.category !== "completed" && (
                     <div className="flex items-center space-x-2 mt-3 pt-2 border-t border-red-200 dark:border-red-700">
                       <input
                         type="text"

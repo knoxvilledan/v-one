@@ -32,7 +32,7 @@ export default function TodoList({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hasBeenMoved, setHasBeenMoved] = useState(false);
-  const [timeBlockCount, setTimeBlockCount] = useState(18); // Dynamic from config
+  const [timeBlockCount, setTimeBlockCount] = useState(24); // Dynamic from config (simple time blocks = 24 hours)
   const dragRef = useRef<HTMLDivElement>(null);
   const { getTimeBlockCount } = useAppConfig();
 

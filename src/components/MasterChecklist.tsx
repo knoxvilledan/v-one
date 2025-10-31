@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { ChecklistItem } from "../types";
 import { useAppConfig } from "../hooks/useAppConfig";
+import { calculateSimpleCompletionBlock } from "../lib/simple-time-blocks";
 
 interface MasterChecklistProps {
   items: ChecklistItem[];
@@ -46,7 +47,7 @@ export default function MasterChecklist({
   const [newItemCategory, setNewItemCategory] = useState<
     ChecklistItem["category"] | "completed"
   >("morning");
-  const [timeBlockCount, setTimeBlockCount] = useState(18); // Dynamic from config
+  const [timeBlockCount, setTimeBlockCount] = useState(24); // Dynamic from config (simple time blocks = 24 hours)
   const { getTimeBlockCount } = useAppConfig();
 
   useEffect(() => {
@@ -55,27 +56,10 @@ export default function MasterChecklist({
     setTimeBlockCount(count);
   }, [getTimeBlockCount]);
 
-  // Get current time block based on actual time (using the same logic as completion assignment)
+  // Get current time block based on actual time using simple time blocks (24-hour system)
   const getCurrentTimeBlock = (): number => {
     const now = new Date();
-    const hour = now.getHours();
-
-    // Use the same logic as getGeneralRuleBlock in time-block-calculator.ts
-    // Before 4:00 a.m.: put in the 4:00 a.m. block
-    if (hour < 4) {
-      return 0; // 4:00 a.m. block
-    }
-
-    // 4–4:59 → 4 a.m. block (index 0)
-    // 5–5:59 → 5 a.m. block (index 1)
-    // ...
-    // 20–20:59 → 8 p.m. block (index 16)
-    if (hour >= 4 && hour <= 20) {
-      return hour - 4;
-    }
-
-    // 21–23:59 and anything later → 9 p.m. block (index 17)
-    return 17; // 9:00 p.m. block
+    return calculateSimpleCompletionBlock(now);
   };
 
   const toggleSection = (category: string) => {

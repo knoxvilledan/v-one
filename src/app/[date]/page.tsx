@@ -994,6 +994,22 @@ export default function DailyPage() {
                   }
                 }
               }}
+              onKeyDown={async (e) => {
+                if (e.key === "Enter") {
+                  // Save on Enter key press
+                  try {
+                    if (session?.user?.email && date) {
+                      await saveDayData(session.user.email, date, {
+                        wakeTime: wakeTime,
+                      });
+                    }
+                    // Remove focus from input after saving
+                    e.currentTarget.blur();
+                  } catch (error) {
+                    console.error("Error saving wake time:", error);
+                  }
+                }
+              }}
               onBlur={async () => {
                 // Save on blur even if incomplete, or clear if empty
                 if (wakeTime.length === 0 || wakeTime.length === 5) {
@@ -1052,6 +1068,22 @@ export default function DailyPage() {
                         weight: value,
                       });
                     }
+                  } catch (error) {
+                    console.error("Error saving weight:", error);
+                  }
+                }
+              }}
+              onKeyDown={async (e) => {
+                if (e.key === "Enter") {
+                  // Save on Enter key press
+                  try {
+                    if (session?.user?.email && date) {
+                      await saveDayData(session.user.email, date, {
+                        weight: weight,
+                      });
+                    }
+                    // Remove focus from input after saving
+                    e.currentTarget.blur();
                   } catch (error) {
                     console.error("Error saving weight:", error);
                   }
