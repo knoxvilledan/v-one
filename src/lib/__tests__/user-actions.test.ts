@@ -51,7 +51,6 @@ function copyBlocksForNewDay(blocks: Block[] | undefined): Block[] {
 
   return blocks.map((block) => ({
     id: block.id,
-    blockId: block.blockId,
     time: block.time,
     label: block.label, // Keep custom names
     notes: [], // Reset notes
@@ -175,7 +174,6 @@ describe("Copy Helpers", () => {
       const sourceBlocks: Block[] = [
         {
           id: "block1",
-          blockId: "block1",
           time: "04:00",
           label: "Custom Morning Routine",
           notes: ["Had a great workout", "Finished early"],
@@ -185,7 +183,6 @@ describe("Copy Helpers", () => {
         },
         {
           id: "block2",
-          blockId: "block2",
           time: "05:00",
           label: "Work Tasks",
           notes: ["Meeting notes", "Project update"],
@@ -200,7 +197,6 @@ describe("Copy Helpers", () => {
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
         id: "block1",
-        blockId: "block1",
         time: "04:00",
         label: "Custom Morning Routine", // Preserved
         notes: [], // Reset
@@ -210,7 +206,6 @@ describe("Copy Helpers", () => {
       });
       expect(result[1]).toEqual({
         id: "block2",
-        blockId: "block2",
         time: "05:00",
         label: "Work Tasks", // Preserved
         notes: [], // Reset
